@@ -51,17 +51,10 @@ def update_commessa(commessa_id: int, commessa_update: ICommesseUpdate, db: Sess
     db.refresh(commessa)
     return commessa
 
-# SERVER_URL_ODOO = 'https://mulattieri-staging.odoo.com'
-# DB_NAME_ODOO = 'unitiva-odoo-mulattieri-creations-addons-dev-17888441'
-# USERNAME_ODOO = 'admin'
-# PASSWORD_ODOO = 'd+£2$99qlWHg'
-
 
 @router.get("/odoo/commesse")
 def get_commesse_from_odoo():
-    
-    print(SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO)
-    
+        
     # Connect to the common service and authenticate
     models = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/object')
     common = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/common')

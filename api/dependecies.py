@@ -1,4 +1,3 @@
-# Defines dependencies used by the routers
 from sqlmodel import Session, create_engine
 import os
 from dotenv import load_dotenv
@@ -7,13 +6,6 @@ from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 import logging
 import boto3
-
-
-
-#Create Logger
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
 
 
 #Load env values in Local & Prod
@@ -33,6 +25,9 @@ DB_NAME_ODOO = os.getenv("DB_NAME_ODOO")
 USERNAME_ODOO = os.getenv("USERNAME_ODOO")
 PASSWORD_ODOO = os.getenv("PASSWORD_ODOO")
 
+#Create Logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 # Db stuff & Initialize tables
