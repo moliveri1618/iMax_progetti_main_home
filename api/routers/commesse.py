@@ -174,7 +174,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     # print(f"    - {prod}")
                     
             final_output.append(order_dict)
-        return JSONResponse(content=final_output)
+        return final_output
 
     except Exception as e:
         print(f"Error fetching sales orders: {e}")
