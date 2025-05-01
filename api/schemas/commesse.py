@@ -7,6 +7,8 @@ from datetime import date
 
 class ICommesseBase(BaseModel):
     ordine: Optional[str] = None
+    costo: Optional[float] = None   
+    ricarico: Optional[float] = None
     data: date
     responsabile: str
     status: int
@@ -25,3 +27,5 @@ class ICommesseUpdate(BaseModel):
     data: Optional[date] = None
     responsabile: Optional[str] = None
     status: Optional[int] = None
+    costo: Optional[float] = None   
+    ricarico: Optional[float] = None

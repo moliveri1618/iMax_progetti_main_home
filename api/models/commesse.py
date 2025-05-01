@@ -9,3 +9,5 @@ class iCommesse(SQLModel, table=True):
     data: date
     responsabile: str
     status: int
+    costo: float
+    ricarico: float
