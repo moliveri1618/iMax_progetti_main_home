@@ -5,7 +5,7 @@ from datetime import date
 
 class iCommesse(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    ordine_n: int
+    ordine: str
     data: date
     responsabile: str
     status: int

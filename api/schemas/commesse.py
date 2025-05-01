@@ -6,7 +6,7 @@ from datetime import date
 
 
 class ICommesseBase(BaseModel):
-    ordine_n: int
+    ordine: Optional[str] = None
     data: date
     responsabile: str
     status: int
@@ -21,7 +21,7 @@ class ICommesseRead(ICommesseBase):
 
 
 class ICommesseUpdate(BaseModel):
-    ordine_n: Optional[int] = None
+    ordine: Optional[str] = None
     data: Optional[date] = None
     responsabile: Optional[str] = None
     status: Optional[int] = None
