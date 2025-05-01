@@ -181,6 +181,8 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
 
     except Exception as e:
         print(f"Error fetching sales orders: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
 
 
 
