@@ -114,43 +114,45 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
 
         # Step 5: Display everything
         final_output = []
-        created_records = []
+        inserted = 0
         for order in sale_orders:
+            
+            #check if ordine exists in the db
+            ordine_name = order.get('name')
+            if not ordine_name:
+                continue
+            exists = db.query(iCommesse).filter(iCommesse.ordine == ordine_name).first()
+            if exists:
+                continue  # Skip existing records
             
             try:
                 new_commessa = iCommesse(
-                    ordine_n=int(re.sub(r'\D', '', order['name'])),  # Extract numbers only
+                    ordine=order['name'],  # Extract numbers only
                     data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
                     nome_cliente=order['partner_id'][1] if order['partner_id'] else "N/A",
                     responsabile=order['user_id'][1] if order['user_id'] else "N/A",
-                    status=1 if order['invoice_status'] == 'to invoice' else 0,
-                    report_tecnico="Auto-generated from Odoo",
-                    report_cliente="Auto-generated from Odoo",
-                    indirizzo="N/A",
-                    riferimento_cliente="N/A",
-                    email="N/A"
+                    status=1 if order['invoice_status'] == 'to invoice' else 0
                 )
 
                 db.add(new_commessa)
-                print(  f"Creating new commessa: {new_commessa}")
-                created_records.append(new_commessa)
-
+                inserted += 1
+                #print(  f"Creating new commessa: {new_commessa}")
             except Exception as inner_e:
                 print(f"Skipping order {order.get('name')} due to error: {inner_e}")
                 
             db.commit()
             
-            order_dict = {
-                "order": order['name'],
-                "date": order['date_order'],
-                "customer": order['partner_id'][1] if order['partner_id'] else "N/A",
-                "salesperson": order['user_id'][1] if order['user_id'] else "N/A",
-                "total": f"{order['amount_total']} €",
-                "invoice_status": order['invoice_status'],
-                "cost": f"{order.get('total_cost_of_lines', 'N/A')} €",
-                "recharge": f"{order.get('total_recharge', 'N/A')} €",
-                "products": []
-            }
+            # order_dict = {
+            #     "order": order['name'],
+            #     "date": order['date_order'],
+            #     "customer": order['partner_id'][1] if order['partner_id'] else "N/A",
+            #     "salesperson": order['user_id'][1] if order['user_id'] else "N/A",
+            #     "total": f"{order['amount_total']} €",
+            #     "invoice_status": order['invoice_status'],
+            #     "cost": f"{order.get('total_cost_of_lines', 'N/A')} €",
+            #     "recharge": f"{order.get('total_recharge', 'N/A')} €",
+            #     "products": []
+            # }
             # print(f"\nOrder: {order['name']}")
             # print(f"  Date: {order['date_order']}")
             # print(f"  Customer: {order['partner_id'][1] if order['partner_id'] else 'N/A'}")
@@ -160,21 +162,21 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             # print(f"  Cost: {order.get('total_cost_of_lines', 'N/A')} €")
             # print(f"  Recharge: {order.get('total_recharge', 'N/A')} €")
 
-            # Show related products
-            products = order_to_products.get(order['id'], [])
-            # print("  Products:")
-            for prod in products:
-                match = re.match(r'\[(.*?)\]\s*(.*)', prod)
-                if match:
-                    code, desc = match.groups()
-                    order_dict["products"].append(f"{code} | {desc}")
-                    # print(f"    - {code} | {desc}")
-                else:
-                    order_dict["products"].append(prod)
-                    # print(f"    - {prod}")
+            # # Show related products
+            # products = order_to_products.get(order['id'], [])
+            # # print("  Products:")
+            # for prod in products:
+            #     match = re.match(r'\[(.*?)\]\s*(.*)', prod)
+            #     if match:
+            #         code, desc = match.groups()
+            #         order_dict["products"].append(f"{code} | {desc}")
+            #         # print(f"    - {code} | {desc}")
+            #     else:
+            #         order_dict["products"].append(prod)
+            #         # print(f"    - {prod}")
                     
-            final_output.append(order_dict)
-        return final_output
+            # final_output.append(order_dict)
+        return JSONResponse(content={"message": "Sync complete", "inserted": inserted}, status_code=200)
 
     except Exception as e:
         print(f"Error fetching sales orders: {e}")
