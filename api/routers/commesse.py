@@ -6,6 +6,7 @@ from xmlrpc import client
 from collections import defaultdict
 import re
 from fastapi.responses import JSONResponse
+from datetime import datetime
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.commesse import iCommesse
@@ -53,7 +54,7 @@ def update_commessa(commessa_id: int, commessa_update: ICommesseUpdate, db: Sess
 
 
 @router.get("/odoo/commesse")
-def get_commesse_from_odoo():
+def get_commesse_from_odoo(db: Session = Depends(get_db)):
         
     # Connect to the common service and authenticate
     models = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/object')
@@ -69,8 +70,8 @@ def get_commesse_from_odoo():
         )
 
         if not sale_order_ids:
-            print("No sales orders found.")
-            return
+            return JSONResponse(content={"message": "No sales orders found."}, status_code=404)
+
 
         # Step 2: Read sale order data
         sale_orders = models.execute_kw(
@@ -112,9 +113,33 @@ def get_commesse_from_odoo():
             order_to_products[order_id].append(product_name)
 
         # Step 5: Display everything
-        # print("\nSales Orders Data:")
         final_output = []
+        created_records = []
         for order in sale_orders:
+            
+            try:
+                new_commessa = iCommesse(
+                    ordine_n=int(re.sub(r'\D', '', order['name'])),  # Extract numbers only
+                    data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
+                    nome_cliente=order['partner_id'][1] if order['partner_id'] else "N/A",
+                    responsabile=order['user_id'][1] if order['user_id'] else "N/A",
+                    status=1 if order['invoice_status'] == 'to invoice' else 0,
+                    report_tecnico="Auto-generated from Odoo",
+                    report_cliente="Auto-generated from Odoo",
+                    indirizzo="N/A",
+                    riferimento_cliente="N/A",
+                    email="N/A"
+                )
+
+                db.add(new_commessa)
+                print(  f"Creating new commessa: {new_commessa}")
+                created_records.append(new_commessa)
+
+            except Exception as inner_e:
+                print(f"Skipping order {order.get('name')} due to error: {inner_e}")
+                
+            db.commit()
+            
             order_dict = {
                 "order": order['name'],
                 "date": order['date_order'],
