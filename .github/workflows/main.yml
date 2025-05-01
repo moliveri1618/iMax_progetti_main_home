@@ -1,0 +1,81 @@
+# name: gestionale_upload_images_s3
+
+# on:
+#   push:
+#     branches:
+#       - master
+
+# jobs:
+#   CI:
+#     runs-on: ubuntu-latest
+#     steps:
+#       # Step 1: Checkout repository
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       # Step 2: Set up Python
+#       - name: Set up Python
+#         uses: actions/setup-python@v4
+#         with:
+#           python-version: "3.11"
+
+#       # Step 3: Install Virtualenv
+#       - name: Install Virtualenv
+#         run: pip install virtualenv
+
+#       # Step 4: Install dependencies
+#       - name: Install dependencies
+#         run: |
+#           python -m venv venv
+#           source venv/bin/activate
+#           pip install --upgrade pip
+#           pip install -r requirements.txt
+
+#       # Step 6: Run Tests
+#       - name: Run Tests
+#         run: |
+#           source venv/bin/activate
+#           pytest
+
+#       # Step 7: Create archive of dependencies
+#       - name: Create archive of dependencies
+#         run: |
+#           cd ./venv/lib/python3.11/site-packages
+#           zip -r9 ../../../../api2.zip .
+
+#       # Step 8: Add API files to Zip file
+#       - name: Add API files to Zip file
+#         run: |
+#           cd ./api
+#           zip -g ../api2.zip -r .
+
+#       # Step 9: Upload API Zip Artifact
+#       - name: Upload API Zip
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: api2
+#           path: api2.zip
+
+#   CD:
+#     runs-on: ubuntu-latest
+#     needs: [CI]
+#     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+#     steps:
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v2
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_SECRET_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+#       - name: Download Lambda api2.zip
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: api2
+#           path: .
+
+#       - name: Upload to S3
+#         run: aws s3 cp api2.zip s3://${{ secrets.AWS_S3_BUCKET }}/api2.zip  
+
+#       - name: Deploy new Lambda
+#         run: aws lambda update-function-code --function-name ${{ secrets.AWS_LAMBDA }} --s3-bucket ${{ secrets.AWS_S3_BUCKET }} --s3-key api2.zip
