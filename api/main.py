@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import asyncio
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__)) 
-from routers import items  
+from routers import commesse  
 from dependecies import create_db_and_tables, verify_cognito_token
 
 
@@ -28,12 +28,11 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"], 
 )
 
-
 app.include_router(
-    items.router, 
-    prefix="/items", 
-    tags=["Items"]
-)
+    commesse.router, 
+    prefix="/commesse", 
+    tags=["Commesse"]
+    )
 
 
 @app.get("/")
