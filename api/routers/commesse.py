@@ -62,85 +62,85 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
     user_id = common.authenticate(DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO, {})
     
     try:
-        # Step 1: Search for sale order IDs
-        sale_order_ids = models.execute_kw(
-            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-            'sale.order', 'search',
-            [[['state', '!=', 'cancel']]],
-        )
+        # # Step 1: Search for sale order IDs
+        # sale_order_ids = models.execute_kw(
+        #     DB_NAME_ODOO, user_id, PASSWORD_ODOO,
+        #     'sale.order', 'search',
+        #     [[['state', '!=', 'cancel']]],
+        # )
 
-        if not sale_order_ids:
-            return JSONResponse(content={"message": "No sales orders found."}, status_code=404)
+        # if not sale_order_ids:
+        #     return JSONResponse(content={"message": "No sales orders found."}, status_code=404)
 
 
-        # Step 2: Read sale order data
-        sale_orders = models.execute_kw(
-            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-            'sale.order', 'read',
-            [sale_order_ids],
-            {'fields': [
-                'name',            # Numero
-                'date_order',      # Data ordine
-                'partner_id',      # Cliente
-                'user_id',         # Addetto vendite
-                'activity_ids',    # Attività (IDs)
-                'total_cost_of_lines',
-                'total_recharge',
-                'amount_total',
-                'invoice_status',
-            ]}
-        )
+        # # Step 2: Read sale order data
+        # sale_orders = models.execute_kw(
+        #     DB_NAME_ODOO, user_id, PASSWORD_ODOO,
+        #     'sale.order', 'read',
+        #     [sale_order_ids],
+        #     {'fields': [
+        #         'name',            # Numero
+        #         'date_order',      # Data ordine
+        #         'partner_id',      # Cliente
+        #         'user_id',         # Addetto vendite
+        #         'activity_ids',    # Attività (IDs)
+        #         'total_cost_of_lines',
+        #         'total_recharge',
+        #         'amount_total',
+        #         'invoice_status',
+        #     ]}
+        # )
 
-        # Step 3: Fetch related sale order lines
-        sale_order_line_ids = models.execute_kw(
-            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-            'sale.order.line', 'search',
-            [[['order_id', 'in', sale_order_ids]]]
-        )
+        # # Step 3: Fetch related sale order lines
+        # sale_order_line_ids = models.execute_kw(
+        #     DB_NAME_ODOO, user_id, PASSWORD_ODOO,
+        #     'sale.order.line', 'search',
+        #     [[['order_id', 'in', sale_order_ids]]]
+        # )
 
-        sale_order_lines = models.execute_kw(
-            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-            'sale.order.line', 'read',
-            [sale_order_line_ids],
-            {'fields': ['order_id', 'product_template_id']}
-        )
+        # sale_order_lines = models.execute_kw(
+        #     DB_NAME_ODOO, user_id, PASSWORD_ODOO,
+        #     'sale.order.line', 'read',
+        #     [sale_order_line_ids],
+        #     {'fields': ['order_id', 'product_template_id']}
+        # )
 
-        # Step 4: Group products by order
-        order_to_products = defaultdict(list)
-        for line in sale_order_lines:
-            order_id = line['order_id'][0]
-            product_name = line['product_template_id'][1] if line['product_template_id'] else "No Product"
-            order_to_products[order_id].append(product_name)
+        # # Step 4: Group products by order
+        # order_to_products = defaultdict(list)
+        # for line in sale_order_lines:
+        #     order_id = line['order_id'][0]
+        #     product_name = line['product_template_id'][1] if line['product_template_id'] else "No Product"
+        #     order_to_products[order_id].append(product_name)
 
-        # Step 5: Display everything
-        final_output = []
-        inserted = 0
-        for order in sale_orders:
+        # # Step 5: Display everything
+        # final_output = []
+        # inserted = 0
+        # for order in sale_orders:
             
-            #check if ordine exists in the db
-            ordine_name = order.get('name')
-            if not ordine_name:
-                continue
-            exists = db.query(iCommesse).filter(iCommesse.ordine == ordine_name).first()
-            if exists:
-                continue  # Skip existing records
+        #     #check if ordine exists in the db
+        #     ordine_name = order.get('name')
+        #     if not ordine_name:
+        #         continue
+        #     exists = db.query(iCommesse).filter(iCommesse.ordine == ordine_name).first()
+        #     if exists:
+        #         continue  # Skip existing records
             
-            try:
-                new_commessa = iCommesse(
-                    ordine=order['name'],  # Extract numbers only
-                    data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
-                    nome_cliente=order['partner_id'][1] if order['partner_id'] else "N/A",
-                    responsabile=order['user_id'][1] if order['user_id'] else "N/A",
-                    status=1 if order['invoice_status'] == 'to invoice' else 0
-                )
+        #     try:
+        #         new_commessa = iCommesse(
+        #             ordine=order['name'],  # Extract numbers only
+        #             data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
+        #             nome_cliente=order['partner_id'][1] if order['partner_id'] else "N/A",
+        #             responsabile=order['user_id'][1] if order['user_id'] else "N/A",
+        #             status=1 if order['invoice_status'] == 'to invoice' else 0
+        #         )
 
-                db.add(new_commessa)
-                inserted += 1
-                #print(  f"Creating new commessa: {new_commessa}")
-            except Exception as inner_e:
-                print(f"Skipping order {order.get('name')} due to error: {inner_e}")
+        #         db.add(new_commessa)
+        #         inserted += 1
+        #         #print(  f"Creating new commessa: {new_commessa}")
+        #     except Exception as inner_e:
+        #         print(f"Skipping order {order.get('name')} due to error: {inner_e}")
                 
-            db.commit()
+        #     db.commit()
             
             # order_dict = {
             #     "order": order['name'],
@@ -176,8 +176,8 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             #         # print(f"    - {prod}")
                     
             # final_output.append(order_dict)
-            inserted = int(inserted or 0)
-        return JSONResponse(content={"message": "Sync complete", "inserted": inserted}, status_code=200)
+        inserted = int(inserted or 0)
+        return JSONResponse(content={"message": "Sync complete", "inserted": 'inserted'}, status_code=200)
 
     except Exception as e:
         print(f"Error fetching sales orders: {e}")
