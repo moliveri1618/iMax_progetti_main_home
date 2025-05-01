@@ -47,6 +47,119 @@ def update_commessa(commessa_id: int, commessa_update: ICommesseUpdate, db: Sess
     db.refresh(commessa)
     return commessa
 
+from xmlrpc import client
+from collections import defaultdict
+import re
+from fastapi.responses import JSONResponse
+
+server_url = 'https://mulattieri-staging.odoo.com'
+db_name = 'unitiva-odoo-mulattieri-creations-addons-dev-17888441'
+username = 'admin'
+password = 'd+£2$99qlWHg'
+models = client.ServerProxy(f'{server_url}/xmlrpc/2/object')
+
+# Connect to the common service and authenticate
+common = client.ServerProxy(f'{server_url}/xmlrpc/2/common')
+user_id = common.authenticate(db_name, username, password, {})
+
+@router.get("/odoo/commesse")
+def get_commesse_from_odoo():
+    try:
+        # Step 1: Search for sale order IDs
+        sale_order_ids = models.execute_kw(
+            db_name, user_id, password,
+            'sale.order', 'search',
+            [[['state', '!=', 'cancel']]],
+        )
+
+        if not sale_order_ids:
+            print("No sales orders found.")
+            return
+
+        # Step 2: Read sale order data
+        sale_orders = models.execute_kw(
+            db_name, user_id, password,
+            'sale.order', 'read',
+            [sale_order_ids],
+            {'fields': [
+                'name',            # Numero
+                'date_order',      # Data ordine
+                'partner_id',      # Cliente
+                'user_id',         # Addetto vendite
+                'activity_ids',    # Attività (IDs)
+                'total_cost_of_lines',
+                'total_recharge',
+                'amount_total',
+                'invoice_status',
+            ]}
+        )
+
+        # Step 3: Fetch related sale order lines
+        sale_order_line_ids = models.execute_kw(
+            db_name, user_id, password,
+            'sale.order.line', 'search',
+            [[['order_id', 'in', sale_order_ids]]]
+        )
+
+        sale_order_lines = models.execute_kw(
+            db_name, user_id, password,
+            'sale.order.line', 'read',
+            [sale_order_line_ids],
+            {'fields': ['order_id', 'product_template_id']}
+        )
+
+        # Step 4: Group products by order
+        order_to_products = defaultdict(list)
+        for line in sale_order_lines:
+            order_id = line['order_id'][0]
+            product_name = line['product_template_id'][1] if line['product_template_id'] else "No Product"
+            order_to_products[order_id].append(product_name)
+
+        # Step 5: Display everything
+        print("\nSales Orders Data:")
+        final_output = []
+        for order in sale_orders:
+            order_dict = {
+                "order": order['name'],
+                "date": order['date_order'],
+                "customer": order['partner_id'][1] if order['partner_id'] else "N/A",
+                "salesperson": order['user_id'][1] if order['user_id'] else "N/A",
+                "total": f"{order['amount_total']} €",
+                "invoice_status": order['invoice_status'],
+                "cost": f"{order.get('total_cost_of_lines', 'N/A')} €",
+                "recharge": f"{order.get('total_recharge', 'N/A')} €",
+                "products": []
+            }
+            print(f"\nOrder: {order['name']}")
+            print(f"  Date: {order['date_order']}")
+            print(f"  Customer: {order['partner_id'][1] if order['partner_id'] else 'N/A'}")
+            print(f"  Salesperson: {order['user_id'][1] if order['user_id'] else 'N/A'}")
+            print(f"  Total: {order['amount_total']} €")
+            print(f"  Invoice Status: {order['invoice_status']}")
+            print(f"  Cost: {order.get('total_cost_of_lines', 'N/A')} €")
+            print(f"  Recharge: {order.get('total_recharge', 'N/A')} €")
+
+            # Show related products
+            products = order_to_products.get(order['id'], [])
+            print("  Products:")
+            for prod in products:
+                match = re.match(r'\[(.*?)\]\s*(.*)', prod)
+                if match:
+                    code, desc = match.groups()
+                    order_dict["products"].append(f"{code} | {desc}")
+                    print(f"    - {code} | {desc}")
+                else:
+                    order_dict["products"].append(prod)
+                    print(f"    - {prod}")
+                    
+            final_output.append(order_dict)
+        return JSONResponse(content=final_output)
+
+    except Exception as e:
+        print(f"Error fetching sales orders: {e}")
+
+
+
 # Delete
 @router.delete("/{commessa_id}", status_code=204)
 def delete_commessa(commessa_id: int, db: Session = Depends(get_db)):
