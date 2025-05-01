@@ -2,11 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
 import sys, os
+from xmlrpc import client
+from collections import defaultdict
+import re
+from fastapi.responses import JSONResponse
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.commesse import iCommesse
 from schemas.commesse import ICommesseCreate, ICommesseRead, ICommesseUpdate
-from dependecies import get_db
+from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
 
 router = APIRouter()
 
@@ -47,27 +51,26 @@ def update_commessa(commessa_id: int, commessa_update: ICommesseUpdate, db: Sess
     db.refresh(commessa)
     return commessa
 
-from xmlrpc import client
-from collections import defaultdict
-import re
-from fastapi.responses import JSONResponse
+# SERVER_URL_ODOO = 'https://mulattieri-staging.odoo.com'
+# DB_NAME_ODOO = 'unitiva-odoo-mulattieri-creations-addons-dev-17888441'
+# USERNAME_ODOO = 'admin'
+# PASSWORD_ODOO = 'd+£2$99qlWHg'
 
-server_url = 'https://mulattieri-staging.odoo.com'
-db_name = 'unitiva-odoo-mulattieri-creations-addons-dev-17888441'
-username = 'admin'
-password = 'd+£2$99qlWHg'
-models = client.ServerProxy(f'{server_url}/xmlrpc/2/object')
-
-# Connect to the common service and authenticate
-common = client.ServerProxy(f'{server_url}/xmlrpc/2/common')
-user_id = common.authenticate(db_name, username, password, {})
 
 @router.get("/odoo/commesse")
 def get_commesse_from_odoo():
+    
+    print(SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO)
+    
+    # Connect to the common service and authenticate
+    models = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/object')
+    common = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/common')
+    user_id = common.authenticate(DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO, {})
+    
     try:
         # Step 1: Search for sale order IDs
         sale_order_ids = models.execute_kw(
-            db_name, user_id, password,
+            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
             'sale.order', 'search',
             [[['state', '!=', 'cancel']]],
         )
@@ -78,7 +81,7 @@ def get_commesse_from_odoo():
 
         # Step 2: Read sale order data
         sale_orders = models.execute_kw(
-            db_name, user_id, password,
+            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
             'sale.order', 'read',
             [sale_order_ids],
             {'fields': [
@@ -96,13 +99,13 @@ def get_commesse_from_odoo():
 
         # Step 3: Fetch related sale order lines
         sale_order_line_ids = models.execute_kw(
-            db_name, user_id, password,
+            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
             'sale.order.line', 'search',
             [[['order_id', 'in', sale_order_ids]]]
         )
 
         sale_order_lines = models.execute_kw(
-            db_name, user_id, password,
+            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
             'sale.order.line', 'read',
             [sale_order_line_ids],
             {'fields': ['order_id', 'product_template_id']}
@@ -116,7 +119,7 @@ def get_commesse_from_odoo():
             order_to_products[order_id].append(product_name)
 
         # Step 5: Display everything
-        print("\nSales Orders Data:")
+        # print("\nSales Orders Data:")
         final_output = []
         for order in sale_orders:
             order_dict = {
@@ -130,27 +133,27 @@ def get_commesse_from_odoo():
                 "recharge": f"{order.get('total_recharge', 'N/A')} €",
                 "products": []
             }
-            print(f"\nOrder: {order['name']}")
-            print(f"  Date: {order['date_order']}")
-            print(f"  Customer: {order['partner_id'][1] if order['partner_id'] else 'N/A'}")
-            print(f"  Salesperson: {order['user_id'][1] if order['user_id'] else 'N/A'}")
-            print(f"  Total: {order['amount_total']} €")
-            print(f"  Invoice Status: {order['invoice_status']}")
-            print(f"  Cost: {order.get('total_cost_of_lines', 'N/A')} €")
-            print(f"  Recharge: {order.get('total_recharge', 'N/A')} €")
+            # print(f"\nOrder: {order['name']}")
+            # print(f"  Date: {order['date_order']}")
+            # print(f"  Customer: {order['partner_id'][1] if order['partner_id'] else 'N/A'}")
+            # print(f"  Salesperson: {order['user_id'][1] if order['user_id'] else 'N/A'}")
+            # print(f"  Total: {order['amount_total']} €")
+            # print(f"  Invoice Status: {order['invoice_status']}")
+            # print(f"  Cost: {order.get('total_cost_of_lines', 'N/A')} €")
+            # print(f"  Recharge: {order.get('total_recharge', 'N/A')} €")
 
             # Show related products
             products = order_to_products.get(order['id'], [])
-            print("  Products:")
+            # print("  Products:")
             for prod in products:
                 match = re.match(r'\[(.*?)\]\s*(.*)', prod)
                 if match:
                     code, desc = match.groups()
                     order_dict["products"].append(f"{code} | {desc}")
-                    print(f"    - {code} | {desc}")
+                    # print(f"    - {code} | {desc}")
                 else:
                     order_dict["products"].append(prod)
-                    print(f"    - {prod}")
+                    # print(f"    - {prod}")
                     
             final_output.append(order_dict)
         return JSONResponse(content=final_output)
