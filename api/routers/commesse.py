@@ -176,6 +176,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             #         # print(f"    - {prod}")
                     
             # final_output.append(order_dict)
+            inserted = int(inserted or 0)
         return JSONResponse(content={"message": "Sync complete", "inserted": inserted}, status_code=200)
 
     except Exception as e:
