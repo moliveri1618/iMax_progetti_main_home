@@ -113,7 +113,6 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             order_to_products[order_id].append(product_name)
 
         # Step 5: Display everything
-        final_output = []
         inserted = 0
         for order in sale_orders:
             
