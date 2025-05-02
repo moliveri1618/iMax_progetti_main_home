@@ -15,8 +15,18 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 
 router = APIRouter()
 
+@router.get("/", response_model=List[VenditeImax])
+def get_all_vendite(db: Session = Depends(get_db)):
+    try:
+        vendite_list = db.exec(select(VenditeImax)).all()
+        return vendite_list
+    except Exception as e:
+        print(f"Error retrieving vendite: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving vendite from database.")
 
-@router.get("/odoo/vendite")
+
+
+@router.get("/odoo/")
 def get_vendite_from_odoo(db: Session = Depends(get_db)):
     
     # Connect to the common service and authenticate

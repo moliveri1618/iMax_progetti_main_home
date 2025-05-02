@@ -3,10 +3,8 @@ from sqlmodel import Session, select
 from typing import List
 import sys, os
 from xmlrpc import client
-from collections import defaultdict
-import re
 from fastapi.responses import JSONResponse
-from datetime import datetime
+from fastapi import Query
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.tickets import HelpdeskTicket
@@ -14,7 +12,30 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 
 router = APIRouter()
 
-@router.get("/odoo/tickets")
+
+@router.get("/", response_model=List[HelpdeskTicket])
+def get_all_tickets(
+    db: Session = Depends(get_db),
+    type: str = Query("nautica", description="Ticket type: 'nautica', 'home', or 'all'")
+):
+    try:
+        query = select(HelpdeskTicket)
+
+        # If "all" is explicitly requested, skip filtering
+        if type.lower() != "all":
+            query = query.where(HelpdeskTicket.type == type.lower())
+
+        tickets = db.exec(query).all()
+        return tickets
+
+    except Exception as e:
+        print(f"Error retrieving tickets: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving tickets from database.")
+
+
+
+
+@router.get("/odoo/")
 def fetch_helpdesk_tickets(db: Session = Depends(get_db)):
 
     # Connect to the common service and authenticate
