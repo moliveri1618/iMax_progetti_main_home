@@ -112,35 +112,36 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             product_name = line['product_template_id'][1] if line['product_template_id'] else "No Product"
             order_to_products[order_id].append(product_name)
 
-        # # Step 5: Display everything
-        # final_output = []
-        # inserted = 0
-        # for order in sale_orders:
+        # Step 5: Display everything
+        final_output = []
+        inserted = 0
+        for order in sale_orders:
             
-        #     #check if ordine exists in the db
-        #     ordine_name = order.get('name')
-        #     if not ordine_name:
-        #         continue
-        #     exists = db.query(iCommesse).filter(iCommesse.ordine == ordine_name).first()
-        #     if exists:
-        #         continue  # Skip existing records
+            #check if ordine exists in the db
+            ordine_name = order.get('name')
+            if not ordine_name:
+                continue
+            statement = select(iCommesse).where(iCommesse.ordine == ordine_name)
+            exists = db.exec(statement).first()
+            if exists:
+                continue  # Skip existing records
             
-        #     try:
-        #         new_commessa = iCommesse(
-        #             ordine=order['name'],  # Extract numbers only
-        #             data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
-        #             nome_cliente=order['partner_id'][1] if order['partner_id'] else "N/A",
-        #             responsabile=order['user_id'][1] if order['user_id'] else "N/A",
-        #             status=1 if order['invoice_status'] == 'to invoice' else 0
-        #         )
+            try:
+                new_commessa = iCommesse(
+                    ordine=order['name'],  # Extract numbers only
+                    data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
+                    nome_cliente=order['partner_id'][1] if order['partner_id'] else "N/A",
+                    responsabile=order['user_id'][1] if order['user_id'] else "N/A",
+                    status=1 if order['invoice_status'] == 'to invoice' else 0
+                )
 
-        #         db.add(new_commessa)
-        #         inserted += 1
-        #         #print(  f"Creating new commessa: {new_commessa}")
-        #     except Exception as inner_e:
-        #         print(f"Skipping order {order.get('name')} due to error: {inner_e}")
+                db.add(new_commessa)
+                inserted += 1
+                #print(  f"Creating new commessa: {new_commessa}")
+            except Exception as inner_e:
+                print(f"Skipping order {order.get('name')} due to error: {inner_e}")
                 
-        #     db.commit()
+            db.commit()
             
             # order_dict = {
             #     "order": order['name'],
@@ -176,7 +177,6 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             #         # print(f"    - {prod}")
                     
             # final_output.append(order_dict)
-        inserted = 0
         return JSONResponse(content={"message": "Sync complete", "inserted": inserted}, status_code=200)
 
     except Exception as e:
