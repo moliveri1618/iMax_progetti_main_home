@@ -120,6 +120,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             ordine_name = order.get('name')
             if not ordine_name:
                 continue
+            
             statement = select(iCommesse).where(iCommesse.ordine == ordine_name)
             exists = db.exec(statement).first()
             if exists:
