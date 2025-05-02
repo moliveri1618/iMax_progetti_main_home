@@ -16,7 +16,7 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 router = APIRouter()
 
 
-@router.get("/odoo/vendite")
+# @router.get("/odoo/vendite")
 def get_vendite_from_odoo(db: Session = Depends(get_db)):
     
     # Connect to the common service and authenticate
@@ -137,7 +137,7 @@ def get_vendite_from_odoo(db: Session = Depends(get_db)):
     return {"records_added": count}
 
 
-@router.delete("/odoo/vendite/cleanup-duplicates")
+# @router.delete("/odoo/vendite/cleanup-duplicates")
 def delete_latest_duplicates(db: Session = Depends(get_db)):
     try:
         # Step 1: Fetch all vendite
@@ -173,3 +173,14 @@ def delete_latest_duplicates(db: Session = Depends(get_db)):
     except Exception as e:
         print(f"❌ Error cleaning duplicates: {e}")
         raise HTTPException(status_code=500, detail="Errore durante la pulizia dei duplicati")
+    
+from time import sleep
+@router.delete("/porcodiooooooo")
+def yoyoyoooo(db: Session = Depends(get_db)):
+    result1 = get_vendite_from_odoo(db)  # Waits until this is done
+    sleep(5)  # Optional wait
+    result2 = delete_latest_duplicates(db)
+    return {
+        "vendite_result": result1,
+        "cleanup_result": result2
+    }
