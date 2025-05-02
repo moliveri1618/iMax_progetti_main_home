@@ -96,7 +96,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 code, desc = "N/A", desc_raw
                 #print(f"  Description: {desc_raw}")
                 
-            vendite = {
+            vendite_data = {
                 "ordine": order.get("name", "N/A"),
                 "data": order.get("date_order"),
                 "venditore": order["user_id"][1] if order.get("user_id") else "N/A",
@@ -110,7 +110,22 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 "ricarico": line.get("recharge", 0),
                 "subtotale": line.get("price_subtotal", 0)
             }
-            vendite_records.append(vendite)
+            
+            # Check for duplicates
+            existing = db.exec(
+                select(VenditeImax).where(
+                    VenditeImax.ordine == vendite_data["ordine"],
+                    VenditeImax.descrizione == vendite_data["descrizione"]
+                )
+            ).first()
+            
+            if not existing:
+                vendite_obj = VenditeImax(**vendite_data)
+                db.add(vendite_obj)
+                db.commit()
+                db.refresh(vendite_obj)
+
+            vendite_records.append(vendite_data)
 
                 
             # print(f"  Qty: {line['product_uom_qty']}")
