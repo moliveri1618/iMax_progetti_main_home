@@ -36,8 +36,8 @@ app.include_router(
 
 app.include_router(
     vendite.router, 
-    prefix="/commesse", 
-    tags=["Commesse"]
+    prefix="/vendite", 
+    tags=["Vendite"]
     )
 
 
