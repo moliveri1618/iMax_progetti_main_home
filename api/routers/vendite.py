@@ -16,7 +16,7 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 router = APIRouter()
 
 
-@router.get("/odoo/vendite")
+
 def get_commesse_from_odoo(db: Session = Depends(get_db)):
     
     # Connect to the common service and authenticate
@@ -128,9 +128,9 @@ class VenditaInput(BaseModel):
 
 @router.post("/odoo/vendite/save")
 def save_vendite(
-    data: List[VenditaInput] = Body(...),
     db: Session = Depends(get_db)
 ):
+    data = get_commesse_from_odoo(db)
     inserted = 0
     skipped = 0
 
