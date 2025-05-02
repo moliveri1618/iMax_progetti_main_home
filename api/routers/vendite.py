@@ -111,7 +111,8 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
 
 from pydantic import BaseModel
 from fastapi import Body
-
+import asyncio
+from time import sleep
 class VenditaInput(BaseModel):
     ordine: str
     data: datetime
@@ -131,6 +132,7 @@ def save_vendite(
     db: Session = Depends(get_db)
 ):
     data = get_commesse_from_odoo(db)
+    sleep(5)
     inserted = 0
     skipped = 0
 
