@@ -66,9 +66,16 @@ def get_vendite_from_odoo(db: Session = Depends(get_db)):
 
         # Step 4: Display combined data
         #print("\n📦 Sale Order Lines with Related Fields:")
+        seen_orders = set()
         count = 0
         for line in sale_order_lines:
             order = order_data.get(line['order_id'][0]) if line.get('order_id') else {}
+            
+            # Skip duplicate orders
+            ordine_name = order.get("name", "N/A")
+            if ordine_name in seen_orders:
+                continue  
+            seen_orders.add(ordine_name)
 
             # print(f"\nOrder: {order.get('name', 'N/A')}")
             # print(f"  Salesperson: {order['user_id'][1] if order.get('user_id') else 'N/A'}")
@@ -128,3 +135,41 @@ def get_vendite_from_odoo(db: Session = Depends(get_db)):
         print(f"Error fetching sale order lines: {e}")
     
     return {"records_added": count}
+
+
+@router.delete("/odoo/vendite/cleanup-duplicates")
+def delete_latest_duplicates(db: Session = Depends(get_db)):
+    try:
+        # Step 1: Fetch all vendite
+        all_entries = db.exec(select(VenditeImax)).all()
+
+        # Step 2: Group by 'ordine'
+        grouped = defaultdict(list)
+        for entry in all_entries:
+            grouped[entry.ordine].append(entry)
+
+        deleted = 0
+
+        # Step 3: For each group with more than one entry
+        for ordine, entries in grouped.items():
+            if len(entries) > 1:
+                try:
+                    sorted_entries = sorted(
+                        entries,
+                        key=lambda e: datetime.fromisoformat(e.data),
+                        reverse=True
+                    )
+                except Exception as e:
+                    print(f"Error parsing date for ordine {ordine}: {e}")
+                    continue
+
+                db.delete(sorted_entries[0])
+                deleted += 1
+
+
+        db.commit()
+        return {"records_deleted": deleted}
+
+    except Exception as e:
+        print(f"❌ Error cleaning duplicates: {e}")
+        raise HTTPException(status_code=500, detail="Errore durante la pulizia dei duplicati")
