@@ -15,8 +15,8 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 router = APIRouter()
 
 @router.get("/odoo/tickets")
-def fetch_helpdesk_tickets():
-    
+def fetch_helpdesk_tickets(db: Session = Depends(get_db)):
+
     # Connect to the common service and authenticate
     models = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/object')
     common = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/common')
@@ -47,9 +47,8 @@ def fetch_helpdesk_tickets():
             ]}
         )
 
-        result = []
-
-        # 3. Build unified ticket list with "type"
+        # 3. Check if tickets already exist in the database and insert new ones
+        count = 0
         for t in tickets:
             team_name = t['team_id'][1].lower() if t.get('team_id') else ''
             ticket_data = {
@@ -63,16 +62,42 @@ def fetch_helpdesk_tickets():
                 'created': t.get('create_date', 'N/A'),
                 'type': 'nautica' if "nautica" in team_name else 'home'
             }
-            result.append(ticket_data)
 
-        # 4. Return the unified result list
-        return JSONResponse(content={"tickets": result}, status_code=200)
+            # Check if ticket already exists with the same ticket_ref and type
+            exists = db.exec(
+                select(HelpdeskTicket).where(
+                    HelpdeskTicket.ticket_ref == ticket_data['ticket_ref'],
+                    HelpdeskTicket.type == ticket_data['type']
+                )
+            ).first()
+            
+            # Create a HelpdeskTicket instance and add to DB
+            if not exists:
+                new_ticket = HelpdeskTicket(
+                    ticket_ref=ticket_data['ticket_ref'],
+                    name=ticket_data['name'],
+                    priority=ticket_data['priority'],
+                    customer=ticket_data['customer'],
+                    assigned_to=ticket_data['assigned_to'],
+                    stage=ticket_data['stage'],
+                    team=ticket_data['team'],
+                    created=ticket_data['created'],
+                    type=ticket_data['type']
+                )
+                db.add(new_ticket)
+                count += 1
 
+        db.commit()
+        return JSONResponse(
+            content={
+                "message": "Sync complete",
+                "inserted": count
+            },
+            status_code=200
+        )
+        
     except Exception as e:
-        print(f"Error fetching helpdesk tickets: {e}")
         return JSONResponse(
             content={"error": str(e)},
             status_code=500
         )
-
-
