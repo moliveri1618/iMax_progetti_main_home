@@ -13,7 +13,7 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 router = APIRouter()
 
 
-@router.get("/tickets", response_model=List[HelpdeskTicket])
+@router.get("", response_model=List[HelpdeskTicket])
 def get_all_tickets(
     db: Session = Depends(get_db),
     type: str = Query("nautica", description="Ticket type: 'nautica', 'home', or 'all'")
