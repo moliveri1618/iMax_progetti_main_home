@@ -15,7 +15,7 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 
 router = APIRouter()
 
-@router.get("/", response_model=List[VenditeImax])
+@router.get("/")
 def get_all_vendite(db: Session = Depends(get_db)):
     try:
         vendite_list = db.exec(select(VenditeImax)).all()
