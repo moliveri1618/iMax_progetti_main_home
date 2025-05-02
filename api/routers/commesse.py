@@ -124,7 +124,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             statement = select(iCommesse).where(iCommesse.ordine == ordine_name)
             exists = db.exec(statement).first()
             if exists:
-                continue  # Skip existing records
+                continue 
             
             try:
                 new_commessa = iCommesse(
@@ -134,10 +134,9 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     responsabile=order['user_id'][1] if order['user_id'] else "N/A",
                     status=1 if order['invoice_status'] == 'to invoice' else 0
                 )
-
                 db.add(new_commessa)
                 inserted += 1
-                #print(  f"Creating new commessa: {new_commessa}")
+
             except Exception as inner_e:
                 print(f"Skipping order {order.get('name')} due to error: {inner_e}")
                 
