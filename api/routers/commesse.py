@@ -60,6 +60,16 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 'invoice_status',
             ]}
         )
+        
+        # Step 2.1: Read partners (client) data
+        partner_ids = list({order['partner_id'][0] for order in sale_orders if order.get('partner_id')})
+        partners = models.execute_kw(
+            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
+            'res.partner', 'read',
+            [partner_ids],
+            {'fields': ['id', 'name', 'email', 'street', 'city', 'zip', 'country_id']}
+        )
+        partner_info = {p['id']: p for p in partners}
 
         # Step 3: Fetch related sale order lines
         sale_order_line_ids = models.execute_kw(
@@ -97,10 +107,29 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 continue 
             
             try:
+                
+                # Partner info
+                partner_id = order.get('partner_id')[0] if order.get('partner_id') else None
+                partner = partner_info.get(partner_id, {})
+                address_parts = [
+                    partner.get('street', ''),
+                    partner.get('city', ''),
+                    partner.get('zip', ''),
+                    partner.get('country_id', ['', ''])[1] if partner.get('country_id') else ''
+                ]
+                full_address = ', '.join(part for part in address_parts if part).strip(', ')
+                 # Client info
+                print(f"  Client Name: {partner.get('name', 'N/A')}")
+                print(f"  Email: {partner.get('email', 'N/A')}")
+                address = f"{partner.get('street', '')}, {partner.get('city', '')} {partner.get('zip', '')}, {partner.get('country_id', ['', ''])[1] if partner.get('country_id') else ''}"
+                print(f"  Address: {address.strip(', ')}")
+
                 new_commessa = iCommesse(
                     ordine=order['name'],  # Extract numbers only
                     data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
-                    nome_cliente=order['partner_id'][1] if order['partner_id'] else "N/A",
+                    nome_cliente = partner.get('name', 'N/A'),
+                    email_cliente=partner.get('email', 'N/A'),
+                    address_cliente=full_address,
                     responsabile=order['user_id'][1] if order['user_id'] else "N/A",
                     status=1 if order['invoice_status'] == 'to invoice' else 0
                 )
