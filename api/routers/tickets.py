@@ -13,7 +13,7 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 router = APIRouter()
 
 
-@router.get("", response_model=List[HelpdeskTicket])
+@router.get("/all", response_model=List[HelpdeskTicket])
 def get_all_tickets(
     db: Session = Depends(get_db),
     type: str = Query("nautica", description="Ticket type: 'nautica', 'home', or 'all'")
@@ -35,7 +35,7 @@ def get_all_tickets(
 
 
 
-@router.get("/odoo/")
+@router.get("/odoo")
 def fetch_helpdesk_tickets(db: Session = Depends(get_db)):
 
     # Connect to the common service and authenticate

@@ -15,7 +15,7 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 
 router = APIRouter()
 
-@router.get("")
+@router.get("/all")
 def get_all_vendite(db: Session = Depends(get_db)):
     try:
         vendite_list = db.exec(select(VenditeImax)).all()
@@ -26,7 +26,7 @@ def get_all_vendite(db: Session = Depends(get_db)):
 
 
 
-@router.get("/odoo/")
+@router.get("/odoo")
 def get_vendite_from_odoo(db: Session = Depends(get_db)):
     
     # Connect to the common service and authenticate

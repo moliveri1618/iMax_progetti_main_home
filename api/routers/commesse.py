@@ -17,7 +17,7 @@ router = APIRouter()
 
 # 
 # Get all
-@router.get("/getAll", response_model=List[ICommesseRead])
+@router.get("/all", response_model=List[ICommesseRead])
 def read_commesse(db: Session = Depends(get_db)):
     commesse = db.exec(select(iCommesse)).all()
     return commesse
