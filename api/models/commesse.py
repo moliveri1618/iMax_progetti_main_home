@@ -11,3 +11,6 @@ class iCommesse(SQLModel, table=True):
     status: int
     costo: float
     ricarico: float
+    nome_cliente: str
+    address_cliente: str
+    email_cliente: str

@@ -12,6 +12,9 @@ class ICommesseBase(BaseModel):
     data: date
     responsabile: str
     status: int
+    nome_cliente: Optional[str] = None
+    address_cliente: Optional[str] = None
+    email_cliente: Optional[str] = None
 
 
 class ICommesseCreate(ICommesseBase):
