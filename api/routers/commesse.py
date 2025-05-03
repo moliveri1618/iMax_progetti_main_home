@@ -118,12 +118,8 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     partner.get('country_id', ['', ''])[1] if partner.get('country_id') else ''
                 ]
                 full_address = ', '.join(part for part in address_parts if part).strip(', ')
-                 # Client info
-                print(f"  Client Name: {partner.get('name', 'N/A')}")
-                print(f"  Email: {partner.get('email', 'N/A')}")
-                address = f"{partner.get('street', '')}, {partner.get('city', '')} {partner.get('zip', '')}, {partner.get('country_id', ['', ''])[1] if partner.get('country_id') else ''}"
-                print(f"  Address: {address.strip(', ')}")
 
+                #create new commessa
                 new_commessa = iCommesse(
                     ordine=order['name'],  # Extract numbers only
                     data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
