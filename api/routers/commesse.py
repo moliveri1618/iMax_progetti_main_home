@@ -17,13 +17,13 @@ router = APIRouter()
 
 # 
 # Get all
-@router.get("commesseAAA", response_model=List[ICommesseRead])
+@router.get("/getAll", response_model=List[ICommesseRead])
 def read_commesse(db: Session = Depends(get_db)):
     commesse = db.exec(select(iCommesse)).all()
     return commesse
 
 
-@router.get("/CommesseTTT")
+@router.get("/odoo")
 def get_commesse_from_odoo(db: Session = Depends(get_db)):
         
     # Connect to the common service and authenticate
