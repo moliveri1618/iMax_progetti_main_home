@@ -25,6 +25,10 @@ def read_commesse(db: Session = Depends(get_db)):
 
 @router.get("/odoo")
 def get_commesse_from_odoo(db: Session = Depends(get_db)):
+    
+    #test
+    return JSONResponse(content={"message": "Sync complete", "inserted": 1}, status_code=200)
+
         
     # Connect to the common service and authenticate
     models = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/object')
