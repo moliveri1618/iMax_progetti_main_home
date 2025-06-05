@@ -1,4 +1,4 @@
-# 🚀 Microservice Project Templatee
+# 🚀 Microservice Project Template
 
 A **FastAPI-based application** with AWS Lambda deployment, RDS database integration, and GitHub Actions for CI/CD.
 
