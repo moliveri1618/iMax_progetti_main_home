@@ -23,12 +23,11 @@ jobs:
       - name: Install Virtualenv
         run: pip install virtualenv
 
-      # Step 4: Install dependencies
-      - name: Install dependencies
+      # Step 5: Create Virtual Environment if Cache Misses
+      - name: Set up Virtual Environment
         run: |
           python -m venv venv
           source venv/bin/activate
-          pip install --upgrade pip
           pip install -r requirements.txt
 
       # Step 6: Run Tests
@@ -56,26 +55,26 @@ jobs:
           name: api3
           path: api3.zip
 
-  CD:
-    runs-on: ubuntu-latest
-    needs: [CI]
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_SECRET_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+  # CD:
+  #   runs-on: ubuntu-latest
+  #   needs: [CI]
+  #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+  #   steps:
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v2
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_SECRET_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
-      - name: Download Lambda api3.zip
-        uses: actions/download-artifact@v4
-        with:
-          name: api3
-          path: .
+  #     - name: Download Lambda api3.zip
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: api3
+  #         path: .
 
-      - name: Upload to S3
-        run: aws s3 cp api3.zip s3://${{ secrets.AWS_S3_BUCKET }}/api3.zip  
+  #     - name: Upload to S3
+  #       run: aws s3 cp api3.zip s3://${{ secrets.AWS_S3_BUCKET }}/api3.zip  
 
-      - name: Deploy new Lambda
-        run: aws lambda update-function-code --function-name ${{ secrets.AWS_LAMBDA }} --s3-bucket ${{ secrets.AWS_S3_BUCKET }} --s3-key api3.zip
+  #     - name: Deploy new Lambda
+  #       run: aws lambda update-function-code --function-name ${{ secrets.AWS_LAMBDA }} --s3-bucket ${{ secrets.AWS_S3_BUCKET }} --s3-key api3.zip
