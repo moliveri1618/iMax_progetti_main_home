@@ -1,0 +1,13 @@
+from typing import Optional
+from sqlmodel import SQLModel, Field
+from datetime import date
+
+class WorkInProgress(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    commesse_id: int = Field(foreign_key="icommesse.id")  
+    zona: str
+    modello: str
+    colonna: str
+    completato: bool
+    completato_da_user: str
+    data_completamento: Optional[date] = None

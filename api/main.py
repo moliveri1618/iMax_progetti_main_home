@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import asyncio
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__)) 
-from routers import commesse, vendite, tickets  
+from routers import commesse, vendite, tickets, workInProgress  
 from dependecies import create_db_and_tables, verify_cognito_token
 
 
@@ -44,6 +44,12 @@ app.include_router(
     tickets.router, 
     prefix="/tickets", 
     tags=["Tickets"]
+    )
+
+app.include_router(
+    workInProgress.router, 
+    prefix="/workInProgress", 
+    tags=["workInProgress"]
     )
 
 
