@@ -88,7 +88,6 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
 
         # Step 4: Group products by order
         order_to_products = defaultdict(list)
-        inserted_ids = []
         for line in sale_order_lines:
             order_id = line['order_id'][0]
             product_name = line['product_template_id'][1] if line['product_template_id'] else "No Product"
@@ -136,39 +135,17 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 db.flush() 
                 
                 # Add products to the new commessa
-                order_dict = {
-                    "order": order['name'],
-                    "date": order['date_order'],
-                    "customer": order['partner_id'][1] if order['partner_id'] else "N/A",
-                    "salesperson": order['user_id'][1] if order['user_id'] else "N/A",
-                    "total": f"{order['amount_total']} €",
-                    "invoice_status": order['invoice_status'],
-                    "cost": f"{order.get('total_cost_of_lines', 'N/A')} €",
-                    "recharge": f"{order.get('total_recharge', 'N/A')} €",
-                    "products": []
-                }
-                print(f"\nOrder: {order['name']}")
-                print(f"  Date: {order['date_order']}")
-                print(f"  Customer: {order['partner_id'][1] if order['partner_id'] else 'N/A'}")
-                print(f"  Salesperson: {order['user_id'][1] if order['user_id'] else 'N/A'}")
-                print(f"  Total: {order['amount_total']} €")
-                print(f"  Invoice Status: {order['invoice_status']}")
-                print(f"  Cost: {order.get('total_cost_of_lines', 'N/A')} €")
-                print(f"  Recharge: {order.get('total_recharge', 'N/A')} €")
-
-                # Show related products
                 products = order_to_products.get(order['id'], [])
-                print("  Products:")
+                # print("  Products:")
+                
                 for prod in products:
                     match = re.match(r'\[(.*?)\]\s*(.*)', prod)
                     if match:
                         code, desc = match.groups()
-                        order_dict["products"].append(f"{code} | {desc}")
-                        print(f"    - {code} | {desc}")
+                        # print(f"    - {code} | {desc}")
                     else:
-                        order_dict["products"].append(prod)
                         code, desc = prod, ""
-                        print(f"    - {prod}")
+                        # print(f"    - {prod}")
                         
                     work_item = WorkInProgress(
                         commesse_id=new_commessa.id,
@@ -182,8 +159,6 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     db.add(work_item)
                 
                 db.commit()
-                inserted_ids.append(new_commessa.id)
-                #print(inserted_ids)
                 inserted += 1
 
             except Exception as inner_e:
