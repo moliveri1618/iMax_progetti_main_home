@@ -16,7 +16,18 @@ from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PA
 
 router = APIRouter()
 
-# 
+colonne = [
+    "Elaborazione dati",
+    "Ordine a Fornitore",
+    "Trasporto al cliente",
+    "Trasporto al piano",
+    "Smontaggio vecchio",
+    "Taglio telai",
+    "Posa serramento",
+    "Rivestimento Interno"
+    ]
+
+
 # Get all
 @router.get("/all", response_model=List[ICommesseRead])
 def read_commesse(db: Session = Depends(get_db)):
@@ -147,21 +158,23 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                         code, desc = prod, ""
                         # print(f"    - {prod}")
                         
-                    work_item = WorkInProgress(
-                        commesse_id=new_commessa.id,
-                        zona=code,
-                        modello=desc,
-                        colonna="",
-                        completato=False,
-                        completato_da_user="",
-                        data_completamento=None
-                    )
-                    db.add(work_item)
+                    for col in colonne:
+                        work_item = WorkInProgress(
+                            commesse_id=new_commessa.id,
+                            zona=code,
+                            modello=desc,
+                            colonna=col,
+                            completato=False,
+                            completato_da_user="",
+                            data_completamento=None
+                        )
+                        db.add(work_item)
                 
                 db.commit()
                 inserted += 1
 
             except Exception as inner_e:
+                db.rollback()
                 print(f"Skipping order {order.get('name')} due to error: {inner_e}")
                 
                     
