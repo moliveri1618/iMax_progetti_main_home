@@ -185,6 +185,13 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
+# Get one commessa by ID
+@router.get("/{commessa_id}", response_model=ICommesseRead)
+def read_commessa_by_id(commessa_id: int, db: Session = Depends(get_db)):
+    commessa = db.get(iCommesse, commessa_id)
+    if not commessa:
+        raise HTTPException(status_code=404, detail="Commessa not found")
+    return commessa
 
 
 # # Delete
