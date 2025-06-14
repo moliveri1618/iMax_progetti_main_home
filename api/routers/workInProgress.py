@@ -17,16 +17,27 @@ router = APIRouter()
 
 def group_for_frontend(records):
     result = {}
+
     for record in records:
         zona = record.zona
+
         if zona not in result:
             result[zona] = {
                 "zona": zona,
                 "modello": record.modello,
-                "steps": []
+                "steps": {}
             }
-        result[zona]["steps"].append(IWorkInProgressRead.model_validate(record)
-)
+
+        colonna = record.colonna
+
+        # Keep only one step per colonna
+        if colonna not in result[zona]["steps"]:
+            result[zona]["steps"][colonna] = IWorkInProgressRead.model_validate(record)
+
+    # Flatten steps dictionary into a list
+    for zona in result:
+        result[zona]["steps"] = list(result[zona]["steps"].values())
+
     return list(result.values())
 
 
