@@ -10,10 +10,24 @@ if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
 
 from models.workInProgress import WorkInProgress
-from schemas.workInProgress import IWorkInProgressCreate, IWorkInProgressRead, IWorkInProgressUpdate
+from schemas.workInProgress import IWorkInProgressCreate, IWorkInProgressRead, IWorkInProgressUpdate, WorkInProgressGrouped
 from dependecies import get_db
 
 router = APIRouter()
+
+def group_for_frontend(records):
+    result = {}
+    for record in records:
+        zona = record.zona
+        if zona not in result:
+            result[zona] = {
+                "zona": zona,
+                "modello": record.modello,
+                "steps": []
+            }
+        result[zona]["steps"].append(IWorkInProgressRead.model_validate(record)
+)
+    return list(result.values())
 
 
 # Create
@@ -33,12 +47,13 @@ def read_all_workinprogress(db: Session = Depends(get_db)):
 
 
 # Get one
-@router.get("/{work_id}", response_model=IWorkInProgressRead)
-def read_workinprogress(work_id: int, db: Session = Depends(get_db)):
-    work = db.get(WorkInProgress, work_id)
-    if not work:
+@router.get("/{commessa_id}", response_model=List[WorkInProgressGrouped])
+def read_workinprogress(commessa_id: int, db: Session = Depends(get_db)):
+    statement = select(WorkInProgress).where(WorkInProgress.commesse_id == commessa_id)
+    results = db.exec(statement).all()
+    if not results:
         raise HTTPException(status_code=404, detail="Work in progress not found")
-    return work
+    return group_for_frontend(results)
 
 
 # Update
