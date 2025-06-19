@@ -10,29 +10,47 @@ if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
 
 from models.rilievoMisure import RilievoMisure
+from models.workInProgress import WorkInProgress 
 from schemas.rilievoMisure import IRilievoCreate, IRilievoRead, IRilievoUpdate
 from dependecies import get_db
 
 router = APIRouter()
 
 
+@router.get("/by-workInProgress-id/{work_id}", response_model=List[IRilievoRead])
+def get_rilievi_by_work_id(work_id: int, db: Session = Depends(get_db)):
+    rilievi = db.exec(
+        select(RilievoMisure).where(RilievoMisure.workInProgress_id == work_id)
+    ).all()
+    
+    if not rilievi:
+        raise HTTPException(status_code=404, detail="No rilievi found for this workInProgress_id")
+
+    return rilievi
 
 # Upsert rilievo by ID: create if not exists, otherwise update
-@router.put("/{rilievo_id}", response_model=IRilievoRead)
-def upsert_rilievo(rilievo_id: int, data: IRilievoUpdate, db: Session = Depends(get_db)):
-    rilievo = db.get(RilievoMisure, rilievo_id)
-    if rilievo:
-        # Update existing record
-        for key, value in data.dict(exclude_unset=True).items():
-            setattr(rilievo, key, value)
-        db.add(rilievo)
+@router.post("/upsert", response_model=IRilievoRead)
+def upsert_rilievo(input_data: IRilievoCreate, db: Session = Depends(get_db)):
+    existing_rilievo = db.exec(
+        select(RilievoMisure).where(RilievoMisure.workInProgress_id == input_data.workInProgress_id)
+    ).first()
+
+    if existing_rilievo:
+        # Update fields
+        for field, value in input_data.dict().items():
+            setattr(existing_rilievo, field, value)
+        db.add(existing_rilievo)
+        db.commit()
+        db.refresh(existing_rilievo)
+        return existing_rilievo
     else:
-        # Create new record with provided ID
-        rilievo = RilievoMisure(id=rilievo_id, **data.dict(exclude_unset=True))
-        db.add(rilievo)
-    db.commit()
-    db.refresh(rilievo)
-    return rilievo
+        # Create new entry
+        new_rilievo = RilievoMisure(**input_data.dict())
+        db.add(new_rilievo)
+        db.commit()
+        db.refresh(new_rilievo)
+        return new_rilievo
+
 
 
 
