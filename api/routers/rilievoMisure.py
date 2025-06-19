@@ -15,43 +15,25 @@ from dependecies import get_db
 
 router = APIRouter()
 
-# Create a new rilievo record
-@router.post("", response_model=IRilievoRead)
-def create_rilievo(data: IRilievoCreate, db: Session = Depends(get_db)):
-    rilievo = RilievoMisure(**data.dict())
-    db.add(rilievo)
-    db.commit()
-    db.refresh(rilievo)
-    return rilievo
 
 
-# Get all rilievi
-@router.get("", response_model=List[IRilievoRead])
-def read_all_rilievi(db: Session = Depends(get_db)):
-    return db.exec(select(RilievoMisure)).all()
-
-
-# Get one rilievo by ID
-@router.get("/{rilievo_id}", response_model=IRilievoRead)
-def read_rilievo(rilievo_id: int, db: Session = Depends(get_db)):
-    rilievo = db.get(RilievoMisure, rilievo_id)
-    if not rilievo:
-        raise HTTPException(status_code=404, detail="Rilievo not found")
-    return rilievo
-
-
-# Update rilievo by ID
+# Upsert rilievo by ID: create if not exists, otherwise update
 @router.put("/{rilievo_id}", response_model=IRilievoRead)
-def update_rilievo(rilievo_id: int, update_data: IRilievoUpdate, db: Session = Depends(get_db)):
+def upsert_rilievo(rilievo_id: int, data: IRilievoUpdate, db: Session = Depends(get_db)):
     rilievo = db.get(RilievoMisure, rilievo_id)
-    if not rilievo:
-        raise HTTPException(status_code=404, detail="Rilievo not found")
-    for key, value in update_data.dict(exclude_unset=True).items():
-        setattr(rilievo, key, value)
-    db.add(rilievo)
+    if rilievo:
+        # Update existing record
+        for key, value in data.dict(exclude_unset=True).items():
+            setattr(rilievo, key, value)
+        db.add(rilievo)
+    else:
+        # Create new record with provided ID
+        rilievo = RilievoMisure(id=rilievo_id, **data.dict(exclude_unset=True))
+        db.add(rilievo)
     db.commit()
     db.refresh(rilievo)
     return rilievo
+
 
 
 # Delete rilievo

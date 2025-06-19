@@ -24,7 +24,9 @@ colonne = [
     "Smontaggio vecchio",
     "Taglio telai",
     "Posa serramento",
-    "Rivestimento Interno"
+    "Rivestimento Interno",
+    "Rilievo Misure",
+    "Collaudo Finale"
     ]
 
 
@@ -61,11 +63,11 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             'sale.order', 'read',
             [sale_order_ids],
             {'fields': [
-                'name',            # Numero
-                'date_order',      # Data ordine
-                'partner_id',      # Cliente
-                'user_id',         # Addetto vendite
-                'activity_ids',    # Attività (IDs)
+                'name',            
+                'date_order',      
+                'partner_id',      
+                'user_id',         
+                'activity_ids',    
                 'total_cost_of_lines',
                 'total_recharge',
                 'amount_total',
