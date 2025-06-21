@@ -52,11 +52,11 @@ app.include_router(
     tags=["workInProgress"]
     )
 
-# app.include_router(
-#     savePDF.router, 
-#     prefix="/savePDF", 
-#     tags=["savePDF"]
-#     )
+app.include_router(
+    savePDF.router, 
+    prefix="/savePDF", 
+    tags=["savePDF"]
+    )
 
 app.include_router(
     rilievoMisure.router, 

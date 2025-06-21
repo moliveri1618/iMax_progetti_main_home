@@ -41,9 +41,9 @@ class ReportData(BaseModel):
     ore_previste_finitura: str
     per_numero_posatori: str
 
-app = FastAPI()
+router = APIRouter()
 
-@app.post("/generate-from-json")
+@router.post("/post-vendita/generate-from-json")
 async def generate_from_json(data: ReportData):
     pdf = FPDF()
     pdf.add_page()
@@ -144,7 +144,7 @@ async def generate_from_json(data: ReportData):
 
 
 
-@app.get("/generate-layout2")
+@router.get("/generate-layout2")
 def generate_layout22():
     pdf = FPDF()
     pdf.add_page()
