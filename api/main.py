@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import asyncio
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__)) 
-from routers import commesse, vendite, tickets, workInProgress, savePDF, rilievoMisure, collaudoFinale
+from routers import commesse, vendite, tickets, workInProgress, savePDF, rilievoMisure, collaudoFinale, iParametriDaInserire
 from dependecies import create_db_and_tables, verify_cognito_token
 
 
@@ -68,6 +68,12 @@ app.include_router(
     collaudoFinale.router, 
     prefix="/collaudoFinale", 
     tags=["collaudoFinale"]
+    )
+
+app.include_router(
+    iParametriDaInserire.router, 
+    prefix="/parametriDaInserire", 
+    tags=["parametriDaInserire"]
     )
 
 

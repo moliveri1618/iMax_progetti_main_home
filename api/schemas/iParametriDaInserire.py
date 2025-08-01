@@ -1,0 +1,30 @@
+# schemas/parametri.py
+
+from pydantic import BaseModel
+from typing import Optional
+
+
+class ParametriDaInserireBase(BaseModel):
+    mese: str
+    obiettivo_mensile: float
+    perc_premio_trimestrale: Optional[float] = None  
+    perc_premio_annuale: Optional[float] = None      
+    valore_limite: Optional[int] = None              
+    perc_100_budget: Optional[float] = None          
+
+
+class ParametriDaInserireCreate(ParametriDaInserireBase):
+    pass
+
+
+class ParametriDaInserireRead(ParametriDaInserireBase):
+    id: int
+
+
+class ParametriDaInserireUpdate(BaseModel):
+    mese: Optional[str] = None
+    obiettivo_mensile: Optional[float] = None
+    perc_premio_trimestrale: Optional[float] = None
+    perc_premio_annuale: Optional[float] = None
+    valore_limite: Optional[int] = None
+    perc_100_budget: Optional[float] = None
