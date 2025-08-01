@@ -13,14 +13,11 @@ from models.iParametriDaInserire import ParametriDaInserire
 from schemas.iParametriDaInserire import ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate
 from dependecies import get_db
 
-router = APIRouter(
-    prefix="/parametriDaInserire",
-    tags=["parametriDaInserire"]
-)
+router = APIRouter()
 
 
 # CREATE
-@router.post("/", response_model=ParametriDaInserireRead)
+@router.post("", response_model=ParametriDaInserireRead)
 def create_parametro(
         parametro: ParametriDaInserireCreate, 
         session: Session = Depends(get_db)
@@ -33,7 +30,7 @@ def create_parametro(
 
 
 # READ ALL
-@router.get("/", response_model=List[ParametriDaInserireRead])
+@router.get("", response_model=List[ParametriDaInserireRead])
 def get_parametri(session: Session = Depends(get_db)):
     parametri = session.exec(select(ParametriDaInserire)).all()
     return parametri

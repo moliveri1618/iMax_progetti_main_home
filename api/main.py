@@ -72,8 +72,8 @@ app.include_router(
 
 app.include_router(
     iParametriDaInserire.router, 
-    prefix="/parametriDaInserire", 
-    tags=["parametriDaInserire"]
+    prefix="/iParametriDaInserire", 
+    tags=["iParametriDaInserire"]
     )
 
 
