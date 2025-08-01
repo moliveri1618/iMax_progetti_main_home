@@ -21,12 +21,15 @@ router = APIRouter(
 
 # CREATE
 @router.post("/", response_model=ParametriDaInserireRead)
-def create_parametro(parametro: ParametriDaInserireCreate, session: Session = Depends(ParametriDaInserireRead)):
-    db_parametro = ParametriDaInserire.model_validate(parametro)
-    session.add(db_parametro)
-    session.commit()
-    session.refresh(db_parametro)
-    return db_parametro
+def create_parametro(
+        parametro: ParametriDaInserireCreate, 
+        session: Session = Depends(get_db)
+    ):
+        db_parametro = ParametriDaInserire.model_validate(parametro)
+        session.add(db_parametro)
+        session.commit()
+        session.refresh(db_parametro)
+        return db_parametro
 
 
 # READ ALL
