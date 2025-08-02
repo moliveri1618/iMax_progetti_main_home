@@ -1,7 +1,7 @@
 # schemas/parametri.py
 
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 
 class ParametriDaInserireBase(BaseModel):
@@ -28,3 +28,15 @@ class ParametriDaInserireUpdate(BaseModel):
     perc_premio_annuale: Optional[float] = None
     valore_limite: Optional[int] = None
     perc_100_budget: Optional[float] = None
+
+class ParametriBulkUpdateItem(BaseModel):
+    id: Optional[int]            # If provided → update, else create new
+    mese: str
+    obiettivo_mensile: float
+    perc_premio_trimestrale: Optional[float] = None
+    perc_premio_annuale: Optional[float] = None
+    valore_limite: float
+    perc_100_budget: float
+
+class ParametriBulkUpdate(BaseModel):
+    table: List[ParametriBulkUpdateItem]

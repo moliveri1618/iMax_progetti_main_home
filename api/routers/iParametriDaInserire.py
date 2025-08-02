@@ -10,10 +10,46 @@ if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
 from models.iParametriDaInserire import ParametriDaInserire  
-from schemas.iParametriDaInserire import ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate
+from schemas.iParametriDaInserire import ParametriBulkUpdate,ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate
 from dependecies import get_db
 
 router = APIRouter()
+
+
+@router.post("/bulk", response_model=List[ParametriDaInserireRead])
+def bulk_upsert(
+    payload: ParametriBulkUpdate,
+    session: Session = Depends(get_db)
+):
+    results = []
+    for item in payload.table:
+        if item.id:
+            # Try to get existing row
+            parametro_db = session.get(ParametriDaInserire, item.id)
+            if parametro_db:
+                # Update fields
+                for key, value in item.dict(exclude_unset=True).items():
+                    setattr(parametro_db, key, value)
+                session.add(parametro_db)
+                results.append(parametro_db)
+            else:
+                # If ID given but not found, create new
+                new_param = ParametriDaInserire(**item.dict(exclude={"id"}))
+                session.add(new_param)
+                results.append(new_param)
+        else:
+            # Create new record
+            new_param = ParametriDaInserire(**item.dict(exclude={"id"}))
+            session.add(new_param)
+            results.append(new_param)
+
+    session.commit()
+
+    # Refresh all updated/created items
+    for param in results:
+        session.refresh(param)
+
+    return results
 
 
 # CREATE
