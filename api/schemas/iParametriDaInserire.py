@@ -10,7 +10,8 @@ class ParametriDaInserireBase(BaseModel):
     perc_premio_trimestrale: Optional[float] = None  
     perc_premio_annuale: Optional[float] = None      
     valore_limite: Optional[int] = None              
-    perc_100_budget: Optional[float] = None          
+    perc_100_budget: Optional[float] = None  
+    user_id: Optional[str] = None        
 
 
 class ParametriDaInserireCreate(ParametriDaInserireBase):
