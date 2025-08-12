@@ -65,11 +65,13 @@ def create_parametro(
         return db_parametro
 
 
-# READ ALL
+# READ ALL or filter by user id if provided
 @router.get("", response_model=List[ParametriDaInserireRead])
-def get_parametri(session: Session = Depends(get_db)):
-    parametri = session.exec(select(ParametriDaInserire)).all()
-    return parametri
+def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)):
+    stmt = select(ParametriDaInserire)
+    if user_id:
+        stmt = stmt.where(ParametriDaInserire.user_id == user_id)
+    return session.exec(stmt).all()
 
 
 # READ BY ID
@@ -109,3 +111,4 @@ def delete_parametro(parametro_id: int, session: Session = Depends(get_db)):
     session.delete(parametro)
     session.commit()
     return {"message": "Parametro deleted successfully"}
+
