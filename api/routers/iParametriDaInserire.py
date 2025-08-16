@@ -21,10 +21,10 @@ router = APIRouter()
 def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[ParametriRowIn]] = Body(default=None),session: Session = Depends(get_db)):
     
     # Insert PARAMETRI DA INSERIRE for user_id
-    result = replace_or_seed_parametri_for_user_core(session=session,user_id=user_id,rows=None if rows is None else [r.model_dump() for r in rows],treat_empty_list_as_template=True,)
+    result = replace_or_insert_parametriDaInserire(session=session,user_id=user_id,rows=None if rows is None else [r.model_dump() for r in rows],treat_empty_list_as_template=True,)
     
     # Calculate and save PARAMETRI for user_id
-    res = calculate_and_save_parametri(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id)
+    res = replace_or_insert_parametri(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id)
     
     return result
 
