@@ -11,6 +11,7 @@ if os.getenv("GITHUB_ACTIONS"):
     
 from models.iParametriDaInserire import ParametriDaInserire  
 from schemas.iParametriDaInserire import ParametriRowIn, ParametriBulkUpdate,ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate, ParametriDaInserireUpsert, TEMPLATE_ROWS, MONTH_ORDER, MONTHS
+from routers.utils import *
 from dependecies import get_db
 
 router = APIRouter()
@@ -26,55 +27,13 @@ def replace_or_seed_parametri_for_user(
     rows: Optional[List[ParametriRowIn]] = Body(default=None),
     session: Session = Depends(get_db),
 ):
-    """
-    If `rows` is provided:
-      - Expect 12 rows covering all months (same shape as TEMPLATE_ROWS).
-      - Replace all existing rows for this user atomically.
-    If `rows` is None or empty:
-      - Seed from TEMPLATE_ROWS.
-    """
-    uid = str(user_id)
-
-    # Decide source data
-    if rows and len(rows) > 0:
-        incoming = [r.dict() for r in rows]
-        # Normalize month strings
-        for r in incoming:
-            r["mese"] = r["mese"].strip().lower()
-        # Validate: exactly 12, all distinct, all expected months
-        months = [r["mese"] for r in incoming]
-        if len(incoming) != 12 or len(set(months)) != 12 or set(months) != MONTHS:
-            raise HTTPException(
-                status_code=422,
-                detail="Payload must contain exactly one row for each month (gennaio..dicembre).",
-            )
-        source = incoming
-    else:
-        source = TEMPLATE_ROWS
-
-    # Replace atomically: delete then insert
-    try:
-        session.exec(delete(ParametriDaInserire).where(ParametriDaInserire.user_id == uid))
-        for r in source:
-            session.add(ParametriDaInserire(
-                user_id=uid,
-                mese=r["mese"],
-                obiettivo_mensile=r["obiettivo_mensile"],
-                perc_premio_trimestrale=r.get("perc_premio_trimestrale"),
-                perc_premio_annuale=r.get("perc_premio_annuale"),
-                valore_limite=r.get("valore_limite"),
-                perc_100_budget=r.get("perc_100_budget"),
-            ))
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-
-    # Return ordered
-    out = session.exec(
-        select(ParametriDaInserire).where(ParametriDaInserire.user_id == uid)
-    ).all()
-    return sorted(out, key=lambda r: MONTH_ORDER.get(r.mese, 99))
+    result = replace_or_seed_parametri_for_user_core(
+        session=session,
+        user_id=user_id,
+        rows=None if rows is None else [r.dict() for r in rows],
+        treat_empty_list_as_template=True,
+    )
+    return result
 
 
 
