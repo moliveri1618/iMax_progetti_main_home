@@ -3,9 +3,9 @@ from fastapi import HTTPException
 from sqlmodel import Session, select, delete
 from datetime import datetime, date
 from sqlalchemy import select
+from pprint import pprint
 import sys
 import os
-from sqlalchemy.dialects.postgresql import insert  
 
 
 if os.getenv("GITHUB_ACTIONS"):
@@ -223,6 +223,39 @@ def compute_perc_trim_arrays(perc_al_100, calcolo_percentuale_venduto):
     p4 = [nz(q) * h_dec for q in perc_al_100]
     return p1, p2, p3, p4
 
+def create_ordiniPremi_obj(vendite):
+    def parse_date(s):
+        return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+
+    result = []
+    for v in vendite:
+            data = parse_date(v["data"])
+            venduto_a = v["subtotale"]
+            costo_totale = v["costo_unitario"] * v["quantita"]
+            margine = venduto_a - costo_totale
+            percentuale_ricarico = (margine / costo_totale * 100) if costo_totale else None
+
+            obj = {
+                "ordine_numero": v["ordine"],
+                "cliente": v["cliente"],
+                "prodotto": v["prodotto"],
+                "mese": data.strftime("%d/%m/%y"),
+                "venduto_a": venduto_a,
+                "costo_totale_acquisto": costo_totale,
+                "margine": margine,
+                "percentuale_ricarico": percentuale_ricarico
+            }
+            result.append(obj)
+            
+            
+    return result
+
+
+
+
+
+
+
 def replace_or_insert_parametriDaInserire(
     session: Session,
     user_id: str,
@@ -338,5 +371,19 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
             
         })
     print("res", res)
-    res = replace_or_insert_budget_venduto_calcoli(session, user_id, res)
-    return res
+    result = replace_or_insert_budget_venduto_calcoli(session, user_id, res)
+    return result, res
+
+def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametri):
+    vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Diana Joita")).scalars().all() # to change!
+    vendite = [v.dict() for v in vendite]
+    #print("vendite", vendite)
+    
+    res = create_ordiniPremi_obj(vendite)
+    
+    print("res:")
+    pprint(res) 
+   
+    
+    
+    return 1
