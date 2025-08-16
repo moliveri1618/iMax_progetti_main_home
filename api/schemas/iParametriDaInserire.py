@@ -104,13 +104,14 @@ TEMPLATE_ROWS = [
 ]
 '''
 
+# Same 7-month weight pattern you used for Q1 (gen..lug)
+TRIM_WEIGHTS = [0.75, 0.50, 0.25, 0.20, 0.15, 0.10, 0.05]  # 75%, 50%, ...
 
+# Quarter starts (0-based month indices): Jan, Apr, Jul, Oct
+TRIM_STARTS = [0, 3, 6, 9]
 
 # Keep the months in order (list, not set)
 MONTHS = [r["mese"] for r in TEMPLATE_ROWS]
-
-# Map month name -> 0-based index
-MONTH_TO_INDEX = {m: i for i, m in enumerate(MONTHS)}
 
 # If you need 1..12 ordering for sorting displays, use:
 MONTH_ORDER = {m: i + 1 for i, m in enumerate(MONTHS)}

@@ -11,7 +11,7 @@ if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
 from models.iParametriDaInserire import ParametriDaInserire  
-from schemas.iParametriDaInserire import ParametriRowIn, ParametriBulkUpdate,ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate, ParametriDaInserireUpsert, TEMPLATE_ROWS, MONTH_ORDER, MONTHS
+from schemas.iParametriDaInserire import ParametriRowIn, ParametriBulkUpdate,ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate, ParametriDaInserireUpsert, TEMPLATE_ROWS, MONTH_ORDER, MONTHS, TRIM_STARTS, TRIM_WEIGHTS
 from models.vendite import VenditeImax
 
 def compute_progressivi_mensili(obiettivi: List[float]) -> List[float]:
@@ -161,6 +161,64 @@ def compute_premio_ragg_budget_trimestrale(obiettivi, venduto_reale, param_rows)
     return [(v * p) if (p and v >= b) else 0.0
             for v, b, p in zip(venduto_qtd, quarter_budget, perc_spread)]
 
+def _quarter_progressivo(obiettivi, quarter_idx: int) -> float:
+    """Sum of obiettivi for the quarter (equals progressivo trimestrale at Mar/Jun/Sep/Dec)."""
+    start = TRIM_STARTS[quarter_idx]
+    return float(obiettivi[start] or 0) + float(obiettivi[start+1] or 0) + float(obiettivi[start+2] or 0)
+
+def compute_valori_trimestre(obiettivi, quarter_idx: int):
+    """
+    Produce a 12-length array for one quarter:
+      valori_{quarter} [month] = (quarter progressivo) * weight
+    applied over a 7-month window starting at the quarter's first month.
+    Wraps around year end for Q4 (Oct..Dec, then Jan..Apr).
+    """
+    q_prog = _quarter_progressivo(obiettivi, quarter_idx)
+    vals = [0.0] * 12
+    start = TRIM_STARTS[quarter_idx]
+    for k, w in enumerate(TRIM_WEIGHTS):
+        i = (start + k) % 12
+        vals[i] = q_prog * w
+    return vals
+
+def compute_valori_all_trimestri(obiettivi):
+    """Returns 4 arrays: valori_1, valori_2, valori_3, valori_4."""
+    return (
+        compute_valori_trimestre(obiettivi, 0),  # Q1 uses March progressivo
+        compute_valori_trimestre(obiettivi, 1),  # Q2 uses June progressivo
+        compute_valori_trimestre(obiettivi, 2),  # Q3 uses September progressivo
+        compute_valori_trimestre(obiettivi, 3),  # Q4 uses December progressivo
+    )
+
+def compute_perc_trim_arrays(perc_al_100, calcolo_percentuale_venduto):
+    """
+    Build 4 arrays:
+      perc_trim_1 = Q * H[Mar], perc_trim_2 = Q * H[Jun],
+      perc_trim_3 = Q * H[Sep], perc_trim_4 = Q * H[Dec].
+
+    Notes:
+    - We auto-normalize H values: if they look like 0–1 keep as-is, if 0–100 -> divide by 100.
+    - Quarter-end month indices (0-based): Mar=2, Jun=5, Sep=8, Dec=11.
+    """
+    def nz(x):  # none→0 float
+        return 0.0 if x is None else float(x)
+
+    def normalize_h(x):
+        x = nz(x)
+        # If it's percentage like 83 (meaning 83%), scale to 0.83
+        return x / 100.0 if x > 1 else x
+
+    # Pick H at quarter ends
+    h_mar = normalize_h(calcolo_percentuale_venduto[2])   # H5
+    h_jun = normalize_h(calcolo_percentuale_venduto[5])   # H8
+    h_sep = normalize_h(calcolo_percentuale_venduto[8])   # H11
+    h_dec = normalize_h(calcolo_percentuale_venduto[11])  # H14
+
+    p1 = [nz(q) * h_mar for q in perc_al_100]
+    p2 = [nz(q) * h_jun for q in perc_al_100]
+    p3 = [nz(q) * h_sep for q in perc_al_100]
+    p4 = [nz(q) * h_dec for q in perc_al_100]
+    return p1, p2, p3, p4
 
 
 
@@ -228,7 +286,7 @@ def calculate_and_save_parametri(parametriDaInserire, session: Session, user_id:
     Calculate and save the parametri for the given user_id.
     This function should be called after replace_or_seed_parametri_for_user_core.
     """
-    pprint('parametriDaInserire', parametriDaInserire, sort_dicts=False, width=120)
+    print('parametriDaInserire', parametriDaInserire)
     
     res = []
     for i, month in enumerate(MONTHS):
@@ -240,7 +298,12 @@ def calculate_and_save_parametri(parametriDaInserire, session: Session, user_id:
         consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale)
         perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali)     
         perc_ragg_fatturato_trimestrale = compute_perc_ragg_fatturato_trimestrale(parametriDaInserire)
-        premio_ragg_budget_trimestrale = compute_premio_ragg_budget_trimestrale(consuntivo_venduto, prog_trimestrali, perc_ragg_fatturato_trimestrale)
+        premio_ragg_budget_trimestrale = compute_premio_ragg_budget_trimestrale(obiettivi, venduto_reale, parametriDaInserire)
+        valori1, valori2, valori3, valori4 = compute_valori_all_trimestri(obiettivi)
+        perc_al_100 = [row["perc_100_budget"] for row in parametriDaInserire]
+        perc_trim_1_arr, perc_trim_2_arr, perc_trim_3_arr, perc_trim_4_arr = compute_perc_trim_arrays(perc_al_100, perc_rispetto_budget)
+        
+        
         
         res.append({
             "user_id": user_id,
@@ -256,9 +319,19 @@ def calculate_and_save_parametri(parametriDaInserire, session: Session, user_id:
             "perc_ragg_fatturato_trimestrale": perc_ragg_fatturato_trimestrale[i],
             "premio_ragg_budget_trimestrale": premio_ragg_budget_trimestrale[i],
             "premio_ragg_budget_annuale": parametriDaInserire[i]["perc_premio_annuale"],
+            "valori_1_trim": valori1[i],  
+            "valori_2_trim": valori2[i],  
+            "valori_3_trim": valori3[i],  
+            "valori_4_trim": valori4[i],  
+            "perc_al_100": perc_al_100,
+            "perc_trim_1": perc_trim_1_arr[i],
+            "perc_trim_2": perc_trim_2_arr[i],
+            "perc_trim_3": perc_trim_3_arr[i],
+            "perc_trim_4": perc_trim_4_arr[i],
+            "valore_limite_perc": parametriDaInserire[i]["valore_limite"],
             
         })
-    pprint("res", res, sort_dicts=False, width=120)
+    print("res", res)
 
 
     
