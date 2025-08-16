@@ -12,9 +12,10 @@ if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
 from models.iParametriDaInserire import ParametriDaInserire  
-from schemas.iParametriDaInserire import ParametriRowIn, ParametriBulkUpdate,ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate, ParametriDaInserireUpsert, TEMPLATE_ROWS, MONTH_ORDER, MONTHS, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
+from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, TRIM_STARTS, TRIM_WEIGHTS
 from models.vendite import VenditeImax
 from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
+from models.iConteggiCommessa import OrdiniPremi
 
 
 def compute_progressivi_mensili(obiettivi: List[float]) -> List[float]:
@@ -223,9 +224,33 @@ def compute_perc_trim_arrays(perc_al_100, calcolo_percentuale_venduto):
     p4 = [nz(q) * h_dec for q in perc_al_100]
     return p1, p2, p3, p4
 
-def create_ordiniPremi_obj(vendite):
-    def parse_date(s):
-        return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+def parse_date(s):
+    return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+
+def calcola_percentuale_premio(margine, soglie_premi):
+    """
+    Calcola la percentuale_premio in base al margine e alle soglie.
+    soglie_premi deve essere una lista di tuple (soglia, premio), ordinata in modo decrescente.
+    """
+    for soglia, premio in soglie_premi:
+        if margine > soglia:
+            return premio
+
+    # fallback → ultimo premio (come R16 in Excel)
+    if soglie_premi:
+        return soglie_premi[-1][1]
+    return None
+
+def create_ordiniPremi_obj(vendite, parametri, user_id):
+    
+    # estrai coppie (limite, premio) ordinate per valore limite decrescente
+    soglie_premi = sorted(
+        [(p["valore_limite_perc"], p.get("premio_ragg_budget_annuale")) 
+        for p in parametri if p["valore_limite_perc"] is not None],
+        key=lambda x: x[0],
+        reverse=True
+    )
+
 
     result = []
     for v in vendite:
@@ -234,8 +259,11 @@ def create_ordiniPremi_obj(vendite):
             costo_totale = v["costo_unitario"] * v["quantita"]
             margine = venduto_a - costo_totale
             percentuale_ricarico = (margine / costo_totale * 100) if costo_totale else None
+            percentuale_premio = calcola_percentuale_premio(margine, soglie_premi)
+            valore_premio_lordo = margine * percentuale_premio if percentuale_premio else None
 
             obj = {
+                "user_id": user_id,
                 "ordine_numero": v["ordine"],
                 "cliente": v["cliente"],
                 "prodotto": v["prodotto"],
@@ -243,12 +271,37 @@ def create_ordiniPremi_obj(vendite):
                 "venduto_a": venduto_a,
                 "costo_totale_acquisto": costo_totale,
                 "margine": margine,
-                "percentuale_ricarico": percentuale_ricarico
+                "percentuale_ricarico": percentuale_ricarico,
+                "percentuale_premio": percentuale_premio,
+                "valore_premio_lordo": valore_premio_lordo
+
             }
             result.append(obj)
             
             
     return result
+
+def delete_replace_ordini_premi(session, user_id: str, rows: List[Dict]) -> int:
+    """
+    Cancella le righe esistenti in OrdiniPremi per lo user_id e inserisce le nuove.
+    Ritorna il numero di righe inserite.
+    """
+    try:
+        # 1) Cancella righe esistenti per questo user
+        session.exec(delete(OrdiniPremi).where(OrdiniPremi.user_id == user_id))
+
+        # 2) Inserisci nuove righe
+        objs = [OrdiniPremi(user_id=user_id, **{k: v for k, v in row.items() if k != "user_id"}) for row in rows]
+        session.add_all(objs)
+
+        # 3) Commit
+        session.commit()
+
+        return len(objs)
+
+    except Exception:
+        session.rollback()
+        raise
 
 
 
@@ -375,15 +428,19 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
     return result, res
 
 def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametri):
+    
+    # Get vendite for the user
     vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Diana Joita")).scalars().all() # to change!
     vendite = [v.dict() for v in vendite]
-    #print("vendite", vendite)
+    #pprint(parametri)
+    #pprint(vendite)
     
-    res = create_ordiniPremi_obj(vendite)
+    # Create ordiniPremi object 
+    res = create_ordiniPremi_obj(vendite, parametri, user_id)
+    # print("res:")
+    # pprint(res) 
     
-    print("res:")
-    pprint(res) 
+    # delete_replace_ordini_premi
+    result = delete_replace_ordini_premi(session, user_id, res)
    
-    
-    
-    return 1
+    return result
