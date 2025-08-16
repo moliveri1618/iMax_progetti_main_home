@@ -1,6 +1,8 @@
 from typing import List, Optional, Iterable, Dict
 from fastapi import HTTPException
 from sqlmodel import Session, select, delete
+from datetime import datetime, date
+from sqlalchemy import select
 import sys
 import os
 
@@ -9,12 +11,63 @@ if os.getenv("GITHUB_ACTIONS"):
     
 from models.iParametriDaInserire import ParametriDaInserire  
 from schemas.iParametriDaInserire import ParametriRowIn, ParametriBulkUpdate,ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate, ParametriDaInserireUpsert, TEMPLATE_ROWS, MONTH_ORDER, MONTHS
+from models.vendite import VenditeImax
 
-# Expect these exist in your module:
-# - ParametriDaInserire model
-# - TEMPLATE_ROWS (12 items)
-# - MONTHS (set of month names)
-# - MONTH_ORDER (dict month -> index)
+def compute_progressivi_mensili(obiettivi: List[float]) -> List[float]:
+    cumul = 0.0
+    out: List[float] = []
+    for v in obiettivi:
+        cumul += v
+        out.append(cumul)
+    return out
+
+def compute_progressivi_trimestrali(obiettivi: List[float]) -> List[Optional[float]]:
+    out: List[Optional[float]] = []
+    cumul_q = 0.0
+    for i, v in enumerate(obiettivi):
+        cumul_q += v
+        end_of_quarter = (i % 3) == 2  # Mar, Jun, Sep, Dec (0-based)
+        if end_of_quarter:
+            out.append(cumul_q)
+            cumul_q = 0.0
+        else:
+            out.append(None)
+    return out
+
+def _to_datetime(d):
+    if isinstance(d, datetime):
+        return d
+    if isinstance(d, date):
+        return datetime(d.year, d.month, d.day)
+    if isinstance(d, str):
+        # Try common formats + ISO
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(d, fmt)
+            except ValueError:
+                pass
+        try:
+            return datetime.fromisoformat(d)  # handles "YYYY-MM-DD HH:MM:SS"
+        except Exception:
+            return None
+    return None
+
+def compute_venduto_reale(db, year=None):
+    if year is None:
+        year = date.today().year
+
+    sums = [0.0] * 12
+
+    # KEY: use .scalars() so we get VenditeImax instances, not Row tuples
+    vendite = db.exec(select(VenditeImax)).scalars().all()
+
+    for v in vendite:
+        dt = _to_datetime(v.data)
+        if not dt or dt.year != year:
+            continue
+        sums[dt.month - 1] += float(v.quantita or 0)
+
+    return sums
 
 def replace_or_seed_parametri_for_user_core(
     session: Session,
@@ -70,5 +123,34 @@ def replace_or_seed_parametri_for_user_core(
     # Return ordered
     out = session.exec(
         select(ParametriDaInserire).where(ParametriDaInserire.user_id == uid)
-    ).all()
-    return sorted(out, key=lambda r: MONTH_ORDER.get(r.mese, 99))
+    ).scalars().all()
+
+    return sorted(out, key=lambda r: MONTH_ORDER.get((r.mese or "").lower(), 99))
+
+def calculate_and_save_parametri(parametriDaInserire, session: Session, user_id: str):
+    """
+    Calculate and save the parametri for the given user_id.
+    This function should be called after replace_or_seed_parametri_for_user_core.
+    """
+    # print('parametriDaInserire', parametriDaInserire)
+    
+    res = []
+    for i, month in enumerate(MONTHS):
+        
+        obiettivi = [row["obiettivo_mensile"] for row in parametriDaInserire] #obiettivo_mensile
+        prog_mensili = compute_progressivi_mensili(obiettivi)                 #progressivo_mensile
+        prog_trimestrali = compute_progressivi_trimestrali(obiettivi)         #progressivo_trimestrale
+        venduto_reale = compute_venduto_reale(session, year=None)  # -> [m1..m12]
+        
+        res.append({
+            "user_id": user_id,
+            "mese": month,                              
+            "obiettivo_mensile": obiettivi[i],
+            "progressivo_mensile": prog_mensili[i],
+            "progressivo_trimestrale": prog_trimestrali[i],        
+            "venduto_reale": venduto_reale[i]                      
+        })
+    #print('res', res)
+
+    
+    return 1

@@ -106,5 +106,11 @@ TEMPLATE_ROWS = [
 
 
 
-MONTHS = {r["mese"] for r in TEMPLATE_ROWS}
-MONTH_ORDER = {m: i for i, m in enumerate([r["mese"] for r in TEMPLATE_ROWS])}
+# Keep the months in order (list, not set)
+MONTHS = [r["mese"] for r in TEMPLATE_ROWS]
+
+# Map month name -> 0-based index
+MONTH_TO_INDEX = {m: i for i, m in enumerate(MONTHS)}
+
+# If you need 1..12 ordering for sorting displays, use:
+MONTH_ORDER = {m: i + 1 for i, m in enumerate(MONTHS)}

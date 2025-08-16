@@ -17,22 +17,15 @@ from dependecies import get_db
 router = APIRouter()
 
 
-@router.put(
-    "/parametri/{user_id}",
-    response_model=List[ParametriDaInserireRead],
-    status_code=status.HTTP_200_OK,
-)
-def replace_or_seed_parametri_for_user(
-    user_id: str,
-    rows: Optional[List[ParametriRowIn]] = Body(default=None),
-    session: Session = Depends(get_db),
-):
-    result = replace_or_seed_parametri_for_user_core(
-        session=session,
-        user_id=user_id,
-        rows=None if rows is None else [r.dict() for r in rows],
-        treat_empty_list_as_template=True,
-    )
+@router.put("/parametri/{user_id}",response_model=List[ParametriDaInserireRead],status_code=status.HTTP_200_OK,)
+def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[ParametriRowIn]] = Body(default=None),session: Session = Depends(get_db)):
+    
+    # Insert PARAMETRI DA INSERIRE for user_id
+    result = replace_or_seed_parametri_for_user_core(session=session,user_id=user_id,rows=None if rows is None else [r.model_dump() for r in rows],treat_empty_list_as_template=True,)
+    
+    # Calculate and save PARAMETRI for user_id
+    res = calculate_and_save_parametri(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id)
+    
     return result
 
 
