@@ -12,7 +12,7 @@ if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
 from models.iParametriDaInserire import ParametriDaInserire  
-from schemas.iParametriDaInserire import ParametriRowIn, ParametriBulkUpdate,ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate, ParametriDaInserireUpsert, TEMPLATE_ROWS, MONTH_ORDER, MONTHS, TRIM_STARTS, TRIM_WEIGHTS
+from schemas.iParametriDaInserire import ParametriRowIn, ParametriBulkUpdate,ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate, ParametriDaInserireUpsert, TEMPLATE_ROWS, MONTH_ORDER, MONTHS, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
 from models.vendite import VenditeImax
 from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
 
@@ -223,54 +223,13 @@ def compute_perc_trim_arrays(perc_al_100, calcolo_percentuale_venduto):
     p4 = [nz(q) * h_dec for q in perc_al_100]
     return p1, p2, p3, p4
 
-
-
-def upsert_budget_venduto_calcoli_by_month(session: Session, user_id: str, rows: list[dict]) -> list[BudgetVendutoCalcoli]:
-    """
-    For each row in `rows`, check if (user_id, mese) exists:
-      - If yes, update the existing record (all fields except id/user_id/mese).
-      - If no, create a new record.
-    Returns the list of upserted ORM objects, sorted by MONTH_ORDER.
-    """
-    uid = str(user_id)
-
-    # Preload existing rows for this user to avoid 12 separate SELECTs
-    existing = session.exec(
-        select(BudgetVendutoCalcoli).where(BudgetVendutoCalcoli.user_id == uid)
-    ).scalars().all()
-    by_month = { (r.mese or "").strip().lower(): r for r in existing }
-
-    updated: list[BudgetVendutoCalcoli] = []
-    with session.begin():
-        for r in rows:
-            data = dict(r)
-            data.pop("id", None)                             # never trust incoming IDs
-            data["user_id"] = uid
-            mese = (data.get("mese") or "").strip().lower()  # normalize month key
-            data["mese"] = mese
-
-            current = by_month.get(mese)
-            if current:
-                # Update mutable fields
-                for k, v in data.items():
-                    if k not in {"id", "user_id", "mese"}:
-                        setattr(current, k, v)
-                updated.append(current)
-            else:
-                obj = BudgetVendutoCalcoli(**data)
-                session.add(obj)
-                updated.append(obj)
-
-    # After commit, return in calendar order (uses your MONTH_ORDER mapping)
-    return sorted(updated, key=lambda o: MONTH_ORDER.get((o.mese or "").lower(), 99))
-
 def replace_or_insert_parametriDaInserire(
     session: Session,
     user_id: str,
     rows: Optional[Iterable[Dict]] = None,
     *,
     treat_empty_list_as_template: bool = True,
-) -> List["ParametriDaInserire"]:
+)->int:
     """
     If `rows` is provided:
       - Expect 12 rows covering all months (same shape as TEMPLATE_ROWS).
@@ -284,11 +243,9 @@ def replace_or_insert_parametriDaInserire(
     if rows is None or (treat_empty_list_as_template and rows == []):
         source = TEMPLATE_ROWS
     else:
-        incoming = [dict(r) for r in rows]  # defensive copy, accept list[dict] or pydantic models' .dict()
-        # Normalize months
+        incoming = [dict(r) for r in rows]  
         for r in incoming:
             r["mese"] = r["mese"].strip().lower()
-        # Validate: exactly 12 and all expected months
         months = [r["mese"] for r in incoming]
         if len(incoming) != 12 or len(set(months)) != 12 or set(months) != MONTHS:
             raise HTTPException(
@@ -315,19 +272,28 @@ def replace_or_insert_parametriDaInserire(
         session.rollback()
         raise
 
-    # Return ordered
-    out = session.exec(
-        select(ParametriDaInserire).where(ParametriDaInserire.user_id == uid)
-    ).scalars().all()
+    return len(source)
 
-    return sorted(out, key=lambda r: MONTH_ORDER.get((r.mese or "").lower(), 99))
+def replace_or_insert_budget_venduto_calcoli(session: Session, user_id: str, rows: List[Dict]) -> None:
+    
+    try:
+        # 1) Delete old rows for the user
+        session.exec(delete(BudgetVendutoCalcoli).where(BudgetVendutoCalcoli.user_id == user_id))
+
+        # 2) Insert new rows
+        session.add_all([BudgetVendutoCalcoli(**row) for row in rows])
+        session.commit()
+        return len(rows)
+    except Exception:
+        session.rollback()
+        raise
 
 def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: str):
     """
     Calculate and save the parametri for the given user_id.
     This function should be called after replace_or_seed_parametri_for_user_core.
     """
-    print('parametriDaInserire', parametriDaInserire)
+    #print('parametriDaInserire', parametriDaInserire)
     
     res = []
     for i, month in enumerate(MONTHS):
@@ -343,7 +309,6 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
         valori1, valori2, valori3, valori4 = compute_valori_all_trimestri(obiettivi)
         perc_al_100 = [row["perc_100_budget"] for row in parametriDaInserire]
         perc_trim_1_arr, perc_trim_2_arr, perc_trim_3_arr, perc_trim_4_arr = compute_perc_trim_arrays(perc_al_100, perc_rispetto_budget)
-        
         
         
         res.append({
@@ -373,7 +338,5 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
             
         })
     print("res", res)
-    
-    
-    result = upsert_budget_venduto_calcoli_by_month(session, user_id, res)
-    return result
+    res = replace_or_insert_budget_venduto_calcoli(session, user_id, res)
+    return res

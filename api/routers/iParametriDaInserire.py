@@ -17,7 +17,7 @@ from dependecies import get_db
 router = APIRouter()
 
 
-@router.put("/parametri/{user_id}",response_model=List[ParametriDaInserireRead],status_code=status.HTTP_200_OK,)
+@router.put("/parametri/{user_id}",response_model=int,status_code=status.HTTP_200_OK,)
 def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[ParametriRowIn]] = Body(default=None),session: Session = Depends(get_db)):
     
     # Insert PARAMETRI DA INSERIRE for user_id
@@ -26,7 +26,7 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
     # Calculate and save PARAMETRI for user_id
     res = replace_or_insert_parametri(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id)
     
-    return result
+    return 1
 
 
 
