@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import asyncio
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__)) 
-from routers import commesse, vendite, tickets, workInProgress, savePDF, rilievoMisure, collaudoFinale, iParametriDaInserire
+from routers import commesse, vendite, tickets, workInProgress, savePDF, rilievoMisure, collaudoFinale, iParametriDaInserire, iConteggiCommessa, iBudgetVendutoCalcoli
 from dependecies import create_db_and_tables, verify_cognito_token
 
 
@@ -75,6 +75,21 @@ app.include_router(
     prefix="/iParametriDaInserire", 
     tags=["iParametriDaInserire"]
     )
+
+app.include_router(
+    iBudgetVendutoCalcoli.router, 
+    prefix="/iBudgetVendutoCalcoli", 
+    tags=["iBudgetVendutoCalcoli"]
+    )
+
+
+app.include_router(
+    iConteggiCommessa.router, 
+    prefix="/iConteggiCommessa", 
+    tags=["iConteggiCommessa"]
+    )
+
+
 
 
 @app.get("/")
