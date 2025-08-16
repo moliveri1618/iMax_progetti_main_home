@@ -76,18 +76,18 @@ app.include_router(
     tags=["iParametriDaInserire"]
     )
 
-app.include_router(
-    iBudgetVendutoCalcoli.router, 
-    prefix="/iBudgetVendutoCalcoli", 
-    tags=["iBudgetVendutoCalcoli"]
-    )
+# app.include_router(
+#     iBudgetVendutoCalcoli.router, 
+#     prefix="/iBudgetVendutoCalcoli", 
+#     tags=["iBudgetVendutoCalcoli"]
+#     )
 
 
-app.include_router(
-    iConteggiCommessa.router, 
-    prefix="/iConteggiCommessa", 
-    tags=["iConteggiCommessa"]
-    )
+# app.include_router(
+#     iConteggiCommessa.router, 
+#     prefix="/iConteggiCommessa", 
+#     tags=["iConteggiCommessa"]
+#     )
 
 
 
