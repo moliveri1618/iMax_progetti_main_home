@@ -10,7 +10,14 @@ if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
 from models.iParametriDaInserire import ParametriDaInserire  
-from schemas.iParametriDaInserire import ParametriRowIn, ParametriBulkUpdate,ParametriDaInserireCreate, ParametriDaInserireRead, ParametriDaInserireUpdate, ParametriDaInserireUpsert, TEMPLATE_ROWS, MONTH_ORDER, MONTHS
+from schemas.iParametriDaInserire import (
+    ParametriRowIn,
+    ParametriBulkUpdate,
+    ParametriDaInserireCreate,
+    ParametriDaInserireRead,
+    ParametriDaInserireUpdate,
+    TEMPLATE_ROWS,
+)
 from routers.utils import *
 from dependecies import get_db
 
