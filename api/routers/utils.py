@@ -69,6 +69,38 @@ def compute_venduto_reale(db, year=None):
 
     return sums
 
+def compute_consuntivo_venduto_trimestrale(venduto):
+    """
+    Quarter-to-date cumulative of Venduto REALE.
+    Emit value only at quarter end months; None elsewhere.
+    """
+    out = []
+    acc = 0.0
+    for i, v in enumerate(venduto):
+        acc += float(v or 0)
+        if (i % 3) == 2:        # Mar, Jun, Sep, Dec
+            out.append(acc)
+            acc = 0.0
+        else:
+            out.append(None)
+    return out
+
+def compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_q, prog_trimestrale):
+    """
+    Percentage only on quarter ends, None elsewhere.
+    """
+    out = []
+    for c, p in zip(consuntivo_q, prog_trimestrale):
+        if c is None or not p:         # not a quarter end or p = 0/None
+            out.append(None)
+        else:
+            out.append((float(c) / float(p)) * 100.0)
+    return out
+
+
+
+
+
 def replace_or_seed_parametri_for_user_core(
     session: Session,
     user_id: str,
@@ -132,15 +164,18 @@ def calculate_and_save_parametri(parametriDaInserire, session: Session, user_id:
     Calculate and save the parametri for the given user_id.
     This function should be called after replace_or_seed_parametri_for_user_core.
     """
-    # print('parametriDaInserire', parametriDaInserire)
+    print('parametriDaInserire', parametriDaInserire)
     
     res = []
     for i, month in enumerate(MONTHS):
         
-        obiettivi = [row["obiettivo_mensile"] for row in parametriDaInserire] #obiettivo_mensile
-        prog_mensili = compute_progressivi_mensili(obiettivi)                 #progressivo_mensile
-        prog_trimestrali = compute_progressivi_trimestrali(obiettivi)         #progressivo_trimestrale
-        venduto_reale = compute_venduto_reale(session, year=None)  # -> [m1..m12]
+        obiettivi = [row["obiettivo_mensile"] for row in parametriDaInserire]                                       #obiettivo_mensile
+        prog_mensili = compute_progressivi_mensili(obiettivi)                                                       #progressivo_mensile
+        prog_trimestrali = compute_progressivi_trimestrali(obiettivi)                                               #progressivo_trimestrale
+        venduto_reale = compute_venduto_reale(session, year=None) 
+        consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale)
+        perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali)     
+
         
         res.append({
             "user_id": user_id,
@@ -148,7 +183,12 @@ def calculate_and_save_parametri(parametriDaInserire, session: Session, user_id:
             "obiettivo_mensile": obiettivi[i],
             "progressivo_mensile": prog_mensili[i],
             "progressivo_trimestrale": prog_trimestrali[i],        
-            "venduto_reale": venduto_reale[i]                      
+            "venduto_reale": venduto_reale[i],
+            "consuntivo_venduto": consuntivo_venduto[i], 
+            "perc_rispetto_budget": perc_rispetto_budget[i],
+            "calcolo_percentuale_venduto": None,
+            "valore_premio": None,
+            "perc_ragg_fatturato_trimestrale": None
         })
     #print('res', res)
 

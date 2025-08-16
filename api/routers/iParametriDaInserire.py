@@ -91,7 +91,8 @@ def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)
     stmt = select(ParametriDaInserire)
     if user_id:
         stmt = stmt.where(ParametriDaInserire.user_id == user_id)
-    return session.exec(stmt).all()
+    items = session.exec(stmt).scalars().all()  
+    return items
 
 
 # READ BY ID
