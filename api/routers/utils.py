@@ -21,7 +21,6 @@ from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
 from models.iConteggiCommessa import OrdiniPremi
 
 
-
 def json_to_dict(rows: Optional[Sequence[Any]]) -> Optional[List[Dict[str, Any]]]:
     if rows is None:
         return None

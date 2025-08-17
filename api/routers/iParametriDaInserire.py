@@ -19,13 +19,21 @@ from schemas.iParametriDaInserire import (
     ParametriDaInserireUpdate,
     TEMPLATE_ROWS,
 )
+from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
+from schemas.iBudgetVendutoCalcoli import BudgetVendutoCalcoliRead
+from models.iConteggiCommessa import OrdiniPremi
+from schemas.iConteggiCommessa import OrdiniPremiRead
+
 from routers.utils import *
 from dependecies import get_db
 
 router = APIRouter()
 
 
-
+MONTHS_IT = [
+    "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
+    "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
+]
 
 @router.put("/parametri/{user_id}",response_model=Dict[str, int],status_code=status.HTTP_200_OK,)
 def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[ParametriRowIn]] = Body(default=None),session: Session = Depends(get_db)):
@@ -49,12 +57,60 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
     }
 
 
+@router.get(
+    "/budget-venduto-calcoli/{user_id}",
+    response_model=List[BudgetVendutoCalcoliRead],
+    status_code=status.HTTP_200_OK,
+)
+def get_budget_venduto_calcoli_by_user(
+    user_id: str,
+    session: Session = Depends(get_db),
+):
+    """
+    Return all BudgetVendutoCalcoli rows for a given user_id,
+    sorted by calendar month (gennaio..dicembre).
+    """
+    stmt = select(BudgetVendutoCalcoli).where(BudgetVendutoCalcoli.user_id == user_id)
+    rows = session.exec(stmt).scalars().all() 
+
+    def month_key(m: Optional[str]) -> int:
+        if not m:
+            return 999
+        try:
+            return MONTHS_IT.index(m.strip().lower())
+        except ValueError:
+            return 999
+
+    rows.sort(key=lambda r: month_key(r.mese))
+    return rows
 
 
+@router.get(
+    "/ordini-premi/{user_id}",
+    response_model=List[OrdiniPremiRead],
+    status_code=status.HTTP_200_OK,
+)
+def get_ordini_premi_by_user(
+    user_id: str,
+    session: Session = Depends(get_db),
+):
+    """
+    Return all OrdiniPremi rows for a given user_id,
+    sorted by calendar month (gennaio..dicembre).
+    """
+    stmt = select(OrdiniPremi).where(OrdiniPremi.user_id == user_id)
+    rows = session.exec(stmt).scalars().all()  # ensure ORM objects
 
+    def month_key(m: Optional[str]) -> int:
+        if not m:
+            return 999
+        try:
+            return MONTHS_IT.index(m.strip().lower())
+        except ValueError:
+            return 999
 
-
-
+    rows.sort(key=lambda r: month_key(r.mese))
+    return rows
 
 @router.post("/bulk", response_model=List[ParametriDaInserireRead])
 def bulk_upsert(
