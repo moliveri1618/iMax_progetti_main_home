@@ -54,6 +54,7 @@ def compute_progressivi_mensili(obiettivi: List[float]) -> List[float]:
     return out
 
 def compute_progressivi_trimestrali(obiettivi: List[float]) -> List[Optional[float]]:
+    
     out: List[Optional[float]] = []
     cumul_q = 0.0
     for i, v in enumerate(obiettivi):
@@ -414,9 +415,21 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
     # Columns calculation
     obiettivi = [row["obiettivo_mensile"] for row in ordered]
     prog_mensili = compute_progressivi_mensili(obiettivi)
+    prog_trimestrali = compute_progressivi_trimestrali(obiettivi) 
     
     res = []
+    totale_obiettivo_mensile = 0 
+    totale_obiettivo_trimestrale = 0
     for i, month in enumerate(MONTHS_LIST):
+        
+        ### Calc totali ###
+        # obiettivo_mensile totale
+        ob_mens = obiettivi[i] if obiettivi[i] is not None else 0
+        totale_obiettivo_mensile += ob_mens
+        
+        # obiettivo_trimestrale totale
+        trim_val = prog_trimestrali[i] if prog_trimestrali[i] is not None else 0
+        totale_obiettivo_trimestrale += trim_val
         
         # obiettivi = [row["obiettivo_mensile"] for row in parametriDaInserire]                                       #obiettivo_mensile
         # prog_mensili = compute_progressivi_mensili(obiettivi)                                                       #progressivo_mensile
@@ -436,7 +449,7 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
             "mese": month,                              
             "obiettivo_mensile": obiettivi[i],
             "progressivo_mensile": prog_mensili[i],
-            # "progressivo_trimestrale": prog_trimestrali[i],        
+            "progressivo_trimestrale": prog_trimestrali[i],        
             # "venduto_reale": venduto_reale[i],
             # "consuntivo_venduto": consuntivo_venduto[i], 
             # "perc_rispetto_budget": perc_rispetto_budget[i],
@@ -457,6 +470,15 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
             # "valore_limite_perc": parametriDaInserire[i]["valore_limite"],
             
         })
+        
+    # Add extra "totali" row after the loop
+    res.append({
+        "user_id": user_id,
+        "mese": "totali",
+        "obiettivo_mensile": totale_obiettivo_mensile,
+        "progressivo_mensile": None,
+        "progressivo_trimestrale": totale_obiettivo_trimestrale
+    })
     print("res")
     pprint(res)
     
