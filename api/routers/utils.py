@@ -2,7 +2,6 @@ from typing import List, Optional, Iterable, Dict
 from fastapi import HTTPException
 from sqlmodel import Session, select, delete
 from datetime import datetime, date
-from sqlalchemy import select
 from pprint import pprint
 from typing import Any, Dict, List, Optional, Sequence
 import json
@@ -91,8 +90,7 @@ def compute_venduto_reale(db, year=None):
 
     sums = [0.0] * 12
 
-    # KEY: use .scalars() so we get VenditeImax instances, not Row tuples
-    vendite = db.exec(select(VenditeImax)).scalars().all()
+    vendite = db.exec(select(VenditeImax)).all()
 
     for v in vendite:
         dt = _to_datetime(v.data)
@@ -416,10 +414,21 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
     obiettivi = [row["obiettivo_mensile"] for row in ordered]
     prog_mensili = compute_progressivi_mensili(obiettivi)
     prog_trimestrali = compute_progressivi_trimestrali(obiettivi) 
+    venduto_reale = compute_venduto_reale(session, year=None)
+    consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale)
+    perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali)
+    perc_ragg_fatturato_trimestrale = compute_perc_ragg_fatturato_trimestrale(parametriDaInserire)
+    premio_ragg_budget_trimestrale = compute_premio_ragg_budget_trimestrale(obiettivi, venduto_reale, parametriDaInserire)
+    valori1, valori2, valori3, valori4 = compute_valori_all_trimestri(obiettivi)
+    perc_al_100 = [row["perc_100_budget"] for row in parametriDaInserire]
+    perc_trim_1_arr, perc_trim_2_arr, perc_trim_3_arr, perc_trim_4_arr = compute_perc_trim_arrays(perc_al_100, perc_rispetto_budget)
     
     res = []
     totale_obiettivo_mensile = 0 
     totale_obiettivo_trimestrale = 0
+    totale_venduto_reale = 0
+    totale_consuntivo_venduto = 0
+    totale_ragg_budget_trimestrale = 0
     for i, month in enumerate(MONTHS_LIST):
         
         ### Calc totali ###
@@ -430,6 +439,19 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
         # obiettivo_trimestrale totale
         trim_val = prog_trimestrali[i] if prog_trimestrali[i] is not None else 0
         totale_obiettivo_trimestrale += trim_val
+        
+        #Venduto reale totale
+        venduto_val = venduto_reale[i] if venduto_reale[i] is not None else 0
+        totale_venduto_reale += venduto_val
+        
+        #Totale consuntivo venduto
+        consuntivo_val = consuntivo_venduto[i] if consuntivo_venduto[i] is not None else 0
+        totale_consuntivo_venduto += consuntivo_val
+        
+        # TOtale ragg budget trimestrale
+        ragg_budget_val = premio_ragg_budget_trimestrale[i] if premio_ragg_budget_trimestrale[i] is not None else 0
+        totale_ragg_budget_trimestrale += ragg_budget_val
+        
         
         # obiettivi = [row["obiettivo_mensile"] for row in parametriDaInserire]                                       #obiettivo_mensile
         # prog_mensili = compute_progressivi_mensili(obiettivi)                                                       #progressivo_mensile
@@ -450,24 +472,24 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
             "obiettivo_mensile": obiettivi[i],
             "progressivo_mensile": prog_mensili[i],
             "progressivo_trimestrale": prog_trimestrali[i],        
-            # "venduto_reale": venduto_reale[i],
-            # "consuntivo_venduto": consuntivo_venduto[i], 
-            # "perc_rispetto_budget": perc_rispetto_budget[i],
-            # "calcolo_percentuale_venduto": perc_rispetto_budget[i],
-            # "valore_premio": None,
-            # "perc_ragg_fatturato_trimestrale": perc_ragg_fatturato_trimestrale[i],
-            # "premio_ragg_budget_trimestrale": premio_ragg_budget_trimestrale[i],
-            # "premio_ragg_budget_annuale": parametriDaInserire[i]["perc_premio_annuale"],
-            # "valori_1_trim": valori1[i],  
-            # "valori_2_trim": valori2[i],  
-            # "valori_3_trim": valori3[i],  
-            # "valori_4_trim": valori4[i],  
-            # "perc_al_100": perc_al_100[i],
-            # "perc_trim_1": perc_trim_1_arr[i],
-            # "perc_trim_2": perc_trim_2_arr[i],
-            # "perc_trim_3": perc_trim_3_arr[i],
-            # "perc_trim_4": perc_trim_4_arr[i],
-            # "valore_limite_perc": parametriDaInserire[i]["valore_limite"],
+            "venduto_reale": venduto_reale[i],
+            "consuntivo_venduto": consuntivo_venduto[i], 
+            "perc_rispetto_budget": perc_rispetto_budget[i],
+            "calcolo_percentuale_venduto": perc_rispetto_budget[i],
+            "valore_premio": None,
+            "perc_ragg_fatturato_trimestrale": perc_ragg_fatturato_trimestrale[i],
+            "premio_ragg_budget_trimestrale": premio_ragg_budget_trimestrale[i],
+            "premio_ragg_budget_annuale": parametriDaInserire[i]["perc_premio_annuale"],
+            "valori_1_trim": valori1[i],  
+            "valori_2_trim": valori2[i],  
+            "valori_3_trim": valori3[i],  
+            "valori_4_trim": valori4[i],  
+            "perc_al_100": perc_al_100[i],
+            "perc_trim_1": perc_trim_1_arr[i],
+            "perc_trim_2": perc_trim_2_arr[i],
+            "perc_trim_3": perc_trim_3_arr[i],
+            "perc_trim_4": perc_trim_4_arr[i],
+            "valore_limite_perc": parametriDaInserire[i]["valore_limite"],
             
         })
         
@@ -477,10 +499,15 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
         "mese": "totali",
         "obiettivo_mensile": totale_obiettivo_mensile,
         "progressivo_mensile": None,
-        "progressivo_trimestrale": totale_obiettivo_trimestrale
+        "progressivo_trimestrale": totale_obiettivo_trimestrale,
+        "venduto_reale": totale_venduto_reale,
+        "consuntivo_venduto": totale_consuntivo_venduto,
+        "valore_premio": None,
+        "premio_ragg_budget_trimestrale": totale_ragg_budget_trimestrale,
+        "premio_ragg_budget_annuale": parametriDaInserire[0]["perc_premio_annuale"]
     })
-    print("res")
-    pprint(res)
+    # print("res")
+    # pprint(res)
     
     
     result = replace_or_insert_budget_venduto_calcoli(session, user_id, res)
