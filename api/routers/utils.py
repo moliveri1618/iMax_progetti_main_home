@@ -15,11 +15,14 @@ if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
 from models.iParametriDaInserire import ParametriDaInserire  
-from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, TRIM_STARTS, TRIM_WEIGHTS
+from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
 from models.vendite import VenditeImax
 from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
 from models.iConteggiCommessa import OrdiniPremi
 
+def order_rows_by_month(rows: Iterable[Dict]) -> List[Dict]:
+    """Return rows ordered Gen→Dic using MONTH_ORDER."""
+    return sorted(rows, key=lambda r: MONTH_ORDER[str(r["mese"]).strip().lower()])
 
 def json_to_dict(rows: Optional[Sequence[Any]]) -> Optional[List[Dict[str, Any]]]:
     if rows is None:
@@ -405,20 +408,27 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
     """
     #print('parametriDaInserire', parametriDaInserire)
     
+    # Force Gen→Dic order
+    ordered = order_rows_by_month([dict(r) for r in parametriDaInserire])
+
+    # Columns calculation
+    obiettivi = [row["obiettivo_mensile"] for row in ordered]
+    prog_mensili = compute_progressivi_mensili(obiettivi)
+    
     res = []
-    for i, month in enumerate(MONTHS):
+    for i, month in enumerate(MONTHS_LIST):
         
-        obiettivi = [row["obiettivo_mensile"] for row in parametriDaInserire]                                       #obiettivo_mensile
-        prog_mensili = compute_progressivi_mensili(obiettivi)                                                       #progressivo_mensile
-        prog_trimestrali = compute_progressivi_trimestrali(obiettivi)                                               #progressivo_trimestrale
-        venduto_reale = compute_venduto_reale(session, year=None) 
-        consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale)
-        perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali)     
-        perc_ragg_fatturato_trimestrale = compute_perc_ragg_fatturato_trimestrale(parametriDaInserire)
-        premio_ragg_budget_trimestrale = compute_premio_ragg_budget_trimestrale(obiettivi, venduto_reale, parametriDaInserire)
-        valori1, valori2, valori3, valori4 = compute_valori_all_trimestri(obiettivi)
-        perc_al_100 = [row["perc_100_budget"] for row in parametriDaInserire]
-        perc_trim_1_arr, perc_trim_2_arr, perc_trim_3_arr, perc_trim_4_arr = compute_perc_trim_arrays(perc_al_100, perc_rispetto_budget)
+        # obiettivi = [row["obiettivo_mensile"] for row in parametriDaInserire]                                       #obiettivo_mensile
+        # prog_mensili = compute_progressivi_mensili(obiettivi)                                                       #progressivo_mensile
+        # prog_trimestrali = compute_progressivi_trimestrali(obiettivi)                                               #progressivo_trimestrale
+        # venduto_reale = compute_venduto_reale(session, year=None) 
+        # consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale)
+        # perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali)     
+        # perc_ragg_fatturato_trimestrale = compute_perc_ragg_fatturato_trimestrale(parametriDaInserire)
+        # premio_ragg_budget_trimestrale = compute_premio_ragg_budget_trimestrale(obiettivi, venduto_reale, parametriDaInserire)
+        # valori1, valori2, valori3, valori4 = compute_valori_all_trimestri(obiettivi)
+        # perc_al_100 = [row["perc_100_budget"] for row in parametriDaInserire]
+        # perc_trim_1_arr, perc_trim_2_arr, perc_trim_3_arr, perc_trim_4_arr = compute_perc_trim_arrays(perc_al_100, perc_rispetto_budget)
         
         
         res.append({
@@ -426,28 +436,31 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
             "mese": month,                              
             "obiettivo_mensile": obiettivi[i],
             "progressivo_mensile": prog_mensili[i],
-            "progressivo_trimestrale": prog_trimestrali[i],        
-            "venduto_reale": venduto_reale[i],
-            "consuntivo_venduto": consuntivo_venduto[i], 
-            "perc_rispetto_budget": perc_rispetto_budget[i],
-            "calcolo_percentuale_venduto": perc_rispetto_budget[i],
-            "valore_premio": None,
-            "perc_ragg_fatturato_trimestrale": perc_ragg_fatturato_trimestrale[i],
-            "premio_ragg_budget_trimestrale": premio_ragg_budget_trimestrale[i],
-            "premio_ragg_budget_annuale": parametriDaInserire[i]["perc_premio_annuale"],
-            "valori_1_trim": valori1[i],  
-            "valori_2_trim": valori2[i],  
-            "valori_3_trim": valori3[i],  
-            "valori_4_trim": valori4[i],  
-            "perc_al_100": perc_al_100[i],
-            "perc_trim_1": perc_trim_1_arr[i],
-            "perc_trim_2": perc_trim_2_arr[i],
-            "perc_trim_3": perc_trim_3_arr[i],
-            "perc_trim_4": perc_trim_4_arr[i],
-            "valore_limite_perc": parametriDaInserire[i]["valore_limite"],
+            # "progressivo_trimestrale": prog_trimestrali[i],        
+            # "venduto_reale": venduto_reale[i],
+            # "consuntivo_venduto": consuntivo_venduto[i], 
+            # "perc_rispetto_budget": perc_rispetto_budget[i],
+            # "calcolo_percentuale_venduto": perc_rispetto_budget[i],
+            # "valore_premio": None,
+            # "perc_ragg_fatturato_trimestrale": perc_ragg_fatturato_trimestrale[i],
+            # "premio_ragg_budget_trimestrale": premio_ragg_budget_trimestrale[i],
+            # "premio_ragg_budget_annuale": parametriDaInserire[i]["perc_premio_annuale"],
+            # "valori_1_trim": valori1[i],  
+            # "valori_2_trim": valori2[i],  
+            # "valori_3_trim": valori3[i],  
+            # "valori_4_trim": valori4[i],  
+            # "perc_al_100": perc_al_100[i],
+            # "perc_trim_1": perc_trim_1_arr[i],
+            # "perc_trim_2": perc_trim_2_arr[i],
+            # "perc_trim_3": perc_trim_3_arr[i],
+            # "perc_trim_4": perc_trim_4_arr[i],
+            # "valore_limite_perc": parametriDaInserire[i]["valore_limite"],
             
         })
-    print("res", res)
+    print("res")
+    pprint(res)
+    
+    
     result = replace_or_insert_budget_venduto_calcoli(session, user_id, res)
     return result, res
 

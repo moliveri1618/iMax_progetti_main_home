@@ -48,12 +48,12 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
     inserted_rows_parametri, result_parametri = replace_or_insert_parametri(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id)
     
     # Calculate and save Conteggi Commessa for user_id
-    inserted_rows_conteggiCommessa = replace_or_insert_conteggi_commessa(session=session,user_id=user_id,parametri=result_parametri)
+    #inserted_rows_conteggiCommessa = replace_or_insert_conteggi_commessa(session=session,user_id=user_id,parametri=result_parametri)
     
     return {
         "inserted_rows_parametriDaInserire": inserted_rows_parametriDaInserire,
         "inserted_rows_parametri": inserted_rows_parametri,
-        "inserted_rows_conteggiCommessa": inserted_rows_conteggiCommessa,
+        #"inserted_rows_conteggiCommessa": inserted_rows_conteggiCommessa,
     }
 
 

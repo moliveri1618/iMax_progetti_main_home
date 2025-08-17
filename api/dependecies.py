@@ -31,7 +31,7 @@ logger.setLevel(logging.INFO)
 
 
 # Db stuff & Initialize tables
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL, echo=False)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine) # creates the database tables based on the modelds defined using SQLModel
