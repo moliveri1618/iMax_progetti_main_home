@@ -112,53 +112,53 @@ def get_ordini_premi_by_user(
     rows.sort(key=lambda r: month_key(r.mese))
     return rows
 
-@router.post("/bulk", response_model=List[ParametriDaInserireRead])
-def bulk_upsert(
-    payload: ParametriBulkUpdate,
-    session: Session = Depends(get_db)
-):
-    results = []
-    for item in payload.table:
-        if item.id:
-            # Try to get existing row
-            parametro_db = session.get(ParametriDaInserire, item.id)
-            if parametro_db:
-                # Update fields
-                for key, value in item.dict(exclude_unset=True).items():
-                    setattr(parametro_db, key, value)
-                session.add(parametro_db)
-                results.append(parametro_db)
-            else:
-                # If ID given but not found, create new
-                new_param = ParametriDaInserire(**item.dict(exclude={"id"}))
-                session.add(new_param)
-                results.append(new_param)
-        else:
-            # Create new record
-            new_param = ParametriDaInserire(**item.dict(exclude={"id"}))
-            session.add(new_param)
-            results.append(new_param)
+# @router.post("/bulk", response_model=List[ParametriDaInserireRead])
+# def bulk_upsert(
+#     payload: ParametriBulkUpdate,
+#     session: Session = Depends(get_db)
+# ):
+#     results = []
+#     for item in payload.table:
+#         if item.id:
+#             # Try to get existing row
+#             parametro_db = session.get(ParametriDaInserire, item.id)
+#             if parametro_db:
+#                 # Update fields
+#                 for key, value in item.dict(exclude_unset=True).items():
+#                     setattr(parametro_db, key, value)
+#                 session.add(parametro_db)
+#                 results.append(parametro_db)
+#             else:
+#                 # If ID given but not found, create new
+#                 new_param = ParametriDaInserire(**item.dict(exclude={"id"}))
+#                 session.add(new_param)
+#                 results.append(new_param)
+#         else:
+#             # Create new record
+#             new_param = ParametriDaInserire(**item.dict(exclude={"id"}))
+#             session.add(new_param)
+#             results.append(new_param)
 
-    session.commit()
+#     session.commit()
 
-    # Refresh all updated/created items
-    for param in results:
-        session.refresh(param)
+#     # Refresh all updated/created items
+#     for param in results:
+#         session.refresh(param)
 
-    return results
+#     return results
 
 
-# CREATE
-@router.post("", response_model=ParametriDaInserireRead)
-def create_parametro(
-        parametro: ParametriDaInserireCreate, 
-        session: Session = Depends(get_db)
-    ):
-        db_parametro = ParametriDaInserire.model_validate(parametro)
-        session.add(db_parametro)
-        session.commit()
-        session.refresh(db_parametro)
-        return db_parametro
+# # CREATE
+# @router.post("", response_model=ParametriDaInserireRead)
+# def create_parametro(
+#         parametro: ParametriDaInserireCreate, 
+#         session: Session = Depends(get_db)
+#     ):
+#         db_parametro = ParametriDaInserire.model_validate(parametro)
+#         session.add(db_parametro)
+#         session.commit()
+#         session.refresh(db_parametro)
+#         return db_parametro
 
 
 # READ ALL or filter by user id if provided
@@ -171,41 +171,41 @@ def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)
     return items
 
 
-# READ BY ID
-@router.get("/{parametro_id}", response_model=ParametriDaInserireRead)
-def get_parametro(parametro_id: int, session: Session = Depends(ParametriDaInserireRead)):
-    parametro = session.get(ParametriDaInserire, parametro_id)
-    if not parametro:
-        raise HTTPException(status_code=404, detail="Parametro not found")
-    return parametro
+# # READ BY ID
+# @router.get("/{parametro_id}", response_model=ParametriDaInserireRead)
+# def get_parametro(parametro_id: int, session: Session = Depends(ParametriDaInserireRead)):
+#     parametro = session.get(ParametriDaInserire, parametro_id)
+#     if not parametro:
+#         raise HTTPException(status_code=404, detail="Parametro not found")
+#     return parametro
 
 
-# UPDATE
-@router.put("/{parametro_id}", response_model=ParametriDaInserireRead)
-def update_parametro(parametro_id: int, parametro_update: ParametriDaInserireUpdate, session: Session = Depends(get_db)):
-    parametro_db = session.get(ParametriDaInserire, parametro_id)
-    if not parametro_db:
-        raise HTTPException(status_code=404, detail="Parametro not found")
+# # UPDATE
+# @router.put("/{parametro_id}", response_model=ParametriDaInserireRead)
+# def update_parametro(parametro_id: int, parametro_update: ParametriDaInserireUpdate, session: Session = Depends(get_db)):
+#     parametro_db = session.get(ParametriDaInserire, parametro_id)
+#     if not parametro_db:
+#         raise HTTPException(status_code=404, detail="Parametro not found")
 
-    # Update only provided fields
-    parametro_data = parametro_update.dict(exclude_unset=True)
-    for key, value in parametro_data.items():
-        setattr(parametro_db, key, value)
+#     # Update only provided fields
+#     parametro_data = parametro_update.dict(exclude_unset=True)
+#     for key, value in parametro_data.items():
+#         setattr(parametro_db, key, value)
 
-    session.add(parametro_db)
-    session.commit()
-    session.refresh(parametro_db)
-    return parametro_db
+#     session.add(parametro_db)
+#     session.commit()
+#     session.refresh(parametro_db)
+#     return parametro_db
 
 
-# DELETE
-@router.delete("/{parametro_id}")
-def delete_parametro(parametro_id: int, session: Session = Depends(get_db)):
-    parametro = session.get(ParametriDaInserire, parametro_id)
-    if not parametro:
-        raise HTTPException(status_code=404, detail="Parametro not found")
+# # DELETE
+# @router.delete("/{parametro_id}")
+# def delete_parametro(parametro_id: int, session: Session = Depends(get_db)):
+#     parametro = session.get(ParametriDaInserire, parametro_id)
+#     if not parametro:
+#         raise HTTPException(status_code=404, detail="Parametro not found")
 
-    session.delete(parametro)
-    session.commit()
-    return {"message": "Parametro deleted successfully"}
+#     session.delete(parametro)
+#     session.commit()
+#     return {"message": "Parametro deleted successfully"}
 
