@@ -71,7 +71,7 @@ def get_budget_venduto_calcoli_by_user(
     sorted by calendar month (gennaio..dicembre).
     """
     stmt = select(BudgetVendutoCalcoli).where(BudgetVendutoCalcoli.user_id == user_id)
-    rows = session.exec(stmt).scalars().all() 
+    rows = session.exec(stmt).all() 
 
     def month_key(m: Optional[str]) -> int:
         if not m:
@@ -99,7 +99,7 @@ def get_ordini_premi_by_user(
     sorted by calendar month (gennaio..dicembre).
     """
     stmt = select(OrdiniPremi).where(OrdiniPremi.user_id == user_id)
-    rows = session.exec(stmt).scalars().all()  # ensure ORM objects
+    rows = session.exec(stmt).all()  # ensure ORM objects
 
     def month_key(m: Optional[str]) -> int:
         if not m:
@@ -167,7 +167,7 @@ def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)
     stmt = select(ParametriDaInserire)
     if user_id:
         stmt = stmt.where(ParametriDaInserire.user_id == user_id)
-    items = session.exec(stmt).scalars().all()  
+    items = session.exec(stmt).all()  
     return items
 
 
