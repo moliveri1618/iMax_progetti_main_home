@@ -4,6 +4,9 @@ from sqlmodel import Session, select, delete
 from datetime import datetime, date
 from sqlalchemy import select
 from pprint import pprint
+from typing import Any, Dict, List, Optional, Sequence
+import json
+
 import sys
 import os
 
@@ -17,6 +20,28 @@ from models.vendite import VenditeImax
 from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
 from models.iConteggiCommessa import OrdiniPremi
 
+
+
+def json_to_dict(rows: Optional[Sequence[Any]]) -> Optional[List[Dict[str, Any]]]:
+    if rows is None:
+        return None
+    out: List[Dict[str, Any]] = []
+    for r in rows:
+        if isinstance(r, str):
+            try:
+                r = json.loads(r)
+            except Exception:
+                # skip or raise depending on your needs
+                continue
+        if hasattr(r, "model_dump"):     # Pydantic v2 / SQLModel new
+            out.append(r.model_dump())
+        elif hasattr(r, "dict"):         # Pydantic v1 / SQLModel old
+            out.append(r.dict())
+        elif isinstance(r, dict):
+            out.append(r)
+        else:
+            raise TypeError(f"Unexpected row type: {type(r)!r}")
+    return out
 
 def compute_progressivi_mensili(obiettivi: List[float]) -> List[float]:
     cumul = 0.0

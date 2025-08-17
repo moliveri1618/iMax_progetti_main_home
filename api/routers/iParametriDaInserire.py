@@ -2,7 +2,8 @@
 
 from fastapi import APIRouter, HTTPException, Depends, status, Body
 from sqlmodel import Session, select, delete
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Sequence
+import json
 import sys
 import os
 
@@ -24,11 +25,16 @@ from dependecies import get_db
 router = APIRouter()
 
 
+
+
 @router.put("/parametri/{user_id}",response_model=Dict[str, int],status_code=status.HTTP_200_OK,)
 def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[ParametriRowIn]] = Body(default=None),session: Session = Depends(get_db)):
     
+    # Convert payload to dict if not None
+    rows = json_to_dict(rows) 
+    
     # Insert PARAMETRI DA INSERIRE for user_id
-    inserted_rows_parametriDaInserire = replace_or_insert_parametriDaInserire(session=session,user_id=user_id,rows=None if rows is None else [r.model_dump() for r in rows],treat_empty_list_as_template=True,)
+    inserted_rows_parametriDaInserire = replace_or_insert_parametriDaInserire(session=session,user_id=user_id,rows=rows,treat_empty_list_as_template=True,)
     
     # Calculate and save PARAMETRI for user_id
     inserted_rows_parametri, result_parametri = replace_or_insert_parametri(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id)
