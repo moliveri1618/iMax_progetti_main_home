@@ -85,10 +85,10 @@ async def generate_from_json(data: ReportData):
     pdf.set_font("Arial", size=12)
 
     def write_cell(w, h, text='', fill=False, align='L', bold=False):
-        if bold:
-            pdf.set_font(style="B")
-        else:
-            pdf.set_font(style="")
+        family = pdf.font_family or "Arial"
+        size = pdf.font_size_pt or 12
+        style = "B" if bold else ""
+        pdf.set_font(family, style=style, size=size)
         pdf.cell(w, h, text, border=1, fill=fill, align=align)
 
     pdf.set_fill_color(255, 255, 0)  # yellow
@@ -175,7 +175,11 @@ async def generate_from_json(data: ReportData):
     # SEND EMAIL
     send_email()
 
-    buffer = io.BytesIO(pdf.output(dest='S'))
+    content = pdf.output(dest='S')
+    if isinstance(content, str):  # pyfpdf returns str
+        buffer = io.BytesIO(content.encode('latin-1'))
+    else:  # fpdf2 returns bytes
+        buffer = io.BytesIO(content)
     return StreamingResponse(buffer, media_type="application/pdf", headers={
         "Content-Disposition": "attachment; filename=posa_layout.pdf"
     })
