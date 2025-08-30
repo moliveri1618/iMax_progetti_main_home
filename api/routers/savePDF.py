@@ -1,28 +1,18 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 import sys
 import os
 import io
-from fastapi import HTTPException
-from fastapi.responses import FileResponse
-import uuid
 import os
 from fpdf import FPDF
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from typing import List
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
 
-from schemas.savePDF import RecordData
-
 router = APIRouter()
 
-
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from typing import List
-from fpdf import FPDF
-import io
 
 class MaterialeItem(BaseModel):
     materiale: str
@@ -42,6 +32,49 @@ class ReportData(BaseModel):
     per_numero_posatori: str
 
 router = APIRouter()
+
+
+### TEST OBJ ###
+'''
+{
+  "cliente": "Mario Rossi",
+  "ordine": "ORD-2025-001",
+  "squadra_posatori": "Squadra A",
+  "stato_posa": "Completata",
+  "resta_da_fare": "Nessuna attività residua",
+  "cliente_materiale_mancante": [
+    {
+      "materiale": "Vite autofilettante",
+      "ordinare": true,
+      "magazzino": false,
+      "verificare": false
+    },
+    {
+      "materiale": "Silicone trasparente",
+      "ordinare": false,
+      "magazzino": true,
+      "verificare": true
+    }
+  ],
+  "cliente_materiale_rientrato": [
+    {
+      "materiale": "Guarnizione",
+      "ordinare": false,
+      "magazzino": true,
+      "verificare": false
+    },
+    {
+      "materiale": "Tasselli",
+      "ordinare": false,
+      "magazzino": false,
+      "verificare": true
+    }
+  ],
+  "ore_previste_finitura": "4 ore",
+  "per_numero_posatori": "2"
+}
+'''
+
 
 @router.post("/post-vendita/generate-from-json")
 async def generate_from_json(data: ReportData):
@@ -136,6 +169,9 @@ async def generate_from_json(data: ReportData):
     write_cell(30, 10, "FALSE", fill=True)
     write_cell(30, 10, "FALSE", fill=True)
     pdf.ln()
+    
+    # SEND EMAIL
+    #send_email()
 
     buffer = io.BytesIO(pdf.output(dest='S'))
     return StreamingResponse(buffer, media_type="application/pdf", headers={
