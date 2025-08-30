@@ -172,14 +172,16 @@ async def generate_from_json(data: ReportData):
     write_cell(30, 10, "FALSE", fill=True)
     pdf.ln()
     
-    # SEND EMAIL
-    send_email()
-
     content = pdf.output(dest='S')
-    if isinstance(content, str):  # pyfpdf returns str
-        buffer = io.BytesIO(content.encode('latin-1'))
-    else:  # fpdf2 returns bytes
-        buffer = io.BytesIO(content)
+    if isinstance(content, str):
+        pdf_bytes = content.encode('latin-1')
+    else:
+        pdf_bytes = content
+    
+    # SEND EMAIL
+    send_email(pdf_bytes, filename="posa_layout.pdf")
+
+    buffer = io.BytesIO(pdf_bytes)
     return StreamingResponse(buffer, media_type="application/pdf", headers={
         "Content-Disposition": "attachment; filename=posa_layout.pdf"
     })

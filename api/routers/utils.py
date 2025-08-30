@@ -5,9 +5,12 @@ from datetime import datetime, date
 from pprint import pprint
 from typing import Any, Dict, List, Optional, Sequence
 import json
+
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+
 import sys
 import os
 
@@ -534,7 +537,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametr
     return result
 
 
-def send_email():
+def send_email(pdf_bytes=None, filename="posa_layout.pdf"):
     print("Sending email...")
     
     sender_email = "lastiada1@gmail.com"
@@ -545,12 +548,19 @@ def send_email():
     body = "Hello, this is a test email sent from Python!"
 
     try:
+        
         # Create email message
         message = MIMEMultipart()
         message["From"] = sender_email
         message["To"] = receiver_email
         message["Subject"] = subject
         message.attach(MIMEText(body, "plain"))
+        
+        # ✅ attach PDF if provided
+        if pdf_bytes:
+            pdf_part = MIMEApplication(pdf_bytes, _subtype="pdf")
+            pdf_part.add_header("Content-Disposition", "attachment", filename=filename)
+            message.attach(pdf_part)
 
         # Connect to SMTP and send
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
