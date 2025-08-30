@@ -10,6 +10,8 @@ from typing import List
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
+    
+from routers.utils import send_email
 
 router = APIRouter()
 
@@ -171,7 +173,7 @@ async def generate_from_json(data: ReportData):
     pdf.ln()
     
     # SEND EMAIL
-    #send_email()
+    send_email()
 
     buffer = io.BytesIO(pdf.output(dest='S'))
     return StreamingResponse(buffer, media_type="application/pdf", headers={

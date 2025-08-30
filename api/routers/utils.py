@@ -530,3 +530,9 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametr
     result = delete_replace_ordini_premi(session, user_id, res)
    
     return result
+
+
+def send_email():
+    print("Sending email...")
+    
+    return True
