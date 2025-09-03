@@ -33,6 +33,15 @@ class MaterialeItem(BaseModel):
     magazzino: Optional[bool] = None
     verificare: Optional[bool] = None
 
+
+class ClienteLavoro(BaseModel):
+    id: Optional[int] = None
+    cliente: Optional[str] = None
+    switch1: Optional[bool] = None
+    switch2: Optional[bool] = None
+    switch3: Optional[bool] = None
+
+
 class Tecnico(BaseModel):
     cliente_materiale_mancante: Optional[List[MaterialeItem]] = None
     cliente_materiale_rientrato: Optional[List[MaterialeItem]] = None
@@ -76,6 +85,7 @@ class Tecnico(BaseModel):
     errore_misure_ordine: Optional[bool] = None
     errore_calcolo_tempo_disposizione: Optional[bool] = None
     errore_materiale_contratto: Optional[bool] = None
+    cliente_lavori_eseguiti: Optional[List[ClienteLavoro]] = None
 
     signature: Optional[str] = None
 
@@ -84,13 +94,7 @@ class Tecnico(BaseModel):
         "extra": "ignore",          
     }
     
-    
-class ClienteLavoro(BaseModel):
-    id: Optional[int] = None
-    cliente: Optional[str] = None
-    switch1: Optional[bool] = None
-    switch2: Optional[bool] = None
-    switch3: Optional[bool] = None
+
     
 class Cliente(BaseModel):
     cliente_ticket_n: Optional[str] = None
@@ -107,7 +111,6 @@ class Cliente(BaseModel):
     tempo_previsto_ore_cliente: Optional[str] = None
     data_cliente: Optional[datetime] = None
     cellulare_cliente_cliente: Optional[str] = None
-    cliente_lavori_eseguiti: Optional[List[ClienteLavoro]] = None
     signature_cliente_posatore: Optional[str] = None
     signature_cliente_cliente: Optional[str] = None
     note_cliente: Optional[str] = None
@@ -786,7 +789,6 @@ def build_report_pdf(data):
 
 def build_report_pdf2(data):
     t = getattr(data, "tecnico", None) or type("Empty", (), {})()
-    print(t)
 
     def gv(name, default=""):
         """get value from tecnico, defaulting to '' (or provided) if missing/None"""
@@ -860,7 +862,6 @@ def build_report_pdf2(data):
         # restore default fill color (yellow, per your example)
         pdf.set_fill_color(255, 255, 0)
 
-
     def draw_checkbox(pdf, x, y, size=5, checked=False):
         # outer yellow box
         pdf.set_draw_color(0, 0, 0)
@@ -880,11 +881,10 @@ def build_report_pdf2(data):
             pdf.line(x + size*0.45, y + size - 0.9, x + size - 0.8, y + 1.0)
         pdf.set_line_width(0.2)  # reset
 
-
-    def checkbox_cell(pdf, cell_w, cell_h, label, checked):
+    def checkbox_cell(pdf, cell_w, cell_h, label, checked, font_size=12):
         x0, y0 = pdf.get_x(), pdf.get_y()
 
-        # Draw the cell border (keeps table grid continuous)
+        # Draw the cell border
         pdf.rect(x0, y0, cell_w, cell_h)
 
         # Draw checkbox inside the cell
@@ -893,115 +893,169 @@ def build_report_pdf2(data):
         box_y = y0 + (cell_h - box_size) / 2
         draw_checkbox(pdf, box_x, box_y, size=box_size, checked=checked)
 
+        # Save current font size
+        current_font = pdf.font_family
+        current_style = pdf.font_style
+        current_size = pdf.font_size_pt
+
+        # Set smaller font
+        pdf.set_font(current_font, current_style, font_size)
+
         # Write label next to the checkbox
         label_x = box_x + box_size + 3
         pdf.set_xy(label_x, y0)
         pdf.cell(cell_w - (label_x - x0), cell_h, label, border=0, align="L")
 
+        # Restore font
+        pdf.set_font(current_font, current_style, current_size)
+
         # Move cursor to end of cell
         pdf.set_xy(x0 + cell_w, y0)
 
+    def checkbox_cell_right(pdf, cell_w, cell_h, label, checked, font_size=12):
+        x0, y0 = pdf.get_x(), pdf.get_y()
 
-    # Header
+        # Draw the cell border
+        pdf.rect(x0, y0, cell_w, cell_h)
+
+        # Save current font
+        current_font = pdf.font_family
+        current_style = pdf.font_style
+        current_size = pdf.font_size_pt
+
+        # Set font for label
+        pdf.set_font(current_font, current_style, font_size)
+
+        # Write the label (leave room for checkbox at the right side)
+        pdf.set_xy(x0 + 2, y0)
+        pdf.cell(cell_w - 10, cell_h, label, border=0, align="L")
+
+        # Draw checkbox on the right
+        box_size = 5
+        box_x = x0 + cell_w - box_size - 2
+        box_y = y0 + (cell_h - box_size) / 2
+        draw_checkbox(pdf, box_x, box_y, size=box_size, checked=checked)
+
+        # Restore font
+        pdf.set_font(current_font, current_style, current_size)
+
+        # Move cursor to end of cell
+        pdf.set_xy(x0 + cell_w, y0)
+
+    # region Header
     pdf.set_font("Arial", style="B", size=14)
     pdf.cell(0, 10, "Report Commessa Posa in Opera", ln=True, align='C')
     pdf.set_font("Arial", size=12)
     pdf.ln(3)
+    # endregion
 
-    # ---------- Top grid (like screenshot header) ----------
-    # Row 1: Ticket / Del / Data
+    # region Ticket / Del / Data
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Ticket N°", fill=True, bold=True)
     write_cell(60, 8, gv("ticket_n"))
     write_cell(20, 8, "Del", fill=True, bold=True)
     write_cell(80, 8, gv("del"))
     pdf.ln()
-    
-    # ➜ green separator
     green_rule(height=2)   
-
-    # Row 2: Cliente / Ordine N°
+    # endregion
+    
+    # region Cliente / Ordine N°
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Cliente", fill=True, bold=True)
     write_cell(60, 8, gv("cliente"))
     write_cell(30, 8, "Ordine N°", fill=True, bold=True)
     write_cell(70, 8, gv("ordine_n"))
     pdf.ln()
+    # endregion
 
-    # Row 3: Indirizzo / Città
+    # region Indirizzo / Città
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Indirizzo", fill=True, bold=True)
     write_cell(60, 8, gv("indirizzo"))
     write_cell(30, 8, "Città", fill=True, bold=True)
     write_cell(70, 8, gv("citta"))
     pdf.ln()
+    # endregion
 
-    # Row 4: Telefono fisso / Cellulare
+    # region Telefono fisso / Cellulare
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Telefono fisso", fill=True, bold=True)
     write_cell(60, 8, gv("telefono_fisso"))
     write_cell(30, 8, "Cellulare", fill=True, bold=True)
     write_cell(70, 8, gv("cellulare"))
     pdf.ln()
-    
-    # ➜ green separator
     green_rule(height=2)   
+    # endregion
 
-    # Row 5: Persona di riferimento / Posatore / SQUADRA
+    # region Persona di riferimento / Posatore / SQUADRA
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Persona rif", fill=True, bold=True)
     write_cell(60, 8, gv("persona_rif"))
     write_cell(30, 8, "Cellulare", fill=True, bold=True)
     write_cell(70, 8, gv("cellulare"))
     pdf.ln()
+    # endregion
     
-    # postatore / squadra
+    # region postatore / squadra
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Posatore", fill=True, bold=True)
     write_cell(60, 8, gv("posatore"))
     write_cell(30, 8, "SQUADRA", fill=True, bold=True)
     write_cell(70, 8, gv("squadra"))
     pdf.ln()
+    # endregion
 
-    # Row 6: Tempo prev. ore / Intervento pianificato / Data & Ora
+    # region Tempo prev. ore / Intervento pianificato / Data & Ora
     pdf.set_fill_color(230, 230, 230)
     write_cell(50, 8, "Tempo PREVISTO ORE", fill=True, bold=True)
     write_cell(40, 8, gv("tempo_previsto_ore"))
     write_cell(50, 8, "Intervento pianificato x:", fill=True, bold=True)
     date_str, time_str = fmt_dt("int_pian_data_ora")
     pdf.set_fill_color(255, 255, 0)
-    write_cell(30, 8, date_str)  
-    write_cell(20, 8, time_str)  
+    write_cell(30, 8, date_str, fill=True)  
+    write_cell(20, 8, time_str, fill=True)  
     pdf.ln()
+    green_rule(height=2)  
+    # endregion 
     
-    # ➜ green separator
-    green_rule(height=2)   
-    
-    # ---------- Stato/Informazioni/Tipo ----------
-    # Stato Lavoro
-    pdf.set_fill_color(204, 255, 204)  # light pastel green
+    # region Stato Lavoro
+    pdf.set_fill_color(204, 255, 204) 
     write_cell(50, 8, "STATO LAVORO", bold=True, fill=True)
     checkbox_cell(pdf, 40, 8, "Completato", checked=gvb("stato_lavoro"))
-    checkbox_cell(pdf, 90, 8, "Da Completare", checked=not gvb("stato_lavoro"))
+    checkbox_cell(pdf, 100, 8, "Da Completare", checked=not gvb("stato_lavoro"))
     pdf.ln()
+    green_rule(height=2)  
+    # endregion
 
-    # # Informazioni
-    # write_cell(50, 8, "Informazioni", bold=True, fill=True)
-    # write_cell(60, 8, "Già Cliente", fill=gvb("informazioni"))
-    # write_cell(80, 8, "E' STATO ESEGUITO IL SOPRALLUOGO", fill=False)  # not in schema
-    # pdf.ln()
+    # region Informazioni
+    pdf.set_fill_color(204, 255, 204)
+    write_cell(50, 8, "Informazioni", bold=True, fill=True)
+    checkbox_cell(pdf, 60, 8, "Già Cliente", checked=gvb("informazioni"))
+    checkbox_cell(pdf, 80, 8, "E' STATO ESEGUITO IL SOPRALLUOGO", checked=gvb("informazioni"), font_size=10)  
+    pdf.ln()
+    green_rule(height=2)  
+    # endregion
 
-    # # Tipo Riparazione
-    # write_cell(50, 8, "Tipo Riparazione", bold=True, fill=True)
-    # # heuristic: True -> STD, False -> Garanzia
-    # write_cell(60, 8, "Riparazione STD", fill=gvb("tipo_riparazione"))
-    # write_cell(80, 8, "Riparazione in Garanzia", fill=(not gvb("tipo_riparazione")))
-    # pdf.ln(3)
-
-    # # ---------- Cose da fare ----------
-    # section_title("Cose da fare")
-    # write_cell(190, 8, "")  # free-text area you can fill later from another field if desired
-    # pdf.ln(12)
+    # region Tipo Riparazione
+    pdf.set_fill_color(204, 255, 204)
+    write_cell(50, 8, "Tipo Riparazione", bold=True, fill=True)
+    checkbox_cell(pdf, 60, 8, "Riparazione STD", checked=gvb("tipo_riparazione"))
+    checkbox_cell(pdf, 80, 8, "Riparazione in Garanzia", checked=(not gvb("tipo_riparazione")))
+    pdf.ln()
+    # endregion
+    
+    # region Cose da fare
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(190, 8, "Cose da fare", bold=True, fill=True, align='C')
+    pdf.ln()
+    # endregion
+    
+    # region Elenco Cose da fare
+    for item in gvl("cliente_lavori_eseguiti"):
+        checkbox_cell_right(pdf, 190, 8, item.cliente or "", checked=bool(item.switch1))
+        pdf.ln()
+    # endregion
+        
 
     # # ---------- Materiale mancante ----------
     # section_title("Materiale mancante")
