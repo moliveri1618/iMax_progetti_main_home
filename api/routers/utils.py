@@ -8,7 +8,7 @@ import json
 from pydantic import BaseModel, Field
 from fpdf import FPDF
 import base64, tempfile
-
+import logging, time
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -26,6 +26,7 @@ from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MON
 from models.vendite import VenditeImax
 from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
 from models.iConteggiCommessa import OrdiniPremi
+logger = logging.getLogger(__name__)
 
 
 class MaterialeItem(BaseModel):
@@ -751,7 +752,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametr
    
     return result
 
-def send_email(receiver_email, pdf_bytes=None):
+def send_email(receiver_email, filename, pdf_bytes=None):
     print("Sending email...")
     
     sender_email = "lastiada1@gmail.com"
@@ -772,7 +773,7 @@ def send_email(receiver_email, pdf_bytes=None):
         # ✅ attach PDF if provided
         if pdf_bytes:
             pdf_part = MIMEApplication(pdf_bytes, _subtype="pdf")
-            pdf_part.add_header("Content-Disposition", "attachment", filename='report_intervento_tecnico.pdf')
+            pdf_part.add_header("Content-Disposition", "attachment", filename=filename)
             message.attach(pdf_part)
 
         # Connect to SMTP and send
@@ -799,7 +800,30 @@ def send_email(receiver_email, pdf_bytes=None):
         return {"status_code": code, "error": err}
     except Exception as e:
         return {"status_code": 500, "error": str(e)}
-    
+
+def send_email_with_retry(
+    to_email: str,
+    pdf_bytes: bytes,
+    filename: str,
+    *,
+    max_attempts: int = 3,
+    backoff_seconds: float = 2.0,
+):
+    """Blocking send with simple retry/backoff. Safe to run in BackgroundTasks."""
+    attempt = 0
+    last_err: Optional[Exception] = None
+    while attempt < max_attempts:
+        attempt += 1
+        try:
+            logger.info("Email attempt %s to %s", attempt, to_email)
+            send_email(to_email, filename, pdf_bytes)
+            return
+        except Exception as e:
+            last_err = e
+            logger.warning("Email attempt %s failed: %s", attempt, e)
+            time.sleep(backoff_seconds * (2 ** (attempt - 1)))
+
+    logger.error("Email failed after %s attempts: %s", max_attempts, last_err)
     
 
 def build_report_pdf(data):
