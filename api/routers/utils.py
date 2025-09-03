@@ -715,10 +715,8 @@ def build_report_pdf(data):
 
     # Stato POSA
     write_cell(50, 10, "STATO 1° POSA", bold=True, fill=True)
-    write_cell(70, 10, "Completata" if data.stato_posa == "Completata" else "",
-               fill=(data.stato_posa == "Completata"))
-    write_cell(70, 10, "Da Completare" if data.stato_posa != "Completata" else "",
-               fill=(data.stato_posa != "Completata"))
+    write_cell(70, 10, "Completata" if data.stato_posa == "Completata" else "",fill=(data.stato_posa == "Completata"))
+    write_cell(70, 10, "Da Completare" if data.stato_posa != "Completata" else "",fill=(data.stato_posa != "Completata"))
     pdf.ln()
 
     # Resta da fare
@@ -876,133 +874,73 @@ def build_report_pdf2(data):
             pdf.line(x + size*0.45, y + size - 0.9, x + size - 0.8, y + 1.0)
         pdf.set_line_width(0.2)  # reset
 
-    def checkbox_cell(pdf, cell_w, cell_h, label, checked, font_size=12):
-        x0, y0 = pdf.get_x(), pdf.get_y()
-
-        # Draw the cell border
-        pdf.rect(x0, y0, cell_w, cell_h)
-
-        # Draw checkbox inside the cell
-        box_size = 5
-        box_x = x0 + 2
-        box_y = y0 + (cell_h - box_size) / 2
-        draw_checkbox(pdf, box_x, box_y, size=box_size, checked=checked)
-
-        # Save current font size
-        current_font = pdf.font_family
-        current_style = pdf.font_style
-        current_size = pdf.font_size_pt
-
-        # Set smaller font
-        pdf.set_font(current_font, current_style, font_size)
-
-        # Write label next to the checkbox
-        label_x = box_x + box_size + 3
-        pdf.set_xy(label_x, y0)
-        pdf.cell(cell_w - (label_x - x0), cell_h, label, border=0, align="L")
-
-        # Restore font
-        pdf.set_font(current_font, current_style, current_size)
-
-        # Move cursor to end of cell
-        pdf.set_xy(x0 + cell_w, y0)
-
-    def checkbox_cell_right(pdf, cell_w, cell_h, label, checked, font_size=12):
-        x0, y0 = pdf.get_x(), pdf.get_y()
-
-        # Draw the cell border
-        pdf.rect(x0, y0, cell_w, cell_h)
-
-        # Save current font
-        current_font = pdf.font_family
-        current_style = pdf.font_style
-        current_size = pdf.font_size_pt
-
-        # Set font for label
-        pdf.set_font(current_font, current_style, font_size)
-
-        # Write the label (leave room for checkbox at the right side)
-        pdf.set_xy(x0 + 2, y0)
-        pdf.cell(cell_w - 10, cell_h, label, border=0, align="L")
-
-        # Draw checkbox on the right
-        box_size = 5
-        box_x = x0 + cell_w - box_size - 2
-        box_y = y0 + (cell_h - box_size) / 2
-        draw_checkbox(pdf, box_x, box_y, size=box_size, checked=checked)
-
-        # Restore font
-        pdf.set_font(current_font, current_style, current_size)
-
-        # Move cursor to end of cell
-        pdf.set_xy(x0 + cell_w, y0)
-
-    # def three_checkbox_cell_right(pdf, cell_h, materiale,
-    #                             ordinare=False, magazzino=False, verificare=False,
-    #                             green_rgb=(0, 255, 0)):
-    #     """
-    #     Draw a row with Materiale description and 3 checkboxes (Ordinare, Magaz., Verificare).
-    #     If a checkbox is checked, its whole cell background is green.
-    #     """
-    #     x0, y0 = pdf.get_x(), pdf.get_y()
-
-    #     # --- Materiale cell (left column) ---
-    #     pdf.rect(x0, y0, 100, cell_h)
-    #     pdf.set_xy(x0 + 2, y0)
-    #     pdf.cell(100 - 4, cell_h, materiale or "", border=0, align="L")
-
-    #     # --- Helper for the 3 checkbox cells ---
-    #     def box_cell(x, checked):
-    #         if checked:
-    #             pdf.set_fill_color(*green_rgb)
-    #             pdf.rect(x, y0, 30, cell_h, 'DF')   # green background
-    #         else:
-    #             pdf.set_fill_color(255, 255, 255)
-    #             pdf.rect(x, y0, 30, cell_h, 'DF')   # white background
-
-    #         # Draw checkbox inside
-    #         size = 5
-    #         box_x = x + (30 - size) / 2
-    #         box_y = y0 + (cell_h - size) / 2
-    #         draw_checkbox(pdf, box_x, box_y, size=size, checked=checked)
-
-    #     # --- Three checkbox cells ---
-    #     box_cell(x0 + 100, ordinare)
-    #     box_cell(x0 + 130, magazzino)
-    #     box_cell(x0 + 160, verificare)
-
-    #     # --- Move cursor to next row ---
-    #     pdf.set_xy(x0, y0 + cell_h)
-
-    def three_checkbox_cell_right_optional(pdf, cell_h, materiale, ordinare=False, magazzino=False, verificare=False):
+    def three_checkbox_cell_right_optional(
+        pdf,
+        cell_h,
+        materiale,
+        ordinare=None,
+        magazzino=None,
+        verificare=None,
+        *,
+        green_rgb=(0, 255, 0),
+        yellow_rgb=(255, 255, 0),
+    ):
         """
-        Draw a row with Materiale description and up to 3 checkboxes (Ordinare, Magaz., Verificare).
-        If a value is falsy (False, None, ""), the checkbox won't be drawn but the cell remains.
+        States:
+        True   -> green background + checkbox with checkmark
+        False  -> yellow background + empty checkbox
+        None/""-> horizontal lines only (no box, no fill)
         """
         x0, y0 = pdf.get_x(), pdf.get_y()
 
-        # Materiale cell (wide left column)
-        pdf.rect(x0, y0, 100, cell_h)
+        # Left description cell
+        pdf.set_fill_color(255, 255, 255)
+        pdf.rect(x0, y0, 100, cell_h, 'F')  # fill only, no border
+        pdf.set_draw_color(0, 0, 0)
+        pdf.line(x0, y0, x0 + 100, y0)              # top line
+        pdf.line(x0, y0 + cell_h, x0 + 100, y0 + cell_h)  # bottom line
         pdf.set_xy(x0 + 2, y0)
-        pdf.cell(100 - 4, cell_h, materiale or "", border=0, align="L")
+        pdf.cell(96, cell_h, materiale or "", border=0, align="L")
 
-        # Helper to draw one checkbox cell
-        def box_cell(x, checked):
-            pdf.rect(x, y0, 30, cell_h)  # border always drawn
-            if checked:  # only draw checkbox if value is truthy
+        def norm_state(v):
+            if v is True:
+                return "checked"
+            if v is False:
+                return "unchecked"
+            if v is None or (isinstance(v, str) and v.strip() == ""):
+                return "empty"
+            return "checked" if bool(v) else "unchecked"
+
+        def box_cell(x, v):
+            state = norm_state(v)
+
+            if state == "checked":
+                pdf.set_fill_color(*green_rgb)
+                pdf.rect(x, y0, 30, cell_h, 'DF')
                 size = 5
-                box_x = x + (30 - size) / 2
-                box_y = y0 + (cell_h - size) / 2
-                draw_checkbox(pdf, box_x, box_y, size=size, checked=True)
+                bx = x + (30 - size) / 2
+                by = y0 + (cell_h - size) / 2
+                draw_checkbox(pdf, bx, by, size=size, checked=True)
 
-        # Three checkbox slots
-        box_cell(x0 + 100, bool(ordinare))
-        box_cell(x0 + 130, bool(magazzino))
-        box_cell(x0 + 160, bool(verificare))
+            elif state == "unchecked":
+                pdf.set_fill_color(*yellow_rgb)
+                pdf.rect(x, y0, 30, cell_h, 'DF')
+                size = 5
+                bx = x + (30 - size) / 2
+                by = y0 + (cell_h - size) / 2
+                draw_checkbox(pdf, bx, by, size=size, checked=False)
 
-        # Move cursor to next row
+            else:  # "empty"
+                # only horizontal lines (top and bottom)
+                pdf.set_draw_color(0, 0, 0)
+                pdf.line(x, y0, x + 30, y0)             # top line
+                pdf.line(x, y0 + cell_h, x + 30, y0 + cell_h)  # bottom line
+
+        box_cell(x0 + 100, ordinare)
+        box_cell(x0 + 130, magazzino)
+        box_cell(x0 + 160, verificare)
+
         pdf.set_xy(x0, y0 + cell_h)
-        
 
     def three_checkbox_cell_right(pdf, cell_h, materiale,
                                 ordinare=False, magazzino=False, verificare=False,
@@ -1148,7 +1086,7 @@ def build_report_pdf2(data):
     pdf.set_fill_color(204, 255, 204) 
     write_cell(50, 8, "STATO LAVORO", bold=True, fill=True)
     checkbox_cell_split(pdf, 60, 8, "Completato", checked=gvb("stato_lavoro"))
-    checkbox_cell_split(pdf, 80, 8, "Da Completare", checked=not gvb("stato_lavoro"))
+    checkbox_cell_split(pdf, 82, 8, "Da Completare", checked=not gvb("stato_lavoro"))
     pdf.ln()
     green_rule(height=2)  
 
@@ -1156,7 +1094,7 @@ def build_report_pdf2(data):
     pdf.set_fill_color(204, 255, 204)
     write_cell(50, 8, "Informazioni", bold=True, fill=True)
     checkbox_cell_split(pdf, 60, 8, "Già Cliente", checked=gvb("informazioni"))
-    checkbox_cell_split(pdf, 80, 8, "E' STATO ESEGUITO IL SOPRALLUOGO", checked=gvb("informazioni"), font_size=10)  
+    checkbox_cell_split(pdf, 82, 8, "E' STATO ESEGUITO IL SOPRALLUOGO", checked=gvb("informazioni"), font_size=10)  
     pdf.ln()
     green_rule(height=2)  
 
@@ -1164,7 +1102,7 @@ def build_report_pdf2(data):
     pdf.set_fill_color(204, 255, 204)
     write_cell(50, 8, "Tipo Riparazione", bold=True, fill=True)
     checkbox_cell_split(pdf, 60, 8, "Riparazione STD", checked=gvb("tipo_riparazione"))
-    checkbox_cell_split(pdf, 80, 8, "Riparazione in Garanzia", checked=(not gvb("tipo_riparazione")))
+    checkbox_cell_split(pdf, 82, 8, "Riparazione in Garanzia", checked=(not gvb("tipo_riparazione")))
     pdf.ln()
     
     # Cose da fare
@@ -1182,13 +1120,12 @@ def build_report_pdf2(data):
             materiale=d.get("cliente"),
             ordinare="",
             magazzino="",
-            verificare=d.get("cliente"),
+            verificare=d.get("switch1"),
         )
         
     #  Materiale mancante 
     pdf.set_fill_color(230, 230, 230)
     write_cell(100, 8, "Materiale mancante", bold=True, fill=True)
-    pdf.set_fill_color(255, 255, 255)
     write_cell(30, 8, "Ordinare", bold=True, fill=True, align="C")
     write_cell(30, 8, "Magaz.", bold=True, fill=True, align="C")
     write_cell(30, 8, "Verificare", bold=True, fill=True, align="C")
@@ -1209,7 +1146,6 @@ def build_report_pdf2(data):
     # Materiale rientrato 
     pdf.set_fill_color(230, 230, 230)
     write_cell(100, 8, "Materiale rientrato", bold=True, fill=True)
-    pdf.set_fill_color(255, 255, 255)
     write_cell(30, 8, "Riportare", bold=True, fill=True, align="C")
     write_cell(30, 8, "Reso", bold=True, fill=True, align="C")
     write_cell(30, 8, "Avanzo", bold=True, fill=True, align="C")
@@ -1227,22 +1163,25 @@ def build_report_pdf2(data):
             verificare=bool(d.get("verificare")),
         )
 
-    # for item in gvl("cliente_materiale_rientrato"):
-    #     write_cell(80, 8, getattr(item, "materiale", "") or "")
-    #     write_cell(30, 8, " ", fill=bool(getattr(item, "ordinare", False)))
-    #     write_cell(30, 8, " ", fill=bool(getattr(item, "magazzino", False)))
-    #     write_cell(30, 8, " ", fill=bool(getattr(item, "verificare", False)))
-    #     pdf.ln()
-
-    # pdf.ln(2)
-
-    # # ---------- Ore previste ----------
-    # write_cell(80, 8, "Ore previste riparazioni", bold=True)
-    # write_cell(110, 8, gv("ore_previste_riparazioni"))
-    # pdf.ln()
-    # write_cell(80, 8, "Per numero posatori", bold=True)
-    # write_cell(110, 8, gv("per_numero_posatori"))
-    # pdf.ln(6)
+    # ---------- Ore previste ----------
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(60, 8, "Ore previste per finire rip", fill=True, bold=True)
+    write_cell(40, 8, gv("ore_previste_riparazioni"))
+    write_cell(50, 8, "Per quanti posatori", fill=True, bold=True)
+    write_cell(40, 8, gv("per_numero_posatori"))
+    pdf.ln()
+    
+    # FOTOGRAFIE TUTELA DANNI
+    pdf.set_fill_color(230, 230, 230)
+    three_checkbox_cell_right_optional(
+            pdf, 8,
+            materiale="FOTOGRAFIE PER TUTELA DANNI PRIMA DI INIZIARE I LAVORI",
+            ordinare=None,                 
+            magazzino=None,                
+            verificare=gvb("fotografie_danni_prima_di_iniziare"),
+        )
+    # write_cell(190, 8, "Cose da fare", bold=True, fill=True)
+    pdf.ln()
 
     # # ---------- Sezioni tecniche di errore/danni ----------
     # # TECNICO
