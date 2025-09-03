@@ -431,10 +431,6 @@ def delete_replace_ordini_premi(session, user_id: str, rows: List[Dict]) -> int:
 
 
 
-
-
-
-
 def replace_or_insert_parametriDaInserire(
     session: Session,
     user_id: str,
@@ -785,10 +781,13 @@ def build_report_pdf(data):
     return content.encode('latin-1') if isinstance(content, str) else content
 
 
-
-
 def build_report_pdf2(data):
+    
+    
     t = getattr(data, "tecnico", None) or type("Empty", (), {})()
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
 
     def gv(name, default=""):
         """get value from tecnico, defaulting to '' (or provided) if missing/None"""
@@ -814,10 +813,6 @@ def build_report_pdf2(data):
             return d.strftime("%d/%m/%Y"), d.strftime("%H:%M")
         except Exception:
             return str(v), ""
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
 
     def write_cell(w, h, text='', fill=False, align='L', bold=False):
         family = pdf.font_family or "Arial"
@@ -942,14 +937,71 @@ def build_report_pdf2(data):
         # Move cursor to end of cell
         pdf.set_xy(x0 + cell_w, y0)
 
-    # region Header
+    def three_checkbox_cell_right(pdf, cell_h, materiale, ordinare=False, magazzino=False, verificare=False):
+        """
+        Draw a row with Materiale description and 3 checkboxes (Ordinare, Magaz., Verificare).
+        """
+        x0, y0 = pdf.get_x(), pdf.get_y()
+
+        # Materiale cell (wide left column)
+        pdf.rect(x0, y0, 100, cell_h)
+        pdf.set_xy(x0 + 2, y0)
+        pdf.cell(100 - 4, cell_h, materiale or "", border=0, align="L")
+
+        # Three checkbox cells
+        def box_cell(x, checked):
+            pdf.rect(x, y0, 30, cell_h)
+            size = 5
+            box_x = x + (30 - size) / 2
+            box_y = y0 + (cell_h - size) / 2
+            draw_checkbox(pdf, box_x, box_y, size=size, checked=checked)
+
+        box_cell(x0 + 100, ordinare)
+        box_cell(x0 + 130, magazzino)
+        box_cell(x0 + 160, verificare)
+
+        # Move cursor to next row
+        pdf.set_xy(x0, y0 + cell_h)
+
+    def three_checkbox_cell_right_optional(pdf, cell_h, materiale, ordinare=False, magazzino=False, verificare=False):
+        """
+        Draw a row with Materiale description and up to 3 checkboxes (Ordinare, Magaz., Verificare).
+        If a value is falsy (False, None, ""), the checkbox won't be drawn but the cell remains.
+        """
+        x0, y0 = pdf.get_x(), pdf.get_y()
+
+        # Materiale cell (wide left column)
+        pdf.rect(x0, y0, 100, cell_h)
+        pdf.set_xy(x0 + 2, y0)
+        pdf.cell(100 - 4, cell_h, materiale or "", border=0, align="L")
+
+        # Helper to draw one checkbox cell
+        def box_cell(x, checked):
+            pdf.rect(x, y0, 30, cell_h)  # border always drawn
+            if checked:  # only draw checkbox if value is truthy
+                size = 5
+                box_x = x + (30 - size) / 2
+                box_y = y0 + (cell_h - size) / 2
+                draw_checkbox(pdf, box_x, box_y, size=size, checked=True)
+
+        # Three checkbox slots
+        box_cell(x0 + 100, bool(ordinare))
+        box_cell(x0 + 130, bool(magazzino))
+        box_cell(x0 + 160, bool(verificare))
+
+        # Move cursor to next row
+        pdf.set_xy(x0, y0 + cell_h)
+
+    # region pdf Build Code
+    
+    # Header
     pdf.set_font("Arial", style="B", size=14)
     pdf.cell(0, 10, "Report Commessa Posa in Opera", ln=True, align='C')
     pdf.set_font("Arial", size=12)
     pdf.ln(3)
-    # endregion
-
-    # region Ticket / Del / Data
+    
+    
+    # Ticket / Del / Data
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Ticket N°", fill=True, bold=True)
     write_cell(60, 8, gv("ticket_n"))
@@ -957,27 +1009,24 @@ def build_report_pdf2(data):
     write_cell(80, 8, gv("del"))
     pdf.ln()
     green_rule(height=2)   
-    # endregion
     
-    # region Cliente / Ordine N°
+    # Cliente / Ordine N°
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Cliente", fill=True, bold=True)
     write_cell(60, 8, gv("cliente"))
     write_cell(30, 8, "Ordine N°", fill=True, bold=True)
     write_cell(70, 8, gv("ordine_n"))
     pdf.ln()
-    # endregion
 
-    # region Indirizzo / Città
+    # Indirizzo / Città
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Indirizzo", fill=True, bold=True)
     write_cell(60, 8, gv("indirizzo"))
     write_cell(30, 8, "Città", fill=True, bold=True)
     write_cell(70, 8, gv("citta"))
     pdf.ln()
-    # endregion
 
-    # region Telefono fisso / Cellulare
+    # Telefono fisso / Cellulare
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Telefono fisso", fill=True, bold=True)
     write_cell(60, 8, gv("telefono_fisso"))
@@ -985,27 +1034,24 @@ def build_report_pdf2(data):
     write_cell(70, 8, gv("cellulare"))
     pdf.ln()
     green_rule(height=2)   
-    # endregion
 
-    # region Persona di riferimento / Posatore / SQUADRA
+    # Persona di riferimento / Posatore / SQUADRA
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Persona rif", fill=True, bold=True)
     write_cell(60, 8, gv("persona_rif"))
     write_cell(30, 8, "Cellulare", fill=True, bold=True)
     write_cell(70, 8, gv("cellulare"))
     pdf.ln()
-    # endregion
     
-    # region postatore / squadra
+    # postatore / squadra
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Posatore", fill=True, bold=True)
     write_cell(60, 8, gv("posatore"))
     write_cell(30, 8, "SQUADRA", fill=True, bold=True)
     write_cell(70, 8, gv("squadra"))
     pdf.ln()
-    # endregion
 
-    # region Tempo prev. ore / Intervento pianificato / Data & Ora
+    # Tempo prev. ore / Intervento pianificato / Data & Ora
     pdf.set_fill_color(230, 230, 230)
     write_cell(50, 8, "Tempo PREVISTO ORE", fill=True, bold=True)
     write_cell(40, 8, gv("tempo_previsto_ore"))
@@ -1015,72 +1061,90 @@ def build_report_pdf2(data):
     write_cell(30, 8, date_str, fill=True)  
     write_cell(20, 8, time_str, fill=True)  
     pdf.ln()
-    green_rule(height=2)  
-    # endregion 
+    green_rule(height=2)   
     
-    # region Stato Lavoro
+    # Stato Lavoro
     pdf.set_fill_color(204, 255, 204) 
     write_cell(50, 8, "STATO LAVORO", bold=True, fill=True)
-    checkbox_cell(pdf, 40, 8, "Completato", checked=gvb("stato_lavoro"))
-    checkbox_cell(pdf, 100, 8, "Da Completare", checked=not gvb("stato_lavoro"))
+    checkbox_cell(pdf, 60, 8, "Completato", checked=gvb("stato_lavoro"))
+    checkbox_cell(pdf, 80, 8, "Da Completare", checked=not gvb("stato_lavoro"))
     pdf.ln()
     green_rule(height=2)  
-    # endregion
 
-    # region Informazioni
+    # Informazioni
     pdf.set_fill_color(204, 255, 204)
     write_cell(50, 8, "Informazioni", bold=True, fill=True)
     checkbox_cell(pdf, 60, 8, "Già Cliente", checked=gvb("informazioni"))
     checkbox_cell(pdf, 80, 8, "E' STATO ESEGUITO IL SOPRALLUOGO", checked=gvb("informazioni"), font_size=10)  
     pdf.ln()
     green_rule(height=2)  
-    # endregion
 
-    # region Tipo Riparazione
+    # Tipo Riparazione
     pdf.set_fill_color(204, 255, 204)
     write_cell(50, 8, "Tipo Riparazione", bold=True, fill=True)
     checkbox_cell(pdf, 60, 8, "Riparazione STD", checked=gvb("tipo_riparazione"))
     checkbox_cell(pdf, 80, 8, "Riparazione in Garanzia", checked=(not gvb("tipo_riparazione")))
     pdf.ln()
-    # endregion
     
-    # region Cose da fare
+    # Cose da fare
     pdf.set_fill_color(230, 230, 230)
     write_cell(190, 8, "Cose da fare", bold=True, fill=True, align='C')
     pdf.ln()
-    # endregion
     
-    # region Elenco Cose da fare
     for item in gvl("cliente_lavori_eseguiti"):
-        checkbox_cell_right(pdf, 190, 8, item.cliente or "", checked=bool(item.switch1))
-        pdf.ln()
-    # endregion
+        d = item if isinstance(item, dict) else getattr(item, "model_dump", lambda: {})()
+        if callable(d):
+            d = d()
+        #checkbox_cell_right(pdf, 190, 8, item.cliente or "", checked=bool(item.switch1))
+        three_checkbox_cell_right_optional(
+            pdf, 8,
+            materiale=d.get("cliente"),
+            ordinare="",
+            magazzino="",
+            verificare=d.get("cliente"),
+        )
         
-
-    # # ---------- Materiale mancante ----------
-    # section_title("Materiale mancante")
-    # write_cell(80, 8, "Descrizione", bold=True)
-    # write_cell(30, 8, "Ordinare", bold=True)
-    # write_cell(30, 8, "Magaz.", bold=True)
-    # write_cell(30, 8, "Verificare", bold=True)
-    # pdf.ln()
-
-    # for item in gvl("cliente_materiale_mancante"):
-    #     write_cell(80, 8, getattr(item, "materiale", "") or "")
-    #     write_cell(30, 8, " ", fill=bool(getattr(item, "ordinare", False)))
-    #     write_cell(30, 8, " ", fill=bool(getattr(item, "magazzino", False)))
-    #     write_cell(30, 8, " ", fill=bool(getattr(item, "verificare", False)))
-    #     pdf.ln()
-
-    # pdf.ln(2)
-
-    # # ---------- Materiale rientrato ----------
-    # section_title("Materiale rientrato")
-    # write_cell(80, 8, "Descrizione", bold=True)
-    # write_cell(30, 8, "Riportare", bold=True)
-    # write_cell(30, 8, "Reso", bold=True)
-    # write_cell(30, 8, "Avanzo", bold=True)
-    # pdf.ln()
+    #  Materiale mancante 
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(100, 8, "Materiale mancante", bold=True, fill=True)
+    pdf.set_fill_color(255, 255, 255)
+    write_cell(30, 8, "Ordinare", bold=True, fill=True, align="C")
+    write_cell(30, 8, "Magaz.", bold=True, fill=True, align="C")
+    write_cell(30, 8, "Verificare", bold=True, fill=True, align="C")
+    pdf.ln()
+    
+    for item in gvl("cliente_materiale_mancante"):
+        d = item if isinstance(item, dict) else getattr(item, "model_dump", lambda: {})()
+        if callable(d):
+            d = d()
+        three_checkbox_cell_right(
+            pdf, 8,
+            materiale=d.get("materiale"),
+            ordinare=bool(d.get("ordinare")),
+            magazzino=bool(d.get("magazzino")),
+            verificare=bool(d.get("verificare")),
+        )
+    
+    # Materiale rientrato 
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(100, 8, "Materiale rientrato", bold=True, fill=True)
+    pdf.set_fill_color(255, 255, 255)
+    write_cell(30, 8, "Riportare", bold=True, fill=True, align="C")
+    write_cell(30, 8, "Reso", bold=True, fill=True, align="C")
+    write_cell(30, 8, "Avanzo", bold=True, fill=True, align="C")
+    pdf.ln()
+    
+    for item in gvl("cliente_materiale_rientrato"):
+        d = item if isinstance(item, dict) else getattr(item, "model_dump", lambda: {})()
+        if callable(d):
+            d = d()
+        three_checkbox_cell_right(
+            pdf, 8,
+            materiale=d.get("materiale"),
+            ordinare=bool(d.get("ordinare")),
+            magazzino=bool(d.get("magazzino")),
+            verificare=bool(d.get("verificare")),
+        )
 
     # for item in gvl("cliente_materiale_rientrato"):
     #     write_cell(80, 8, getattr(item, "materiale", "") or "")
@@ -1163,6 +1227,7 @@ def build_report_pdf2(data):
     # write_cell(30, 8, " ", fill=False)
     # write_cell(30, 8, " ", fill=False)
     # pdf.ln()
+    # endregion
 
     content = pdf.output(dest='S')
     return content.encode('latin-1') if isinstance(content, str) else content
