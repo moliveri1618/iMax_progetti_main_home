@@ -13,6 +13,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
+import inspect
 
 import sys
 import os
@@ -194,52 +195,37 @@ def signature_block(pdf, text, sig_data, left_w=140, right_w=50, line_h=8, pad=3
     # --- Move cursor to end of block ---
     pdf.set_y(y_after)
 
-def note_box(pdf, title, body=None, *, height=85, title_fs=12, end_gap=10, force_new_page=False):
+def note_box(pdf, title, body=None, *, height=85, title_fs=12, end_gap=10):
     """
     Draw a wide note rectangle with a blue title, stopping before the page end.
     - height: requested box height
     - end_gap: space to leave between the box bottom and page bottom margin
-    - force_new_page: if True and not enough space, start the box on a new page
     """
-    # Page geometry
-    x = pdf.l_margin
-    y = pdf.get_y()
+    x, y = pdf.get_x(), pdf.get_y()
     w = pdf.w - pdf.l_margin - pdf.r_margin
 
-    # Compute max allowed height that keeps end_gap above bottom margin
-    max_h = pdf.h - pdf.b_margin - end_gap - y
-    if max_h <= 0 or (force_new_page and height > max_h):
-        pdf.add_page()
-        y = pdf.get_y()
-        max_h = pdf.h - pdf.b_margin - end_gap - y
-
-    box_h = min(height, max_h)
-
-    # Draw outer rect (white fill, light grey border)
+    # --- Outer rectangle ---
     pdf.set_draw_color(140, 140, 140)
     pdf.set_fill_color(255, 255, 255)
-    pdf.rect(x, y, w, box_h, style="FD")
+    pdf.rect(x, y, w, height, style="FD")
 
-    # Title (blue)
+    # --- Title ---
     pdf.set_text_color(0, 0, 255)
     pdf.set_font("Arial", "", title_fs)
     pdf.set_xy(x + 5, y + 4)
     pdf.cell(w - 10, 6, title, border=0, ln=1)
 
-    # Body (optional, black)
+    # --- Body (optional) ---
     if body:
         pdf.set_text_color(0, 0, 0)
         pdf.set_font("Arial", "", 11)
         pdf.set_xy(x + 5, y + 12)
-        # ensure we don't overflow below the box
-        usable_h = box_h - 16  # title area (~12) + a little padding
-        # clip by limiting number of lines to available height
-        # (multi_cell stops when it runs out of vertical space)
-        pdf.multi_cell(w - 10, 6, body, border=0,
-                       max_line_height=pdf.font_size)  # safe with fpdf2
+        usable_h = height - 16  # space below the title
+        pdf.multi_cell(w - 10, 6, body, border=0)
 
-    # Move cursor just below the box
-    pdf.set_y(y + box_h)
+    # Move cursor below the box
+    pdf.set_y(y + height)
+
     # reset colors
     pdf.set_text_color(0, 0, 0)
     pdf.set_draw_color(0, 0, 0)
@@ -824,106 +810,9 @@ def send_email_with_retry(
             time.sleep(backoff_seconds * (2 ** (attempt - 1)))
 
     logger.error("Email failed after %s attempts: %s", max_attempts, last_err)
-    
 
-def build_report_pdf(data):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
 
-    def write_cell(w, h, text='', fill=False, align='L', bold=False):
-        family = pdf.font_family or "Arial"
-        size = pdf.font_size_pt or 12
-        style = "B" if bold else ""
-        pdf.set_font(family, style=style, size=size)
-        pdf.cell(w, h, text, border=1, fill=fill, align=align)
 
-    pdf.set_fill_color(255, 255, 0)  # yellow
-
-    # Header
-    pdf.set_font("Arial", style="B", size=14)
-    pdf.cell(0, 10, "Report Commessa Posa in Opera", ln=True, align='C')
-    pdf.set_font("Arial", size=12)
-    pdf.ln(3)
-
-    # Cliente/Ordine row
-    write_cell(50, 10, "Cliente", bold=True)
-    write_cell(70, 10, data.cliente)
-    write_cell(30, 10, "Ordine", bold=True)
-    write_cell(40, 10, data.ordine)
-    pdf.ln()
-
-    # Squadra/Data row
-    write_cell(50, 10, "SQUADRA Posatori", bold=True)
-    write_cell(70, 10, data.squadra_posatori)
-    write_cell(30, 10, "Data", bold=True)
-    write_cell(40, 10, "")  # Not in schema
-    pdf.ln()
-
-    # Stato POSA
-    write_cell(50, 10, "STATO 1° POSA", bold=True, fill=True)
-    write_cell(70, 10, "Completata" if data.stato_posa == "Completata" else "",fill=(data.stato_posa == "Completata"))
-    write_cell(70, 10, "Da Completare" if data.stato_posa != "Completata" else "",fill=(data.stato_posa != "Completata"))
-    pdf.ln()
-
-    # Resta da fare
-    write_cell(190, 10, data.resta_da_fare)
-    pdf.ln()
-
-    # Materiale mancante header
-    write_cell(80, 10, "Materiale mancante", bold=True)
-    write_cell(30, 10, "Ordinare", bold=True)
-    write_cell(30, 10, "Magaz.", bold=True)
-    write_cell(30, 10, "Verificare", bold=True)
-    pdf.ln()
-
-    for item in data.cliente_materiale_mancante:
-        write_cell(80, 10, item.materiale)
-        write_cell(30, 10, str(item.ordinare).upper(), fill=item.ordinare)
-        write_cell(30, 10, str(item.magazzino).upper(), fill=item.magazzino)
-        write_cell(30, 10, str(item.verificare).upper(), fill=item.verificare)
-        pdf.ln()
-
-    # Materiale rientrato header
-    write_cell(80, 10, "Materiale rientrato", bold=True)
-    write_cell(30, 10, "Riportare", bold=True)
-    write_cell(30, 10, "Reso", bold=True)
-    write_cell(30, 10, "Avanzo", bold=True)
-    pdf.ln()
-
-    for item in data.cliente_materiale_rientrato:
-        write_cell(80, 10, item.materiale)
-        write_cell(30, 10, str(item.ordinare).upper(), fill=item.ordinare)
-        write_cell(30, 10, str(item.magazzino).upper(), fill=item.magazzino)
-        write_cell(30, 10, str(item.verificare).upper(), fill=item.verificare)
-        pdf.ln()
-
-    # Ore previste
-    write_cell(80, 10, "Ore previste finitura", bold=True)
-    write_cell(110, 10, data.ore_previste_finitura)
-    pdf.ln()
-
-    write_cell(80, 10, "Per numero posatori", bold=True)
-    write_cell(110, 10, data.per_numero_posatori)
-    pdf.ln()
-
-    # Notes
-    pdf.ln(3)
-    pdf.set_font("Arial", size=10)
-    pdf.multi_cell(0, 8,
-        "PULIZIA DEI VETRI E/O FINESTRE (CONTROLLO SE PRESENZA DI DIFETTI) - TOGLIERE ETICHETTE\n"
-        "GIRO CON IL CLIENTE, PRODOTTO PER PRODOTTO SU CORRETTA FUNZIONALITA'"
-    )
-    pdf.ln()
-
-    # Extra dummy TRUE/FALSE values if needed
-    write_cell(95, 10, "")
-    write_cell(30, 10, "FALSE", fill=True)
-    write_cell(30, 10, "FALSE", fill=True)
-    pdf.ln()
-
-    content = pdf.output(dest='S')
-    return content.encode('latin-1') if isinstance(content, str) else content
 
 def build_pdf_report_tecnico(data):
 
