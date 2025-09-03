@@ -5,6 +5,8 @@ from datetime import datetime, date
 from pprint import pprint
 from typing import Any, Dict, List, Optional, Sequence
 import json
+from pydantic import BaseModel, Field
+from fpdf import FPDF
 
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -23,6 +25,96 @@ from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MON
 from models.vendite import VenditeImax
 from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
 from models.iConteggiCommessa import OrdiniPremi
+
+
+class MaterialeItem(BaseModel):
+    materiale: Optional[str] = None
+    ordinare: Optional[bool] = None
+    magazzino: Optional[bool] = None
+    verificare: Optional[bool] = None
+
+class Tecnico(BaseModel):
+    cliente_materiale_mancante: Optional[List[MaterialeItem]] = None
+    cliente_materiale_rientrato: Optional[List[MaterialeItem]] = None
+
+    ticket_n: Optional[str] = None
+    del_: Optional[str] = Field(default=None, alias="del")  # accepts JSON key "del"
+    cliente: Optional[str] = None
+    ordine_n: Optional[str] = None
+    indirizzo: Optional[str] = None
+    citta: Optional[str] = None
+    telefono_fisso: Optional[str] = None
+    cellulare: Optional[str] = None
+    persona_rif: Optional[str] = None
+    posatore: Optional[str] = None
+    squadra: Optional[str] = None
+    tempo_previsto_ore: Optional[str] = None
+    int_pian_data_ora: Optional[datetime] = None
+    ore_previste_riparazioni: Optional[str] = None
+    per_numero_posatori: Optional[str] = None
+
+    stato_lavoro: Optional[bool] = None
+    informazioni: Optional[bool] = None
+    tipo_riparazione: Optional[bool] = None
+    fotografie_lavoro_ultimato: Optional[bool] = None
+    fotografie_danni_prima_di_iniziare: Optional[bool] = None
+    lavoro_non_completato_causa_nostra: Optional[bool] = None
+    lavoro_non_completato_causa_cliente: Optional[bool] = None
+    danni_vedi_rapporto_posa: Optional[bool] = None
+    errore_progettazione: Optional[bool] = None
+    errore_scelta_profili_accessori: Optional[bool] = None
+    errore_misure_nel_rilievo: Optional[bool] = None
+    difficolta_trasporto_non_segnalate: Optional[bool] = None
+    errore_calcolo_disposizione: Optional[bool] = None
+    vetro_rotto: Optional[bool] = None
+    materiale_mancante_non_caricato: Optional[bool] = None
+    materiali_posa_mancanti: Optional[bool] = None
+    vetro_rotto_posa: Optional[bool] = None
+    materiali_profili_danneggiati: Optional[bool] = None
+    mancanza_attrezzature: Optional[bool] = None
+    danneggiamento_casa_cliente: Optional[bool] = None
+    errore_misure_ordine: Optional[bool] = None
+    errore_calcolo_tempo_disposizione: Optional[bool] = None
+    errore_materiale_contratto: Optional[bool] = None
+
+    signature: Optional[str] = None
+
+    model_config = {
+        "populate_by_name": True,   
+        "extra": "ignore",          
+    }
+    
+    
+class ClienteLavoro(BaseModel):
+    id: Optional[int] = None
+    cliente: Optional[str] = None
+    switch1: Optional[bool] = None
+    switch2: Optional[bool] = None
+    switch3: Optional[bool] = None
+    
+class Cliente(BaseModel):
+    cliente_ticket_n: Optional[str] = None
+    cliente_del: Optional[str] = None
+    cliente_cliente: Optional[str] = None
+    ordine_cliente: Optional[str] = None
+    indirizzo_cliente: Optional[str] = None
+    citta_cliente: Optional[str] = None
+    telefono_fisso_cliente: Optional[str] = None
+    cellulare_cliente: Optional[str] = None
+    persona_di_riferimento_cliente: Optional[str] = None
+    posatore_cliente: Optional[str] = None
+    squadra_cliente: Optional[str] = None
+    tempo_previsto_ore_cliente: Optional[str] = None
+    data_cliente: Optional[datetime] = None
+    cellulare_cliente_cliente: Optional[str] = None
+    cliente_lavori_eseguiti: Optional[List[ClienteLavoro]] = None
+    signature_cliente_posatore: Optional[str] = None
+    signature_cliente_cliente: Optional[str] = None
+    note_cliente: Optional[str] = None
+
+class ReportData(BaseModel):
+    tecnico: Optional[Tecnico] = None
+    cliente: Optional[Cliente] = None  
 
 def order_rows_by_month(rows: Iterable[Dict]) -> List[Dict]:
     """Return rows ordered Gen→Dic using MONTH_ORDER."""
@@ -536,7 +628,6 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametr
    
     return result
 
-
 def send_email(pdf_bytes=None, filename="posa_layout.pdf"):
     print("Sending email...")
     
@@ -586,3 +677,438 @@ def send_email(pdf_bytes=None, filename="posa_layout.pdf"):
         return {"status_code": code, "error": err}
     except Exception as e:
         return {"status_code": 500, "error": str(e)}
+    
+    
+
+def build_report_pdf(data):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    def write_cell(w, h, text='', fill=False, align='L', bold=False):
+        family = pdf.font_family or "Arial"
+        size = pdf.font_size_pt or 12
+        style = "B" if bold else ""
+        pdf.set_font(family, style=style, size=size)
+        pdf.cell(w, h, text, border=1, fill=fill, align=align)
+
+    pdf.set_fill_color(255, 255, 0)  # yellow
+
+    # Header
+    pdf.set_font("Arial", style="B", size=14)
+    pdf.cell(0, 10, "Report Commessa Posa in Opera", ln=True, align='C')
+    pdf.set_font("Arial", size=12)
+    pdf.ln(3)
+
+    # Cliente/Ordine row
+    write_cell(50, 10, "Cliente", bold=True)
+    write_cell(70, 10, data.cliente)
+    write_cell(30, 10, "Ordine", bold=True)
+    write_cell(40, 10, data.ordine)
+    pdf.ln()
+
+    # Squadra/Data row
+    write_cell(50, 10, "SQUADRA Posatori", bold=True)
+    write_cell(70, 10, data.squadra_posatori)
+    write_cell(30, 10, "Data", bold=True)
+    write_cell(40, 10, "")  # Not in schema
+    pdf.ln()
+
+    # Stato POSA
+    write_cell(50, 10, "STATO 1° POSA", bold=True, fill=True)
+    write_cell(70, 10, "Completata" if data.stato_posa == "Completata" else "",
+               fill=(data.stato_posa == "Completata"))
+    write_cell(70, 10, "Da Completare" if data.stato_posa != "Completata" else "",
+               fill=(data.stato_posa != "Completata"))
+    pdf.ln()
+
+    # Resta da fare
+    write_cell(190, 10, data.resta_da_fare)
+    pdf.ln()
+
+    # Materiale mancante header
+    write_cell(80, 10, "Materiale mancante", bold=True)
+    write_cell(30, 10, "Ordinare", bold=True)
+    write_cell(30, 10, "Magaz.", bold=True)
+    write_cell(30, 10, "Verificare", bold=True)
+    pdf.ln()
+
+    for item in data.cliente_materiale_mancante:
+        write_cell(80, 10, item.materiale)
+        write_cell(30, 10, str(item.ordinare).upper(), fill=item.ordinare)
+        write_cell(30, 10, str(item.magazzino).upper(), fill=item.magazzino)
+        write_cell(30, 10, str(item.verificare).upper(), fill=item.verificare)
+        pdf.ln()
+
+    # Materiale rientrato header
+    write_cell(80, 10, "Materiale rientrato", bold=True)
+    write_cell(30, 10, "Riportare", bold=True)
+    write_cell(30, 10, "Reso", bold=True)
+    write_cell(30, 10, "Avanzo", bold=True)
+    pdf.ln()
+
+    for item in data.cliente_materiale_rientrato:
+        write_cell(80, 10, item.materiale)
+        write_cell(30, 10, str(item.ordinare).upper(), fill=item.ordinare)
+        write_cell(30, 10, str(item.magazzino).upper(), fill=item.magazzino)
+        write_cell(30, 10, str(item.verificare).upper(), fill=item.verificare)
+        pdf.ln()
+
+    # Ore previste
+    write_cell(80, 10, "Ore previste finitura", bold=True)
+    write_cell(110, 10, data.ore_previste_finitura)
+    pdf.ln()
+
+    write_cell(80, 10, "Per numero posatori", bold=True)
+    write_cell(110, 10, data.per_numero_posatori)
+    pdf.ln()
+
+    # Notes
+    pdf.ln(3)
+    pdf.set_font("Arial", size=10)
+    pdf.multi_cell(0, 8,
+        "PULIZIA DEI VETRI E/O FINESTRE (CONTROLLO SE PRESENZA DI DIFETTI) - TOGLIERE ETICHETTE\n"
+        "GIRO CON IL CLIENTE, PRODOTTO PER PRODOTTO SU CORRETTA FUNZIONALITA'"
+    )
+    pdf.ln()
+
+    # Extra dummy TRUE/FALSE values if needed
+    write_cell(95, 10, "")
+    write_cell(30, 10, "FALSE", fill=True)
+    write_cell(30, 10, "FALSE", fill=True)
+    pdf.ln()
+
+    content = pdf.output(dest='S')
+    return content.encode('latin-1') if isinstance(content, str) else content
+
+
+
+
+def build_report_pdf2(data):
+    t = getattr(data, "tecnico", None) or type("Empty", (), {})()
+    print(t)
+
+    def gv(name, default=""):
+        """get value from tecnico, defaulting to '' (or provided) if missing/None"""
+        return getattr(t, name, None) if getattr(t, name, None) is not None else default
+
+    def gvl(name):
+        """get list value"""
+        v = getattr(t, name, None)
+        return v if isinstance(v, list) else []
+
+    def gvb(name):
+        """get boolean value"""
+        v = getattr(t, name, None)
+        return bool(v) if v is not None else False
+
+    def fmt_dt(dt):
+        v = gv(dt, None)
+        if not v:
+            return "", ""
+        try:
+            # pydantic may give datetime already; otherwise ISO string
+            d = v if isinstance(v, datetime) else datetime.fromisoformat(str(v))
+            return d.strftime("%d/%m/%Y"), d.strftime("%H:%M")
+        except Exception:
+            return str(v), ""
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    def write_cell(w, h, text='', fill=False, align='L', bold=False):
+        family = pdf.font_family or "Arial"
+        size = pdf.font_size_pt or 12
+        style = "B" if bold else ""
+        pdf.set_font(family, style=style, size=size)
+        pdf.cell(w, h, text or "", border=1, fill=fill, align=align)
+
+    def bool_cell(label, value, w_label=100, w_box=90):
+        write_cell(w_label, 8, label)
+        write_cell(w_box, 8, " ", fill=value)
+
+    def section_title(text):
+        pdf.set_font("Arial", style="B", size=12)
+        pdf.cell(0, 9, text, ln=True)
+        pdf.set_font("Arial", size=12)
+        
+    def green_rule(height=3):
+        """Draw a full-width green bar at the current Y, then move cursor down."""
+        x = pdf.l_margin
+        y = pdf.get_y()
+        w = pdf.w - pdf.l_margin - pdf.r_margin
+        # draw filled green rect (no border)
+        pdf.set_fill_color(0, 128, 0)
+        pdf.rect(x, y, w, height, style='F')
+        pdf.ln(height)
+        # restore your default fill color (yellow for cells, per your code)
+        pdf.set_fill_color(255, 255, 0)
+        
+    def green_rule(height=3, x_start=None):
+        """Draw a green bar from a given X to the right margin, then move cursor down."""
+        if x_start is None:
+            x_start = pdf.l_margin  # fallback to left margin
+
+        y = pdf.get_y()
+        w = pdf.w - x_start - pdf.r_margin  # width from x_start to right margin
+
+        pdf.set_fill_color(0, 128, 0)
+        pdf.rect(x_start, y, w, height, style='F')
+        pdf.ln(height)
+
+        # restore default fill color (yellow, per your example)
+        pdf.set_fill_color(255, 255, 0)
+
+
+    def draw_checkbox(pdf, x, y, size=5, checked=False):
+        # outer yellow box
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_fill_color(255, 235, 59)  # soft yellow (#FFEB3B)
+        pdf.rect(x, y, size, size, 'DF')
+
+        # inner light square
+        pad = 1.2
+        pdf.set_fill_color(245, 245, 245)  # very light gray
+        pdf.rect(x + pad, y + pad, size - 2*pad, size - 2*pad, 'F')
+
+        # checkmark if selected
+        if checked:
+            pdf.set_draw_color(0, 128, 0)
+            pdf.set_line_width(0.6)
+            pdf.line(x + 0.8, y + size*0.55, x + size*0.45, y + size - 0.9)
+            pdf.line(x + size*0.45, y + size - 0.9, x + size - 0.8, y + 1.0)
+        pdf.set_line_width(0.2)  # reset
+
+
+    def checkbox_cell(pdf, cell_w, cell_h, label, checked):
+        x0, y0 = pdf.get_x(), pdf.get_y()
+
+        # Draw the cell border (keeps table grid continuous)
+        pdf.rect(x0, y0, cell_w, cell_h)
+
+        # Draw checkbox inside the cell
+        box_size = 5
+        box_x = x0 + 2
+        box_y = y0 + (cell_h - box_size) / 2
+        draw_checkbox(pdf, box_x, box_y, size=box_size, checked=checked)
+
+        # Write label next to the checkbox
+        label_x = box_x + box_size + 3
+        pdf.set_xy(label_x, y0)
+        pdf.cell(cell_w - (label_x - x0), cell_h, label, border=0, align="L")
+
+        # Move cursor to end of cell
+        pdf.set_xy(x0 + cell_w, y0)
+
+
+    # Header
+    pdf.set_font("Arial", style="B", size=14)
+    pdf.cell(0, 10, "Report Commessa Posa in Opera", ln=True, align='C')
+    pdf.set_font("Arial", size=12)
+    pdf.ln(3)
+
+    # ---------- Top grid (like screenshot header) ----------
+    # Row 1: Ticket / Del / Data
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(30, 8, "Ticket N°", fill=True, bold=True)
+    write_cell(60, 8, gv("ticket_n"))
+    write_cell(20, 8, "Del", fill=True, bold=True)
+    write_cell(80, 8, gv("del"))
+    pdf.ln()
+    
+    # ➜ green separator
+    green_rule(height=2)   
+
+    # Row 2: Cliente / Ordine N°
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(30, 8, "Cliente", fill=True, bold=True)
+    write_cell(60, 8, gv("cliente"))
+    write_cell(30, 8, "Ordine N°", fill=True, bold=True)
+    write_cell(70, 8, gv("ordine_n"))
+    pdf.ln()
+
+    # Row 3: Indirizzo / Città
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(30, 8, "Indirizzo", fill=True, bold=True)
+    write_cell(60, 8, gv("indirizzo"))
+    write_cell(30, 8, "Città", fill=True, bold=True)
+    write_cell(70, 8, gv("citta"))
+    pdf.ln()
+
+    # Row 4: Telefono fisso / Cellulare
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(30, 8, "Telefono fisso", fill=True, bold=True)
+    write_cell(60, 8, gv("telefono_fisso"))
+    write_cell(30, 8, "Cellulare", fill=True, bold=True)
+    write_cell(70, 8, gv("cellulare"))
+    pdf.ln()
+    
+    # ➜ green separator
+    green_rule(height=2)   
+
+    # Row 5: Persona di riferimento / Posatore / SQUADRA
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(30, 8, "Persona rif", fill=True, bold=True)
+    write_cell(60, 8, gv("persona_rif"))
+    write_cell(30, 8, "Cellulare", fill=True, bold=True)
+    write_cell(70, 8, gv("cellulare"))
+    pdf.ln()
+    
+    # postatore / squadra
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(30, 8, "Posatore", fill=True, bold=True)
+    write_cell(60, 8, gv("posatore"))
+    write_cell(30, 8, "SQUADRA", fill=True, bold=True)
+    write_cell(70, 8, gv("squadra"))
+    pdf.ln()
+
+    # Row 6: Tempo prev. ore / Intervento pianificato / Data & Ora
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(50, 8, "Tempo PREVISTO ORE", fill=True, bold=True)
+    write_cell(40, 8, gv("tempo_previsto_ore"))
+    write_cell(50, 8, "Intervento pianificato x:", fill=True, bold=True)
+    date_str, time_str = fmt_dt("int_pian_data_ora")
+    pdf.set_fill_color(255, 255, 0)
+    write_cell(30, 8, date_str)  
+    write_cell(20, 8, time_str)  
+    pdf.ln()
+    
+    # ➜ green separator
+    green_rule(height=2)   
+    
+    # ---------- Stato/Informazioni/Tipo ----------
+    # Stato Lavoro
+    pdf.set_fill_color(204, 255, 204)  # light pastel green
+    write_cell(50, 8, "STATO LAVORO", bold=True, fill=True)
+    checkbox_cell(pdf, 40, 8, "Completato", checked=gvb("stato_lavoro"))
+    checkbox_cell(pdf, 90, 8, "Da Completare", checked=not gvb("stato_lavoro"))
+    pdf.ln()
+
+    # # Informazioni
+    # write_cell(50, 8, "Informazioni", bold=True, fill=True)
+    # write_cell(60, 8, "Già Cliente", fill=gvb("informazioni"))
+    # write_cell(80, 8, "E' STATO ESEGUITO IL SOPRALLUOGO", fill=False)  # not in schema
+    # pdf.ln()
+
+    # # Tipo Riparazione
+    # write_cell(50, 8, "Tipo Riparazione", bold=True, fill=True)
+    # # heuristic: True -> STD, False -> Garanzia
+    # write_cell(60, 8, "Riparazione STD", fill=gvb("tipo_riparazione"))
+    # write_cell(80, 8, "Riparazione in Garanzia", fill=(not gvb("tipo_riparazione")))
+    # pdf.ln(3)
+
+    # # ---------- Cose da fare ----------
+    # section_title("Cose da fare")
+    # write_cell(190, 8, "")  # free-text area you can fill later from another field if desired
+    # pdf.ln(12)
+
+    # # ---------- Materiale mancante ----------
+    # section_title("Materiale mancante")
+    # write_cell(80, 8, "Descrizione", bold=True)
+    # write_cell(30, 8, "Ordinare", bold=True)
+    # write_cell(30, 8, "Magaz.", bold=True)
+    # write_cell(30, 8, "Verificare", bold=True)
+    # pdf.ln()
+
+    # for item in gvl("cliente_materiale_mancante"):
+    #     write_cell(80, 8, getattr(item, "materiale", "") or "")
+    #     write_cell(30, 8, " ", fill=bool(getattr(item, "ordinare", False)))
+    #     write_cell(30, 8, " ", fill=bool(getattr(item, "magazzino", False)))
+    #     write_cell(30, 8, " ", fill=bool(getattr(item, "verificare", False)))
+    #     pdf.ln()
+
+    # pdf.ln(2)
+
+    # # ---------- Materiale rientrato ----------
+    # section_title("Materiale rientrato")
+    # write_cell(80, 8, "Descrizione", bold=True)
+    # write_cell(30, 8, "Riportare", bold=True)
+    # write_cell(30, 8, "Reso", bold=True)
+    # write_cell(30, 8, "Avanzo", bold=True)
+    # pdf.ln()
+
+    # for item in gvl("cliente_materiale_rientrato"):
+    #     write_cell(80, 8, getattr(item, "materiale", "") or "")
+    #     write_cell(30, 8, " ", fill=bool(getattr(item, "ordinare", False)))
+    #     write_cell(30, 8, " ", fill=bool(getattr(item, "magazzino", False)))
+    #     write_cell(30, 8, " ", fill=bool(getattr(item, "verificare", False)))
+    #     pdf.ln()
+
+    # pdf.ln(2)
+
+    # # ---------- Ore previste ----------
+    # write_cell(80, 8, "Ore previste riparazioni", bold=True)
+    # write_cell(110, 8, gv("ore_previste_riparazioni"))
+    # pdf.ln()
+    # write_cell(80, 8, "Per numero posatori", bold=True)
+    # write_cell(110, 8, gv("per_numero_posatori"))
+    # pdf.ln(6)
+
+    # # ---------- Sezioni tecniche di errore/danni ----------
+    # # TECNICO
+    # section_title("TECNICO")
+    # bool_cell("errore progettazione", gvb("errore_progettazione"))
+    # pdf.ln()
+    # bool_cell("errore scelta profili e accessori", gvb("errore_scelta_profili_accessori"))
+    # pdf.ln()
+    # bool_cell("errore misure nel rilievo", gvb("errore_misure_nel_rilievo"))
+    # pdf.ln()
+    # bool_cell("difficoltà trasporto non segnalate", gvb("difficolta_trasporto_non_segnalate"))
+    # pdf.ln()
+    # bool_cell("errore calcolo tempo a disposizione", gvb("errore_calcolo_disposizione"))
+    # pdf.ln(4)
+
+    # # UFFICIO
+    # section_title("UFFICIO")
+    # bool_cell("errore misure/materiale/colore nell'ordine", gvb("errore_misure_ordine"))
+    # pdf.ln()
+    # bool_cell("errore calcolo tempo a disposizione", gvb("errore_calcolo_tempo_disposizione"))
+    # pdf.ln(4)
+
+    # # COMMERCIALE
+    # section_title("COMMERCIALE")
+    # bool_cell("errore materiale/colore nel contratto", gvb("errore_materiale_contratto"))
+    # pdf.ln(4)
+
+    # # POSATORI
+    # section_title("POSATORI")
+    # bool_cell("vetro rotto durante la posa", gvb("vetro_rotto_posa"))
+    # pdf.ln()
+    # bool_cell("materiali-profili danneggiati durante la posa", gvb("materiali_profili_danneggiati"))
+    # pdf.ln()
+    # bool_cell("mancanza attrezzature non caricate", gvb("mancanza_attrezzature"))
+    # pdf.ln()
+    # bool_cell("danneggiamento casa del cliente", gvb("danneggiamento_casa_cliente"))
+    # pdf.ln(4)
+
+    # # MAGAZZINO
+    # section_title("MAGAZZINO")
+    # bool_cell("vetro rotto/difettoso da sostituire", gvb("vetro_rotto"))
+    # pdf.ln()
+    # bool_cell("materiale mancante non caricato", gvb("materiale_mancante_non_caricato"))
+    # pdf.ln()
+    # bool_cell("materiali di posa mancanti non caricati", gvb("materiali_posa_mancanti"))
+    # pdf.ln(4)
+
+    # # FORNITORE
+    # section_title("FORNITORE")
+    # bool_cell("materiale difettoso causa fornitore", gvb("errore_materiale_contratto"))  # adjust if you add specific keys
+    # pdf.ln(6)
+
+    # # ---------- Note statiche ----------
+    # pdf.set_font("Arial", size=10)
+    # pdf.multi_cell(0, 7,
+    #     "PULIZIA DEI VETRI E/O FINESTRE (CONTROLLO SE PRESENZA DI DIFETTI) - TOGLIERE ETICHETTE\n"
+    #     "GIRO CON IL CLIENTE, PRODOTTO PER PRODOTTO SU CORRETTA FUNZIONALITA'"
+    # )
+    # pdf.ln(2)
+
+    # # ---------- Segnaposto check extra ----------
+    # write_cell(95, 8, "")
+    # write_cell(30, 8, " ", fill=False)
+    # write_cell(30, 8, " ", fill=False)
+    # pdf.ln()
+
+    content = pdf.output(dest='S')
+    return content.encode('latin-1') if isinstance(content, str) else content
