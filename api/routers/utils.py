@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Sequence
 import json
 from pydantic import BaseModel, Field
 from fpdf import FPDF
-import base64, uuid, os, tempfile
+import base64, tempfile
 
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -62,7 +62,8 @@ class Tecnico(BaseModel):
     int_pian_data_ora: Optional[datetime] = None
     ore_previste_riparazioni: Optional[str] = None
     per_numero_posatori: Optional[str] = None
-
+    note: Optional[str] = None
+        
     stato_lavoro: Optional[bool] = None
     informazioni: Optional[bool] = None
     tipo_riparazione: Optional[bool] = None
@@ -87,6 +88,7 @@ class Tecnico(BaseModel):
     errore_calcolo_tempo_disposizione: Optional[bool] = None
     errore_materiale_contratto: Optional[bool] = None
     cliente_lavori_eseguiti: Optional[List[ClienteLavoro]] = None
+
 
     signature: Optional[str] = None
 
@@ -119,6 +121,127 @@ class Cliente(BaseModel):
 class ReportData(BaseModel):
     tecnico: Optional[Tecnico] = None
     cliente: Optional[Cliente] = None  
+    
+
+def signature_block(pdf, text, sig_data, left_w=140, right_w=50, line_h=8, pad=3):
+    """
+    Draws a signature block with explanatory text on the left and 
+    a signature box (with optional image) on the right.
+
+    Args:
+        pdf: FPDF object
+        text (str): explanatory text for the left cell
+        sig_data (str): signature from JSON (data:image/png;base64,...)
+        left_w (int): width of explanatory cell
+        right_w (int): width of signature box
+        line_h (int): line height for text
+        pad (int): padding inside the signature box
+    """
+
+    # --- Save start position
+    x0, y0 = pdf.get_x(), pdf.get_y()
+
+    # --- Left explanatory cell ---
+    pdf.set_fill_color(230, 230, 230)
+    pdf.set_font("Arial", "B", 10)
+    pdf.multi_cell(left_w, line_h, text, border=1, fill=True)
+    y_after = pdf.get_y()
+
+    # Height used
+    h_box = y_after - y0
+
+    # --- Right signature box ---
+    x_box = x0 + left_w
+    pdf.set_xy(x_box, y0)
+    pdf.set_fill_color(255, 255, 255)
+    pdf.cell(right_w, h_box, "", border=1, fill=True, align="C")
+
+    # --- Insert signature image if present ---
+    if isinstance(sig_data, str) and sig_data.startswith("data:image/"):
+        try:
+            header, b64 = sig_data.split(",", 1)
+
+            # infer extension from MIME
+            ext = "png"
+            if header.startswith("data:image/") and ";base64" in header:
+                ext = header[len("data:image/"): header.index(";base64")] or "png"
+
+            img_bytes = base64.b64decode(b64)
+
+            # write to temp file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}") as tmp:
+                tmp_path = tmp.name
+                tmp.write(img_bytes)
+
+            # place image with padding
+            pdf.image(
+                tmp_path,
+                x=x_box + pad,
+                y=y0 + pad,
+                w=right_w - 2*pad,  # height auto to keep aspect ratio
+            )
+
+        except Exception as e:
+            print(f"[signature] failed to render: {e}")
+        finally:
+            try:
+                if 'tmp_path' in locals() and os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass
+
+    # --- Move cursor to end of block ---
+    pdf.set_y(y_after)
+
+def note_box(pdf, title, body=None, *, height=85, title_fs=12, end_gap=10, force_new_page=False):
+    """
+    Draw a wide note rectangle with a blue title, stopping before the page end.
+    - height: requested box height
+    - end_gap: space to leave between the box bottom and page bottom margin
+    - force_new_page: if True and not enough space, start the box on a new page
+    """
+    # Page geometry
+    x = pdf.l_margin
+    y = pdf.get_y()
+    w = pdf.w - pdf.l_margin - pdf.r_margin
+
+    # Compute max allowed height that keeps end_gap above bottom margin
+    max_h = pdf.h - pdf.b_margin - end_gap - y
+    if max_h <= 0 or (force_new_page and height > max_h):
+        pdf.add_page()
+        y = pdf.get_y()
+        max_h = pdf.h - pdf.b_margin - end_gap - y
+
+    box_h = min(height, max_h)
+
+    # Draw outer rect (white fill, light grey border)
+    pdf.set_draw_color(140, 140, 140)
+    pdf.set_fill_color(255, 255, 255)
+    pdf.rect(x, y, w, box_h, style="FD")
+
+    # Title (blue)
+    pdf.set_text_color(0, 0, 255)
+    pdf.set_font("Arial", "", title_fs)
+    pdf.set_xy(x + 5, y + 4)
+    pdf.cell(w - 10, 6, title, border=0, ln=1)
+
+    # Body (optional, black)
+    if body:
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("Arial", "", 11)
+        pdf.set_xy(x + 5, y + 12)
+        # ensure we don't overflow below the box
+        usable_h = box_h - 16  # title area (~12) + a little padding
+        # clip by limiting number of lines to available height
+        # (multi_cell stops when it runs out of vertical space)
+        pdf.multi_cell(w - 10, 6, body, border=0,
+                       max_line_height=pdf.font_size)  # safe with fpdf2
+
+    # Move cursor just below the box
+    pdf.set_y(y + box_h)
+    # reset colors
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_draw_color(0, 0, 0)
 
 def order_rows_by_month(rows: Iterable[Dict]) -> List[Dict]:
     """Return rows ordered Gen→Dic using MONTH_ORDER."""
@@ -628,11 +751,10 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametr
    
     return result
 
-def send_email(pdf_bytes=None, filename="posa_layout.pdf"):
+def send_email(receiver_email, pdf_bytes=None):
     print("Sending email...")
     
     sender_email = "lastiada1@gmail.com"
-    receiver_email = "mauro.oliveri16@gmail.com"
     password = "opqexobtkprukiyi"   # Use environment variable in production!
 
     subject = "Test Email"
@@ -650,7 +772,7 @@ def send_email(pdf_bytes=None, filename="posa_layout.pdf"):
         # ✅ attach PDF if provided
         if pdf_bytes:
             pdf_part = MIMEApplication(pdf_bytes, _subtype="pdf")
-            pdf_part.add_header("Content-Disposition", "attachment", filename=filename)
+            pdf_part.add_header("Content-Disposition", "attachment", filename='report_intervento_tecnico.pdf')
             message.attach(pdf_part)
 
         # Connect to SMTP and send
@@ -779,8 +901,7 @@ def build_report_pdf(data):
     content = pdf.output(dest='S')
     return content.encode('latin-1') if isinstance(content, str) else content
 
-
-def build_report_pdf2(data):
+def build_pdf_report_tecnico(data):
 
     t = getattr(data, "tecnico", None) or type("Empty", (), {})()
     pdf = FPDF()
@@ -1329,89 +1450,25 @@ def build_report_pdf2(data):
         
     
     # Firma del posatore
-    pdf.set_fill_color(230, 230, 230)
-
-    # --- Left explanatory cell ---
-    text = (
-        "FIRMA DEL POSATORE  Il tecnico dichiara, sotto la propria responsabilità, "
-        "che tutto quanto sopra indicato corrisponde al vero ed è consapevole e "
-        "informato di eventuali sanzioni disciplinari o addebiti nel caso quanto "
-        "dichiarato non corrisponda a verità."
+    signature_block(
+        pdf,
+        text=(
+            "FIRMA DEL POSATORE  Il tecnico dichiara, sotto la propria responsabilità, "
+            "che tutto quanto sopra indicato corrisponde al vero ed è consapevole e "
+            "informato di eventuali sanzioni disciplinari o addebiti nel caso quanto "
+            "dichiarato non corrisponda a verità."
+        ),
+        sig_data=gv("signature"),
     )
 
-    # Save Y position
-    x0, y0 = pdf.get_x(), pdf.get_y()
-    left_w, right_w = 140, 50
-
-    # Draw left block, but capture Y after writing
-    pdf.set_font("Arial", "B", 10)
-    pdf.multi_cell(left_w, 8, text, border=1, fill=True)
-    y_after = pdf.get_y()
-
-    # Compute height used by left cell
-    h_box = y_after - y0
-
-    # Draw right signature box aligned to the same top (y0)
-    x_box = x0 + left_w
-    pdf.set_xy(x_box, y0)
-    pdf.set_fill_color(255, 255, 255)
-    pdf.cell(right_w, h_box, "", border=1, fill=True, align="C")
-
-    # Try to place signature image if present
-    sig = gv("signature")  # JSON field
-    if isinstance(sig, str) and sig.startswith("data:image/"):
-        try:
-            # strip "data:image/png;base64," (or jpg, etc.)
-            try:
-                header, b64 = sig.split(",", 1)
-            except ValueError:
-                raise ValueError("Signature data URL missing comma separator")
-
-            # infer extension from MIME
-            ext = "png"
-            if header.startswith("data:image/") and ";base64" in header:
-                ext = header[len("data:image/"): header.index(";base64")] or "png"
-
-            img_bytes = base64.b64decode(b64)
-
-            # write to a temp file (FPDF needs a path)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}") as tmp:
-                tmp_path = tmp.name
-                tmp.write(img_bytes)
-
-            # place image with padding (constrain by width; keep aspect ratio)
-            pad = 3
-            pdf.image(
-                tmp_path,
-                x=x_box + pad,
-                y=y0 + pad,
-                w=right_w - 2*pad,  # height auto to preserve aspect ratio
-            )
-
-        except Exception as e:
-            print(f"[signature] failed to render: {e}")
-        finally:
-            # cleanup temp file if it exists
-            try:
-                if 'tmp_path' in locals() and os.path.exists(tmp_path):
-                    os.remove(tmp_path)
-            except Exception as _:
-                pass
-
-    # # ---------- Note statiche ----------
-    # pdf.set_font("Arial", size=10)
-    # pdf.multi_cell(0, 7,
-    #     "PULIZIA DEI VETRI E/O FINESTRE (CONTROLLO SE PRESENZA DI DIFETTI) - TOGLIERE ETICHETTE\n"
-    #     "GIRO CON IL CLIENTE, PRODOTTO PER PRODOTTO SU CORRETTA FUNZIONALITA'"
-    # )
-    # pdf.ln(2)
-
-    # # ---------- Segnaposto check extra ----------
-    # write_cell(95, 8, "")
-    # write_cell(30, 8, " ", fill=False)
-    # write_cell(30, 8, " ", fill=False)
-    # pdf.ln()
-    # endregion
+    # ---------- Note ----------
+    note_box(
+        pdf,
+        title="NOTE descrivere eventuali difetti riscontrati o danni causati all'interno dell'abitazione:",
+        body=gv("note"),
+        height=85,       # your desired size
+        end_gap=2       # leave ~12 pts before page bottom
+    )
 
     content = pdf.output(dest='S')
     return content.encode('latin-1') if isinstance(content, str) else content
