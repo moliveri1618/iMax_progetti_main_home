@@ -815,10 +815,67 @@ def send_email_with_retry(
 
 
 def build_pdf_report_tecnico(data):
+    
+    def add_pdf_header(pdf: FPDF, title: str, *, left_ratio=0.66, h=26, pad=6):
+        # geometry
+        x0 = pdf.l_margin
+        y0 = pdf.get_y()
+        full_w = pdf.w - pdf.l_margin - pdf.r_margin
+        left_w = full_w * left_ratio
+        right_w = full_w - left_w
+
+        # ---- left panel background + GREY BORDER (this is the new part) ----
+        pdf.set_draw_color(190, 190, 190)      # light grey border
+        pdf.set_fill_color(255, 255, 255)      # white fill
+        pdf.rect(x0, y0, left_w, h, style="DF")
+
+        # ---- draw Mulattieri mark ----
+        # red icon
+        icon = h * 0.68
+        ix = x0 + pad
+        iy = y0 + (h - icon) / 2
+        pdf.set_fill_color(230, 0, 0)
+        pdf.rect(ix, iy, icon, icon, "F")
+        # two white “windows”
+        m = icon * 0.16
+        w = icon * 0.26
+        g = icon * 0.12
+        pdf.set_fill_color(255, 255, 255)
+        pdf.rect(ix + m,           iy + m, w, icon - 2*m, "F")
+        pdf.rect(ix + m + w + g,   iy + m, w, icon - 2*m, "F")
+
+        # “MULATTIERI”
+        tx = ix + icon + pad
+        pdf.set_text_color(34, 64, 180)        # deep blue
+        pdf.set_font("Arial", "B", 18)
+        pdf.set_xy(tx, y0 + 3)
+        pdf.cell(left_w - (tx - x0) - 4, h/2, "MULATTIERI", border=0, align="L")
+
+        # tagline
+        pdf.set_text_color(130, 130, 130)
+        pdf.set_font("Arial", "", 14)
+        pdf.set_xy(tx, y0 + h/2 + 1)
+        pdf.cell(left_w - (tx - x0) - 4, h/2, "porte e finestre", border=0, align="L")
+
+        # ---- right green title block ----
+        pdf.set_xy(x0 + left_w, y0)
+        pdf.set_fill_color(0, 128, 85)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("Arial", "B", 18)
+        pdf.cell(right_w, h, title, border=0, fill=True, align="C")
+
+        # move below header
+        pdf.ln(h + 2)
+
+        # restore defaults so later table borders don’t inherit colors
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_fill_color(255, 255, 0)
 
     t = getattr(data, "tecnico", None) or type("Empty", (), {})()
     pdf = FPDF()
     pdf.add_page()
+    add_pdf_header(pdf, title="Report Int. Tecnico")
     pdf.set_font("Arial", size=12)
 
     def gv(name, default=""):
@@ -846,6 +903,11 @@ def build_pdf_report_tecnico(data):
         except Exception:
             return str(v), ""
 
+    def ensure_space(pdf: FPDF, needed_h: float):
+        """Start a new page if the next block won't fit."""
+        if pdf.get_y() + needed_h > pdf.page_break_trigger:
+            pdf.add_page()
+
     def write_cell(w, h, text='', fill=False, align='L', bold=False):
         family = pdf.font_family or "Arial"
         size = pdf.font_size_pt or 12
@@ -853,15 +915,6 @@ def build_pdf_report_tecnico(data):
         pdf.set_font(family, style=style, size=size)
         pdf.cell(w, h, text or "", border=1, fill=fill, align=align)
 
-    def bool_cell(label, value, w_label=100, w_box=90):
-        write_cell(w_label, 8, label)
-        write_cell(w_box, 8, " ", fill=value)
-
-    def section_title(text):
-        pdf.set_font("Arial", style="B", size=12)
-        pdf.cell(0, 9, text, ln=True)
-        pdf.set_font("Arial", size=12)
-        
     def green_rule(height=3):
         """Draw a full-width green bar at the current Y, then move cursor down."""
         x = pdf.l_margin
@@ -1220,14 +1273,9 @@ def build_pdf_report_tecnico(data):
 
     # region pdf Build Code
     
-    # Header
-    pdf.set_font("Arial", style="B", size=14)
-    pdf.cell(0, 10, "Report Commessa Posa in Opera", ln=True, align='C')
-    pdf.set_font("Arial", size=12)
-    pdf.ln(3)
-    
     # Ticket / Del / Data
     pdf.set_fill_color(230, 230, 230)
+    ensure_space(pdf, 8)
     write_cell(30, 8, "Ticket N°", fill=True, bold=True)
     write_cell(60, 8, gv("ticket_n"))
     write_cell(20, 8, "Del", fill=True, bold=True)
@@ -1237,6 +1285,7 @@ def build_pdf_report_tecnico(data):
 
     # cliente indirizzo tel fisso persona rif popsatore
     for i, (lbl1, val1, w1, wval1, lbl2, val2, w2, wval2) in enumerate(pairs, start=1):
+        ensure_space(pdf, 8)
         pdf.set_fill_color(230, 230, 230)
         write_cell(w1, 8, lbl1, fill=True, bold=True)
         write_cell(wval1, 8, val1)
@@ -1250,6 +1299,7 @@ def build_pdf_report_tecnico(data):
 
     # Tempo prev. ore / Intervento pianificato / Data & Ora
     pdf.set_fill_color(230, 230, 230)
+    ensure_space(pdf, 8)
     write_cell(50, 8, "Tempo PREVISTO ORE", fill=True, bold=True)
     write_cell(40, 8, gv("tempo_previsto_ore"))
     write_cell(50, 8, "Intervento pianificato x:", fill=True, bold=True)
@@ -1263,6 +1313,7 @@ def build_pdf_report_tecnico(data):
     # stato lavoro, informazioni, tipo riparazione
     for title, checkboxes in checkbox_groups:
         pdf.set_fill_color(204, 255, 204)
+        ensure_space(pdf, 8)
         write_cell(50, 8, title, bold=True, fill=True)
         for cb in checkboxes:
             if len(cb) == 3:
@@ -1277,6 +1328,7 @@ def build_pdf_report_tecnico(data):
     
     # Cose da fare
     pdf.set_fill_color(230, 230, 230)
+    ensure_space(pdf, 8)
     write_cell(190, 8, "Cose da fare", bold=True, fill=True, align='C')
     pdf.ln()
     
@@ -1295,6 +1347,7 @@ def build_pdf_report_tecnico(data):
         
     #  Materiale mancante 
     pdf.set_fill_color(230, 230, 230)
+    ensure_space(pdf, 8)
     write_cell(100, 8, "Materiale mancante", bold=True, fill=True)
     write_cell(30, 8, "Ordinare", bold=True, fill=True, align="C")
     write_cell(30, 8, "Magaz.", bold=True, fill=True, align="C")
@@ -1305,6 +1358,7 @@ def build_pdf_report_tecnico(data):
         d = item if isinstance(item, dict) else getattr(item, "model_dump", lambda: {})()
         if callable(d):
             d = d()
+        ensure_space(pdf, 8)
         three_checkbox_cell_right(
             pdf, 8,
             materiale=d.get("materiale"),
@@ -1315,6 +1369,7 @@ def build_pdf_report_tecnico(data):
     
     # Materiale rientrato 
     pdf.set_fill_color(230, 230, 230)
+    ensure_space(pdf, 8)
     write_cell(100, 8, "Materiale rientrato", bold=True, fill=True)
     write_cell(30, 8, "Riportare", bold=True, fill=True, align="C")
     write_cell(30, 8, "Reso", bold=True, fill=True, align="C")
@@ -1325,6 +1380,7 @@ def build_pdf_report_tecnico(data):
         d = item if isinstance(item, dict) else getattr(item, "model_dump", lambda: {})()
         if callable(d):
             d = d()
+        ensure_space(pdf, 8)
         three_checkbox_cell_right(
             pdf, 8,
             materiale=d.get("materiale"),
@@ -1335,6 +1391,7 @@ def build_pdf_report_tecnico(data):
 
     # ---------- Ore previste ----------
     pdf.set_fill_color(230, 230, 230)
+    ensure_space(pdf, 8)
     write_cell(60, 8, "Ore previste per finire rip", fill=True, bold=True)
     write_cell(40, 8, gv("ore_previste_riparazioni"))
     write_cell(50, 8, "Per quanti posatori", fill=True, bold=True)
@@ -1350,6 +1407,7 @@ def build_pdf_report_tecnico(data):
             pdf.ln()
 
         for label, check_value, bg_color in section["rows"]:
+            ensure_space(pdf, 8)
             one_checkbox_cell_right(
                 pdf, 8,
                 materiale=label,
@@ -1363,6 +1421,7 @@ def build_pdf_report_tecnico(data):
         
     
     # Firma del posatore
+    ensure_space(pdf, 8)
     signature_block(
         pdf,
         text=(
@@ -1375,12 +1434,13 @@ def build_pdf_report_tecnico(data):
     )
 
     # ---------- Note ----------
+    ensure_space(pdf, 8)
     note_box(
         pdf,
         title="NOTE descrivere eventuali difetti riscontrati o danni causati all'interno dell'abitazione:",
         body=gv("note"),
         height=85,       # your desired size
-        end_gap=2       # leave ~12 pts before page bottom
+        end_gap=5       # leave ~12 pts before page bottom
     )
 
     content = pdf.output(dest='S')

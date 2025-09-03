@@ -27,7 +27,7 @@ async def generate_from_json(
 
 
     # SEND EMAIL
-    background_tasks.add_task(send_email_with_retry,email, pdf_tecnico, "report_intervento_tecnico.pdf")  #send_email_with_retry(email, pdf_tecnico, "report_intervento_tecnico.pdf")
+    #background_tasks.add_task(send_email_with_retry,email, pdf_tecnico, "report_intervento_tecnico.pdf")  #send_email_with_retry(email, pdf_tecnico, "report_intervento_tecnico.pdf")
 
     buffer = io.BytesIO(pdf_tecnico)
     return StreamingResponse(buffer, media_type="application/pdf", headers={
