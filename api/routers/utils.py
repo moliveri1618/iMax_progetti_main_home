@@ -780,8 +780,7 @@ def build_report_pdf(data):
 
 
 def build_report_pdf2(data):
-    
-    
+
     t = getattr(data, "tecnico", None) or type("Empty", (), {})()
     pdf = FPDF()
     pdf.add_page()
@@ -1012,7 +1011,6 @@ def build_report_pdf2(data):
         # move to next row
         pdf.set_xy(x0, y0 + cell_h)
 
-
     def three_checkbox_cell_right(pdf, cell_h, materiale,
                                 ordinare=False, magazzino=False, verificare=False,
                                 green_rgb=(0, 255, 0), yellow_rgb=(255, 255, 0)):
@@ -1080,6 +1078,77 @@ def build_report_pdf2(data):
         pdf.set_font(cur_font, cur_style, font_size)
         pdf.set_xy(x0 + box_col_w + gap, y0)
         pdf.cell(cell_w - box_col_w - 2*gap, cell_h, label or "", border=0, align="L")
+
+    sections = [
+        # --- First block: fotografie + danni ---
+        {
+            "header": None,  # no section header here
+            "rows": [
+                ("FOTOGRAFIE PER TUTELA DANNI PRIMA DI INIZIARE I LAVORI", gvb("fotografie_danni_prima_di_iniziare"), (255, 0, 0)),
+                ("FOTOGRAFIE LAVORO ULTIMATO",                             gvb("fotografie_lavoro_ultimato"),          (255, 255, 255)),
+                ("LAVORO NON COMPLETATO CAUSA NOSTRA",                     gvb("lavoro_non_completato_causa_nostra"),  (255, 255, 255)),
+                ("LAVORO NON COMPLETATO CAUSA CLIENTE",                    gvb("lavoro_non_completato_causa_cliente"), (255, 255, 255)),
+                ("SONO STATI ARRECATI DANNI VEDI RAPPORTO POSA",           gvb("danni_vedi_rapporto_posa"),            (255, 255, 255)),
+            ],
+        },
+
+        # --- Second block: TECNICO ---
+        {
+            "header": "TECNICO",
+            "rows": [
+                ("ERRORE PROGETTAZIONE",                gvb("errore_progettazione"),               (230, 230, 230)),
+                ("ERRORE SCELTA PROFILI ACCESSORI",     gvb("errore_scelta_profili_accessori"),    (230, 230, 230)),
+                ("ERRORE MISURE NEL RILIEVO",           gvb("errore_misure_nel_rilievo"),          (230, 230, 230)),
+                ("DIFFICOLTA' TRASPORTO NON SEGNALATE", gvb("difficolta_trasporto_non_segnalate"), (230, 230, 230)),
+                ("ERRORE CALCOLO TEMPO A DISPOSIZIONE", gvb("errore_calcolo_disposizione"),        (230, 230, 230)),
+            ],
+        },
+
+        # --- Third block: UFFICIO ---
+        {
+            "header": "UFFICIO",
+            "rows": [
+                ("ERRORE MISURE",                       gvb("errore_progettazione"),            (230, 230, 230)),
+                ("ERRORE CALCOLO TEMPO A DISPOSIZIONE", gvb("errore_scelta_profili_accessori"), (230, 230, 230)),
+            ],
+        },
+        # COMMERCIALE
+        {
+            "header": "COMMERCIALE",
+            "rows": [
+                ("ERRORE MATERIALE/COLORE NEL CONTRATTO", gvb("errore_misure_nel_rilievo"), (230, 230, 230))
+            ],
+        },
+        # POSATORI
+        {
+            "header": "POSATORI",
+            "rows": [
+                ("VETRO ROTTO DURANTE LA POSA",                   gvb("vetro_rotto"),                   (230, 230, 230)),
+                ("MATERIALI-PROFILI DANNEGGIATI DURANTE LA POSA", gvb("materiali_profili_danneggiati"), (230, 230, 230)),
+                ("MANCANZA ATTREZZATURE NON CARICATE",            gvb("mancanza_attrezzature"),         (230, 230, 230)),
+                ("DANNEGGIAMENTO CASA DEL CLIENTE",               gvb("danneggiamento_casa_cliente"),   (230, 230, 230))
+            ],
+        },
+        # MAGAZZINO
+        {
+            "header": "MAGAZZINO",
+            "rows": [
+                ("VETRO ROTTO DIFETTOSO DA SOTITUIRE",      gvb("errore_materiale_contratto"),  (230, 230, 230)),
+                ("MATERIALE MANCANTE NON CARICATO",         gvb("mancanza_attrezzature"),       (230, 230, 230)),
+                ("MATERIALI DI POSA MANCANTI NON CARICATI", gvb("errore_misure_ordine"),        (230, 230, 230))
+            ],
+        },
+        # FORNITORE
+        {
+            "header": "FORNITORE",
+            "rows": [
+                ("VETRO ROTTO DIFETTOSO DA SOTITUIRE CAUSA FORNITORE",  gvb("errore_materiale_contratto"),  (230, 230, 230)),
+                ("MATERIALE MANCANTE CAUSA FORNITORE",                  gvb("mancanza_attrezzature"),       (230, 230, 230)),
+                ("ERRORE TIPOLOGIA MATERIALE CAUSA FORNITORE",          gvb("errore_misure_ordine"),        (230, 230, 230)),
+                ("MATERIALE DIFETTOSO CAUSA FORNITORE",                 gvb("danneggiamento_casa_cliente"), (230, 230, 230))
+            ],
+        },
+    ]
 
 
     # region pdf Build Code
@@ -1243,75 +1312,26 @@ def build_report_pdf2(data):
     pdf.ln()
     
     
-    # FOTOGRAFIE TUTELA DANNI ... SONO STATI ARRECATI DANNI VEDI
-    rows = [
-        ("FOTOGRAFIE PER TUTELA DANNI PRIMA DI INIZIARE I LAVORI", gvb("fotografie_danni_prima_di_iniziare"),  (255, 0, 0)),
-        ("FOTOGRAFIE LAVORO ULTIMATO",                             gvb("fotografie_lavoro_ultimato"),          (255, 255, 255)),
-        ("LAVORO NON COMPLETATO CAUSA NOSTRA",                     gvb("lavoro_non_completato_causa_nostra"),  (255, 255, 255)),
-        ("LAVORO NON COMPLETATO CAUSA CLIENTE",                    gvb("lavoro_non_completato_causa_cliente"), (255, 255, 255)),
-        ("LAVORO NON COMPLETATO CAUSA CLIENTE",                    gvb("danni_vedi_rapporto_posa"),            (255, 255, 255)),
-    ]
 
-    for label, check_value, bg_color in rows:
-        one_checkbox_cell_right(
-            pdf, 8,
-            materiale=label,
-            checked=check_value,
-            left_w=160,
-            box_w=30,
-            mat_fill_rgb=bg_color,
-            empty_fill_rgb=None,
-        )
-    pdf.ln()
-    
-    # TECNICO
-    pdf.set_fill_color(230, 230, 230)
-    write_cell(190, 8, " TECNICO", bold=True, fill=True)
-    pdf.ln()
-    
-    # Errore progettazione ... errore calcolo tempo a disposizione
-    rows = [
-        ("ERRORE PROGETTAZIONE",                gvb("errore_progettazione"),               (230, 230, 230)),
-        ("ERRORE SCELTA PROFILI ACCESSORI",     gvb("errore_scelta_profili_accessori"),    (230, 230, 230)),
-        ("ERRORE MISURE NEL RILIEVO",           gvb("errore_misure_nel_rilievo"),          (230, 230, 230)),
-        ("DIFFICOLTA' TRASPORTO NON SEGNALATE", gvb("difficolta_trasporto_non_segnalate"), (230, 230, 230)),
-        ("ERRORE CALCOLO TEMPO A DISPOSIZIONE", gvb("errore_calcolo_disposizione"),        (230, 230, 230)),
-    ]
+    # FOTOGRAFIE TUTELA, TECNICO, UFFICIO, COMMERCIALE, POSATORI, MAGAZZINO, FORNITORE
+    for section in sections:
+        if section["header"]:
+            pdf.set_fill_color(230, 230, 230)
+            write_cell(190, 8, f" {section['header']}", bold=True, fill=True)
+            pdf.ln()
 
-    for label, check_value, bg_color in rows:
-        one_checkbox_cell_right(
-            pdf, 8,
-            materiale=label,
-            checked=check_value,
-            left_w=160,
-            box_w=30,
-            mat_fill_rgb=bg_color,
-            empty_fill_rgb=None,
-        )
-    pdf.ln()
-    
-    # UFFICIO
-    pdf.set_fill_color(230, 230, 230)
-    write_cell(190, 8, " UFFICIO", bold=True, fill=True)
-    pdf.ln()
-    
-    # Errore misure ... errore calcolo tempo a disposizione
-    rows = [
-        ("ERRORE MISURE",                       gvb("errore_progettazione"),               (230, 230, 230)),
-        ("ERRORE CALCOLO TEMPO A DISPOSIZIONE", gvb("errore_scelta_profili_accessori"),    (230, 230, 230)),
-    ]
+        for label, check_value, bg_color in section["rows"]:
+            one_checkbox_cell_right(
+                pdf, 8,
+                materiale=label,
+                checked=check_value,
+                left_w=160,
+                box_w=30,
+                mat_fill_rgb=bg_color,
+                empty_fill_rgb=None,
+            )
+        pdf.ln()
 
-    for label, check_value, bg_color in rows:
-        one_checkbox_cell_right(
-            pdf, 8,
-            materiale=label,
-            checked=check_value,
-            left_w=160,
-            box_w=30,
-            mat_fill_rgb=bg_color,
-            empty_fill_rgb=None,
-        )
-    pdf.ln()
 
 
     # # ---------- Sezioni tecniche di errore/danni ----------
