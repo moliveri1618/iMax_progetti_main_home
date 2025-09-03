@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Sequence
 import json
 from pydantic import BaseModel, Field
 from fpdf import FPDF
+import base64, uuid, os, tempfile
 
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -1191,7 +1192,6 @@ def build_report_pdf2(data):
     pdf.set_font("Arial", size=12)
     pdf.ln(3)
     
-    
     # Ticket / Del / Data
     pdf.set_fill_color(230, 230, 230)
     write_cell(30, 8, "Ticket N°", fill=True, bold=True)
@@ -1214,7 +1214,6 @@ def build_report_pdf2(data):
             green_rule(height=2)
 
 
-
     # Tempo prev. ore / Intervento pianificato / Data & Ora
     pdf.set_fill_color(230, 230, 230)
     write_cell(50, 8, "Tempo PREVISTO ORE", fill=True, bold=True)
@@ -1231,7 +1230,6 @@ def build_report_pdf2(data):
     for title, checkboxes in checkbox_groups:
         pdf.set_fill_color(204, 255, 204)
         write_cell(50, 8, title, bold=True, fill=True)
-
         for cb in checkboxes:
             if len(cb) == 3:
                 label, checked, width = cb
@@ -1239,7 +1237,6 @@ def build_report_pdf2(data):
             else:
                 label, checked, width, font_size = cb
                 checkbox_cell_split(pdf, width, 8, label, checked=checked, font_size=font_size)
-
         pdf.ln()
         green_rule(height=2)
 
@@ -1309,8 +1306,7 @@ def build_report_pdf2(data):
     write_cell(50, 8, "Per quanti posatori", fill=True, bold=True)
     write_cell(40, 8, gv("per_numero_posatori"))
     pdf.ln()
-    
-    
+
 
     # FOTOGRAFIE TUTELA, TECNICO, UFFICIO, COMMERCIALE, POSATORI, MAGAZZINO, FORNITORE
     for section in sections:
@@ -1330,59 +1326,77 @@ def build_report_pdf2(data):
                 empty_fill_rgb=None,
             )
         pdf.ln()
+        
+    
+    # Firma del posatore
+    pdf.set_fill_color(230, 230, 230)
 
+    # --- Left explanatory cell ---
+    text = (
+        "FIRMA DEL POSATORE  Il tecnico dichiara, sotto la propria responsabilità, "
+        "che tutto quanto sopra indicato corrisponde al vero ed è consapevole e "
+        "informato di eventuali sanzioni disciplinari o addebiti nel caso quanto "
+        "dichiarato non corrisponda a verità."
+    )
 
+    # Save Y position
+    x0, y0 = pdf.get_x(), pdf.get_y()
+    left_w, right_w = 140, 50
 
-    # # ---------- Sezioni tecniche di errore/danni ----------
-    # # TECNICO
-    # section_title("TECNICO")
-    # bool_cell("errore progettazione", gvb("errore_progettazione"))
-    # pdf.ln()
-    # bool_cell("errore scelta profili e accessori", gvb("errore_scelta_profili_accessori"))
-    # pdf.ln()
-    # bool_cell("errore misure nel rilievo", gvb("errore_misure_nel_rilievo"))
-    # pdf.ln()
-    # bool_cell("difficoltà trasporto non segnalate", gvb("difficolta_trasporto_non_segnalate"))
-    # pdf.ln()
-    # bool_cell("errore calcolo tempo a disposizione", gvb("errore_calcolo_disposizione"))
-    # pdf.ln(4)
+    # Draw left block, but capture Y after writing
+    pdf.set_font("Arial", "B", 10)
+    pdf.multi_cell(left_w, 8, text, border=1, fill=True)
+    y_after = pdf.get_y()
 
-    # # UFFICIO
-    # section_title("UFFICIO")
-    # bool_cell("errore misure/materiale/colore nell'ordine", gvb("errore_misure_ordine"))
-    # pdf.ln()
-    # bool_cell("errore calcolo tempo a disposizione", gvb("errore_calcolo_tempo_disposizione"))
-    # pdf.ln(4)
+    # Compute height used by left cell
+    h_box = y_after - y0
 
-    # # COMMERCIALE
-    # section_title("COMMERCIALE")
-    # bool_cell("errore materiale/colore nel contratto", gvb("errore_materiale_contratto"))
-    # pdf.ln(4)
+    # Draw right signature box aligned to the same top (y0)
+    x_box = x0 + left_w
+    pdf.set_xy(x_box, y0)
+    pdf.set_fill_color(255, 255, 255)
+    pdf.cell(right_w, h_box, "", border=1, fill=True, align="C")
 
-    # # POSATORI
-    # section_title("POSATORI")
-    # bool_cell("vetro rotto durante la posa", gvb("vetro_rotto_posa"))
-    # pdf.ln()
-    # bool_cell("materiali-profili danneggiati durante la posa", gvb("materiali_profili_danneggiati"))
-    # pdf.ln()
-    # bool_cell("mancanza attrezzature non caricate", gvb("mancanza_attrezzature"))
-    # pdf.ln()
-    # bool_cell("danneggiamento casa del cliente", gvb("danneggiamento_casa_cliente"))
-    # pdf.ln(4)
+    # Try to place signature image if present
+    sig = gv("signature")  # JSON field
+    if isinstance(sig, str) and sig.startswith("data:image/"):
+        try:
+            # strip "data:image/png;base64," (or jpg, etc.)
+            try:
+                header, b64 = sig.split(",", 1)
+            except ValueError:
+                raise ValueError("Signature data URL missing comma separator")
 
-    # # MAGAZZINO
-    # section_title("MAGAZZINO")
-    # bool_cell("vetro rotto/difettoso da sostituire", gvb("vetro_rotto"))
-    # pdf.ln()
-    # bool_cell("materiale mancante non caricato", gvb("materiale_mancante_non_caricato"))
-    # pdf.ln()
-    # bool_cell("materiali di posa mancanti non caricati", gvb("materiali_posa_mancanti"))
-    # pdf.ln(4)
+            # infer extension from MIME
+            ext = "png"
+            if header.startswith("data:image/") and ";base64" in header:
+                ext = header[len("data:image/"): header.index(";base64")] or "png"
 
-    # # FORNITORE
-    # section_title("FORNITORE")
-    # bool_cell("materiale difettoso causa fornitore", gvb("errore_materiale_contratto"))  # adjust if you add specific keys
-    # pdf.ln(6)
+            img_bytes = base64.b64decode(b64)
+
+            # write to a temp file (FPDF needs a path)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}") as tmp:
+                tmp_path = tmp.name
+                tmp.write(img_bytes)
+
+            # place image with padding (constrain by width; keep aspect ratio)
+            pad = 3
+            pdf.image(
+                tmp_path,
+                x=x_box + pad,
+                y=y0 + pad,
+                w=right_w - 2*pad,  # height auto to preserve aspect ratio
+            )
+
+        except Exception as e:
+            print(f"[signature] failed to render: {e}")
+        finally:
+            # cleanup temp file if it exists
+            try:
+                if 'tmp_path' in locals() and os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception as _:
+                pass
 
     # # ---------- Note statiche ----------
     # pdf.set_font("Arial", size=10)
