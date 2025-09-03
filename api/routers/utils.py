@@ -937,31 +937,42 @@ def build_report_pdf2(data):
         # Move cursor to end of cell
         pdf.set_xy(x0 + cell_w, y0)
 
-    def three_checkbox_cell_right(pdf, cell_h, materiale, ordinare=False, magazzino=False, verificare=False):
-        """
-        Draw a row with Materiale description and 3 checkboxes (Ordinare, Magaz., Verificare).
-        """
-        x0, y0 = pdf.get_x(), pdf.get_y()
+    # def three_checkbox_cell_right(pdf, cell_h, materiale,
+    #                             ordinare=False, magazzino=False, verificare=False,
+    #                             green_rgb=(0, 255, 0)):
+    #     """
+    #     Draw a row with Materiale description and 3 checkboxes (Ordinare, Magaz., Verificare).
+    #     If a checkbox is checked, its whole cell background is green.
+    #     """
+    #     x0, y0 = pdf.get_x(), pdf.get_y()
 
-        # Materiale cell (wide left column)
-        pdf.rect(x0, y0, 100, cell_h)
-        pdf.set_xy(x0 + 2, y0)
-        pdf.cell(100 - 4, cell_h, materiale or "", border=0, align="L")
+    #     # --- Materiale cell (left column) ---
+    #     pdf.rect(x0, y0, 100, cell_h)
+    #     pdf.set_xy(x0 + 2, y0)
+    #     pdf.cell(100 - 4, cell_h, materiale or "", border=0, align="L")
 
-        # Three checkbox cells
-        def box_cell(x, checked):
-            pdf.rect(x, y0, 30, cell_h)
-            size = 5
-            box_x = x + (30 - size) / 2
-            box_y = y0 + (cell_h - size) / 2
-            draw_checkbox(pdf, box_x, box_y, size=size, checked=checked)
+    #     # --- Helper for the 3 checkbox cells ---
+    #     def box_cell(x, checked):
+    #         if checked:
+    #             pdf.set_fill_color(*green_rgb)
+    #             pdf.rect(x, y0, 30, cell_h, 'DF')   # green background
+    #         else:
+    #             pdf.set_fill_color(255, 255, 255)
+    #             pdf.rect(x, y0, 30, cell_h, 'DF')   # white background
 
-        box_cell(x0 + 100, ordinare)
-        box_cell(x0 + 130, magazzino)
-        box_cell(x0 + 160, verificare)
+    #         # Draw checkbox inside
+    #         size = 5
+    #         box_x = x + (30 - size) / 2
+    #         box_y = y0 + (cell_h - size) / 2
+    #         draw_checkbox(pdf, box_x, box_y, size=size, checked=checked)
 
-        # Move cursor to next row
-        pdf.set_xy(x0, y0 + cell_h)
+    #     # --- Three checkbox cells ---
+    #     box_cell(x0 + 100, ordinare)
+    #     box_cell(x0 + 130, magazzino)
+    #     box_cell(x0 + 160, verificare)
+
+    #     # --- Move cursor to next row ---
+    #     pdf.set_xy(x0, y0 + cell_h)
 
     def three_checkbox_cell_right_optional(pdf, cell_h, materiale, ordinare=False, magazzino=False, verificare=False):
         """
@@ -991,6 +1002,76 @@ def build_report_pdf2(data):
 
         # Move cursor to next row
         pdf.set_xy(x0, y0 + cell_h)
+        
+
+    def three_checkbox_cell_right(pdf, cell_h, materiale,
+                                ordinare=False, magazzino=False, verificare=False,
+                                green_rgb=(0, 255, 0), yellow_rgb=(255, 255, 0)):
+        """
+        Draw a row with Materiale description and 3 checkboxes (Ordinare, Magaz., Verificare).
+        If checked, cell background is green; otherwise yellow.
+        """
+        x0, y0 = pdf.get_x(), pdf.get_y()
+
+        # --- Materiale cell (left column, stays white always) ---
+        pdf.set_fill_color(255, 255, 255)
+        pdf.rect(x0, y0, 100, cell_h, 'DF')
+        pdf.set_xy(x0 + 2, y0)
+        pdf.cell(100 - 4, cell_h, materiale or "", border=0, align="L")
+
+        # --- Helper for the 3 checkbox cells ---
+        def box_cell(x, checked):
+            if checked:
+                pdf.set_fill_color(*green_rgb)   # green if checked
+            else:
+                pdf.set_fill_color(*yellow_rgb)  # yellow if not checked
+            pdf.rect(x, y0, 30, cell_h, 'DF')
+
+            # Draw checkbox inside
+            size = 5
+            box_x = x + (30 - size) / 2
+            box_y = y0 + (cell_h - size) / 2
+            draw_checkbox(pdf, box_x, box_y, size=size, checked=checked)
+
+        # --- Three checkbox cells ---
+        box_cell(x0 + 100, ordinare)
+        box_cell(x0 + 130, magazzino)
+        box_cell(x0 + 160, verificare)
+
+        # --- Move cursor to next row ---
+        pdf.set_xy(x0, y0 + cell_h)
+
+    def checkbox_cell_split(pdf, cell_w, cell_h, label, checked, *,
+                        font_size=12, box_col_w=10, gap=2,
+                        green_rgb=(0, 255, 0), yellow_rgb=(255, 255, 0)):
+        """
+        [ left column (green if checked, yellow if not) | label column ]
+        """
+        x0, y0 = pdf.get_x(), pdf.get_y()
+
+        # Save current font
+        cur_font, cur_style, cur_size = pdf.font_family, pdf.font_style, pdf.font_size_pt
+
+        # --- Left column (checkbox area background) ---
+        if checked:
+            pdf.set_fill_color(*green_rgb)   # green if checked
+        else:
+            pdf.set_fill_color(*yellow_rgb)  # yellow if not checked
+        pdf.rect(x0, y0, box_col_w, cell_h, 'DF')
+
+        # draw the checkbox square inside
+        size = 5
+        bx = x0 + (box_col_w - size) / 2
+        by = y0 + (cell_h - size) / 2
+        draw_checkbox(pdf, bx, by, size=size, checked=checked)
+
+        # --- Right column (label) ---
+        pdf.set_fill_color(255, 255, 255)  # always white
+        pdf.rect(x0 + box_col_w, y0, cell_w - box_col_w, cell_h, 'DF')
+        pdf.set_font(cur_font, cur_style, font_size)
+        pdf.set_xy(x0 + box_col_w + gap, y0)
+        pdf.cell(cell_w - box_col_w - 2*gap, cell_h, label or "", border=0, align="L")
+
 
     # region pdf Build Code
     
@@ -1066,24 +1147,24 @@ def build_report_pdf2(data):
     # Stato Lavoro
     pdf.set_fill_color(204, 255, 204) 
     write_cell(50, 8, "STATO LAVORO", bold=True, fill=True)
-    checkbox_cell(pdf, 60, 8, "Completato", checked=gvb("stato_lavoro"))
-    checkbox_cell(pdf, 80, 8, "Da Completare", checked=not gvb("stato_lavoro"))
+    checkbox_cell_split(pdf, 60, 8, "Completato", checked=gvb("stato_lavoro"))
+    checkbox_cell_split(pdf, 80, 8, "Da Completare", checked=not gvb("stato_lavoro"))
     pdf.ln()
     green_rule(height=2)  
 
     # Informazioni
     pdf.set_fill_color(204, 255, 204)
     write_cell(50, 8, "Informazioni", bold=True, fill=True)
-    checkbox_cell(pdf, 60, 8, "Già Cliente", checked=gvb("informazioni"))
-    checkbox_cell(pdf, 80, 8, "E' STATO ESEGUITO IL SOPRALLUOGO", checked=gvb("informazioni"), font_size=10)  
+    checkbox_cell_split(pdf, 60, 8, "Già Cliente", checked=gvb("informazioni"))
+    checkbox_cell_split(pdf, 80, 8, "E' STATO ESEGUITO IL SOPRALLUOGO", checked=gvb("informazioni"), font_size=10)  
     pdf.ln()
     green_rule(height=2)  
 
     # Tipo Riparazione
     pdf.set_fill_color(204, 255, 204)
     write_cell(50, 8, "Tipo Riparazione", bold=True, fill=True)
-    checkbox_cell(pdf, 60, 8, "Riparazione STD", checked=gvb("tipo_riparazione"))
-    checkbox_cell(pdf, 80, 8, "Riparazione in Garanzia", checked=(not gvb("tipo_riparazione")))
+    checkbox_cell_split(pdf, 60, 8, "Riparazione STD", checked=gvb("tipo_riparazione"))
+    checkbox_cell_split(pdf, 80, 8, "Riparazione in Garanzia", checked=(not gvb("tipo_riparazione")))
     pdf.ln()
     
     # Cose da fare
