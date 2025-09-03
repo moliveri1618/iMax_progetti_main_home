@@ -1150,6 +1150,38 @@ def build_report_pdf2(data):
         },
     ]
 
+    pairs = [
+        # (label1, value1, width1, widthVal1, label2, value2, width2, widthVal2)
+        ("Cliente", gv("cliente"), 30, 60, "Ordine N°", gv("ordine_n"), 30, 70),
+        ("Indirizzo", gv("indirizzo"), 30, 60, "Città", gv("citta"), 30, 70),
+        ("Telefono fisso", gv("telefono_fisso"), 30, 60, "Cellulare", gv("cellulare"), 30, 70),
+        ("Persona rif", gv("persona_rif"), 30, 60, "Cellulare", gv("cellulare"), 30, 70),
+        ("Posatore", gv("posatore"), 30, 60, "SQUADRA", gv("squadra"), 30, 70),
+    ]
+
+    checkbox_groups = [
+        (
+            "STATO LAVORO",
+            [
+                ("Completato", gvb("stato_lavoro"), 60),
+                ("Da Completare", not gvb("stato_lavoro"), 82),
+            ],
+        ),
+        (
+            "Informazioni",
+            [
+                ("Già Cliente", gvb("informazioni"), 60),
+                ("E' STATO ESEGUITO IL SOPRALLUOGO", gvb("informazioni"), 82, 10),  # font_size override
+            ],
+        ),
+        (
+            "Tipo Riparazione",
+            [
+                ("Riparazione STD", gvb("tipo_riparazione"), 60),
+                ("Riparazione in Garanzia", not gvb("tipo_riparazione"), 82),
+            ],
+        ),
+    ]
 
     # region pdf Build Code
     
@@ -1168,47 +1200,20 @@ def build_report_pdf2(data):
     write_cell(80, 8, gv("del"))
     pdf.ln()
     green_rule(height=2)   
-    
-    # Cliente / Ordine N°
-    pdf.set_fill_color(230, 230, 230)
-    write_cell(30, 8, "Cliente", fill=True, bold=True)
-    write_cell(60, 8, gv("cliente"))
-    write_cell(30, 8, "Ordine N°", fill=True, bold=True)
-    write_cell(70, 8, gv("ordine_n"))
-    pdf.ln()
 
-    # Indirizzo / Città
-    pdf.set_fill_color(230, 230, 230)
-    write_cell(30, 8, "Indirizzo", fill=True, bold=True)
-    write_cell(60, 8, gv("indirizzo"))
-    write_cell(30, 8, "Città", fill=True, bold=True)
-    write_cell(70, 8, gv("citta"))
-    pdf.ln()
+    # cliente indirizzo tel fisso persona rif popsatore
+    for i, (lbl1, val1, w1, wval1, lbl2, val2, w2, wval2) in enumerate(pairs, start=1):
+        pdf.set_fill_color(230, 230, 230)
+        write_cell(w1, 8, lbl1, fill=True, bold=True)
+        write_cell(wval1, 8, val1)
+        write_cell(w2, 8, lbl2, fill=True, bold=True)
+        write_cell(wval2, 8, val2)
+        pdf.ln()
 
-    # Telefono fisso / Cellulare
-    pdf.set_fill_color(230, 230, 230)
-    write_cell(30, 8, "Telefono fisso", fill=True, bold=True)
-    write_cell(60, 8, gv("telefono_fisso"))
-    write_cell(30, 8, "Cellulare", fill=True, bold=True)
-    write_cell(70, 8, gv("cellulare"))
-    pdf.ln()
-    green_rule(height=2)   
+        if i == 3:   # after the 3rd iteration
+            green_rule(height=2)
 
-    # Persona di riferimento / Posatore / SQUADRA
-    pdf.set_fill_color(230, 230, 230)
-    write_cell(30, 8, "Persona rif", fill=True, bold=True)
-    write_cell(60, 8, gv("persona_rif"))
-    write_cell(30, 8, "Cellulare", fill=True, bold=True)
-    write_cell(70, 8, gv("cellulare"))
-    pdf.ln()
-    
-    # postatore / squadra
-    pdf.set_fill_color(230, 230, 230)
-    write_cell(30, 8, "Posatore", fill=True, bold=True)
-    write_cell(60, 8, gv("posatore"))
-    write_cell(30, 8, "SQUADRA", fill=True, bold=True)
-    write_cell(70, 8, gv("squadra"))
-    pdf.ln()
+
 
     # Tempo prev. ore / Intervento pianificato / Data & Ora
     pdf.set_fill_color(230, 230, 230)
@@ -1222,28 +1227,22 @@ def build_report_pdf2(data):
     pdf.ln()
     green_rule(height=2)   
     
-    # Stato Lavoro
-    pdf.set_fill_color(204, 255, 204) 
-    write_cell(50, 8, "STATO LAVORO", bold=True, fill=True)
-    checkbox_cell_split(pdf, 60, 8, "Completato", checked=gvb("stato_lavoro"))
-    checkbox_cell_split(pdf, 82, 8, "Da Completare", checked=not gvb("stato_lavoro"))
-    pdf.ln()
-    green_rule(height=2)  
+    # stato lavoro, informazioni, tipo riparazione
+    for title, checkboxes in checkbox_groups:
+        pdf.set_fill_color(204, 255, 204)
+        write_cell(50, 8, title, bold=True, fill=True)
 
-    # Informazioni
-    pdf.set_fill_color(204, 255, 204)
-    write_cell(50, 8, "Informazioni", bold=True, fill=True)
-    checkbox_cell_split(pdf, 60, 8, "Già Cliente", checked=gvb("informazioni"))
-    checkbox_cell_split(pdf, 82, 8, "E' STATO ESEGUITO IL SOPRALLUOGO", checked=gvb("informazioni"), font_size=10)  
-    pdf.ln()
-    green_rule(height=2)  
+        for cb in checkboxes:
+            if len(cb) == 3:
+                label, checked, width = cb
+                checkbox_cell_split(pdf, width, 8, label, checked=checked)
+            else:
+                label, checked, width, font_size = cb
+                checkbox_cell_split(pdf, width, 8, label, checked=checked, font_size=font_size)
 
-    # Tipo Riparazione
-    pdf.set_fill_color(204, 255, 204)
-    write_cell(50, 8, "Tipo Riparazione", bold=True, fill=True)
-    checkbox_cell_split(pdf, 60, 8, "Riparazione STD", checked=gvb("tipo_riparazione"))
-    checkbox_cell_split(pdf, 82, 8, "Riparazione in Garanzia", checked=(not gvb("tipo_riparazione")))
-    pdf.ln()
+        pdf.ln()
+        green_rule(height=2)
+
     
     # Cose da fare
     pdf.set_fill_color(230, 230, 230)
