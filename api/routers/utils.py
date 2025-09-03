@@ -884,6 +884,7 @@ def build_report_pdf2(data):
         *,
         green_rgb=(0, 255, 0),
         yellow_rgb=(255, 255, 0),
+        mat_fill_rgb=(255, 255, 255),
     ):
         """
         States:
@@ -893,12 +894,13 @@ def build_report_pdf2(data):
         """
         x0, y0 = pdf.get_x(), pdf.get_y()
 
-        # Left description cell
-        pdf.set_fill_color(255, 255, 255)
-        pdf.rect(x0, y0, 100, cell_h, 'F')  # fill only, no border
+        # Left description cell 
+        pdf.set_fill_color(*mat_fill_rgb)
+        pdf.rect(x0, y0, 100, cell_h, 'F')   
         pdf.set_draw_color(0, 0, 0)
-        pdf.line(x0, y0, x0 + 100, y0)              # top line
-        pdf.line(x0, y0 + cell_h, x0 + 100, y0 + cell_h)  # bottom line
+        pdf.line(x0, y0, x0, y0 + cell_h)
+        pdf.line(x0, y0, x0 + 100, y0)
+        pdf.line(x0, y0 + cell_h, x0 + 100, y0 + cell_h)
         pdf.set_xy(x0 + 2, y0)
         pdf.cell(96, cell_h, materiale or "", border=0, align="L")
 
@@ -941,6 +943,75 @@ def build_report_pdf2(data):
         box_cell(x0 + 160, verificare)
 
         pdf.set_xy(x0, y0 + cell_h)
+
+    def one_checkbox_cell_right(
+        pdf,
+        cell_h,
+        materiale,
+        checked=None,                      # True -> green + check, False -> yellow empty, None -> only horizontals
+        *,
+        left_w=160,                        # width of "materiale" cell
+        box_w=30,                          # width of the right checkbox cell
+        green_rgb=(0, 255, 0),
+        yellow_rgb=(255, 255, 0),
+        mat_fill_rgb=(255, 255, 255),      # fill for "materiale"
+        empty_fill_rgb=None,               # optional fill for empty state; None keeps only horizontals
+    ):
+        """
+        Draws: [  materiale (left_w)  |  checkbox (box_w)  ]
+        Borders: left cell has LEFT+TOP+BOTTOM; no right border (to avoid vertical seam).
+                Right cell: filled (F) with no borders for checked/unchecked; only top/bottom lines for empty.
+        """
+        x0, y0 = pdf.get_x(), pdf.get_y()
+
+        # --- Left "materiale" cell ---
+        pdf.set_fill_color(*mat_fill_rgb)
+        pdf.rect(x0, y0, left_w, cell_h, 'F')                 # fill only
+        pdf.set_draw_color(0, 0, 0)
+        pdf.line(x0, y0, x0, y0 + cell_h)                     # left border
+        pdf.line(x0, y0, x0 + left_w, y0)                     # top
+        pdf.line(x0, y0 + cell_h, x0 + left_w, y0 + cell_h)   # bottom
+        pdf.set_xy(x0 + 2, y0)
+        pdf.set_font("Arial", "", 12)
+        pdf.cell(left_w - 4, cell_h, materiale or "", border=0, align="L")
+
+        # --- Right checkbox cell ---
+        x_box = x0 + left_w
+        state = (
+            "checked"   if checked is True else
+            "unchecked" if checked is False else
+            "empty"
+        )
+
+        if state in ("checked", "unchecked"):
+            # background fill without borders
+            pdf.set_fill_color(*(green_rgb if state == "checked" else yellow_rgb))
+            pdf.rect(x_box, y0, box_w, cell_h, 'DF')
+
+            # checkbox graphic
+            size = 5
+            bx = x_box + (box_w - size) / 2
+            by = y0 + (cell_h - size) / 2
+            draw_checkbox(pdf, bx, by, size=size, checked=(state == "checked"))
+
+        else:  # empty -> only horizontals (optional fill)
+            if empty_fill_rgb is not None:
+                pdf.set_fill_color(*empty_fill_rgb)
+                pdf.rect(x_box, y0, box_w, cell_h, 'DF')
+            pdf.set_draw_color(0, 0, 0)
+            pdf.line(x_box, y0, x_box + box_w, y0)                # top
+            pdf.line(x_box, y0 + cell_h, x_box + box_w, y0 + cell_h)  # bottom
+
+        # erase any left seam from previous cell (defensive)
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_line_width(0.2)
+        pdf.line(x_box, y0, x_box, y0 + cell_h)
+        pdf.set_line_width(0.2)
+        pdf.set_draw_color(0, 0, 0)
+
+        # move to next row
+        pdf.set_xy(x0, y0 + cell_h)
+
 
     def three_checkbox_cell_right(pdf, cell_h, materiale,
                                 ordinare=False, magazzino=False, verificare=False,
@@ -1171,17 +1242,77 @@ def build_report_pdf2(data):
     write_cell(40, 8, gv("per_numero_posatori"))
     pdf.ln()
     
-    # FOTOGRAFIE TUTELA DANNI
-    pdf.set_fill_color(230, 230, 230)
-    three_checkbox_cell_right_optional(
+    
+    # FOTOGRAFIE TUTELA DANNI ... SONO STATI ARRECATI DANNI VEDI
+    rows = [
+        ("FOTOGRAFIE PER TUTELA DANNI PRIMA DI INIZIARE I LAVORI", gvb("fotografie_danni_prima_di_iniziare"),  (255, 0, 0)),
+        ("FOTOGRAFIE LAVORO ULTIMATO",                             gvb("fotografie_lavoro_ultimato"),          (255, 255, 255)),
+        ("LAVORO NON COMPLETATO CAUSA NOSTRA",                     gvb("lavoro_non_completato_causa_nostra"),  (255, 255, 255)),
+        ("LAVORO NON COMPLETATO CAUSA CLIENTE",                    gvb("lavoro_non_completato_causa_cliente"), (255, 255, 255)),
+        ("LAVORO NON COMPLETATO CAUSA CLIENTE",                    gvb("danni_vedi_rapporto_posa"),            (255, 255, 255)),
+    ]
+
+    for label, check_value, bg_color in rows:
+        one_checkbox_cell_right(
             pdf, 8,
-            materiale="FOTOGRAFIE PER TUTELA DANNI PRIMA DI INIZIARE I LAVORI",
-            ordinare=None,                 
-            magazzino=None,                
-            verificare=gvb("fotografie_danni_prima_di_iniziare"),
+            materiale=label,
+            checked=check_value,
+            left_w=160,
+            box_w=30,
+            mat_fill_rgb=bg_color,
+            empty_fill_rgb=None,
         )
-    # write_cell(190, 8, "Cose da fare", bold=True, fill=True)
     pdf.ln()
+    
+    # TECNICO
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(190, 8, " TECNICO", bold=True, fill=True)
+    pdf.ln()
+    
+    # Errore progettazione ... errore calcolo tempo a disposizione
+    rows = [
+        ("ERRORE PROGETTAZIONE",                gvb("errore_progettazione"),               (230, 230, 230)),
+        ("ERRORE SCELTA PROFILI ACCESSORI",     gvb("errore_scelta_profili_accessori"),    (230, 230, 230)),
+        ("ERRORE MISURE NEL RILIEVO",           gvb("errore_misure_nel_rilievo"),          (230, 230, 230)),
+        ("DIFFICOLTA' TRASPORTO NON SEGNALATE", gvb("difficolta_trasporto_non_segnalate"), (230, 230, 230)),
+        ("ERRORE CALCOLO TEMPO A DISPOSIZIONE", gvb("errore_calcolo_disposizione"),        (230, 230, 230)),
+    ]
+
+    for label, check_value, bg_color in rows:
+        one_checkbox_cell_right(
+            pdf, 8,
+            materiale=label,
+            checked=check_value,
+            left_w=160,
+            box_w=30,
+            mat_fill_rgb=bg_color,
+            empty_fill_rgb=None,
+        )
+    pdf.ln()
+    
+    # UFFICIO
+    pdf.set_fill_color(230, 230, 230)
+    write_cell(190, 8, " UFFICIO", bold=True, fill=True)
+    pdf.ln()
+    
+    # Errore misure ... errore calcolo tempo a disposizione
+    rows = [
+        ("ERRORE MISURE",                       gvb("errore_progettazione"),               (230, 230, 230)),
+        ("ERRORE CALCOLO TEMPO A DISPOSIZIONE", gvb("errore_scelta_profili_accessori"),    (230, 230, 230)),
+    ]
+
+    for label, check_value, bg_color in rows:
+        one_checkbox_cell_right(
+            pdf, 8,
+            materiale=label,
+            checked=check_value,
+            left_w=160,
+            box_w=30,
+            mat_fill_rgb=bg_color,
+            empty_fill_rgb=None,
+        )
+    pdf.ln()
+
 
     # # ---------- Sezioni tecniche di errore/danni ----------
     # # TECNICO
