@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
-from routers.utils import send_email_with_retry, ReportData, ReportPostVendita, build_pdf_report_tecnico, build_pdf_report_cliente, build_pdf_report_posa_cliente
+from routers.utils import send_email_with_retry, ReportData, ReportPostVendita, build_pdf_report_tecnico, build_pdf_report_cliente, build_pdf_report_posa_cliente, build_pdf_report_posa_commessa
 
 
 router = APIRouter()
@@ -67,27 +67,27 @@ async def generate_reports(
     
     try:
         # Generate PDF TECNICO & CLIENTE
-        pdf_psa_cliente = build_pdf_report_posa_cliente(data)
-        #pdf_cliente = build_pdf_report_cliente(data)
+        pdf_posa_commessa = build_pdf_report_posa_commessa(data)
+        pdf_posa_cliente = build_pdf_report_posa_cliente(data)
 
-        # SEND EMAIL
-        # background_tasks.add_task(send_email_with_retry, email, pdf_tecnico, "report_intervento_tecnico.pdf")
-        # background_tasks.add_task(send_email_with_retry, email, pdf_cliente, "report_intervento_cliente.pdf")
+        #SEND EMAIL
+        background_tasks.add_task(send_email_with_retry, email, pdf_posa_commessa, "report_posa_commessa.pdf")
+        background_tasks.add_task(send_email_with_retry, email, pdf_posa_cliente, "report_posa_cliente.pdf")
 
-        # return JSONResponse(
-        #     {
-        #         "ok": True,
-        #         "message": "Reports generated successfully.",
-        #     },
-        #     status_code=status.HTTP_200_OK,
-        # )
+        return JSONResponse(
+            {
+                "ok": True,
+                "message": "Reports generated successfully.",
+            },
+            status_code=status.HTTP_200_OK,
+        )
         
-        # return pdf file 
-        buffer = io.BytesIO(pdf_psa_cliente)
-        #buffer = io.BytesIO(pdf_cliente)
-        return StreamingResponse(buffer, media_type="application/pdf", headers={
-            "Content-Disposition": "attachment; filename=posa_layout.pdf"
-        })
+        # # return pdf file 
+        # buffer = io.BytesIO(pdf_posa_commessa)
+        # #buffer = io.BytesIO(pdf_posa_cliente)
+        # return StreamingResponse(buffer, media_type="application/pdf", headers={
+        #     "Content-Disposition": "attachment; filename=posa_layout.pdf"
+        # })
     
 
     except Exception as e:
