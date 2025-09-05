@@ -30,12 +30,12 @@ from models.iConteggiCommessa import OrdiniPremi
 logger = logging.getLogger(__name__)
 
 
+###   REPORTDATA MODELS     ###
 class MaterialeItem(BaseModel):
     materiale: Optional[str] = None
     ordinare: Optional[bool] = None
     magazzino: Optional[bool] = None
     verificare: Optional[bool] = None
-
 
 class ClienteLavoro(BaseModel):
     id: Optional[int] = None
@@ -43,7 +43,6 @@ class ClienteLavoro(BaseModel):
     switch1: Optional[bool] = None
     switch2: Optional[bool] = None
     switch3: Optional[bool] = None
-
 
 class Tecnico(BaseModel):
     cliente_materiale_mancante: Optional[List[MaterialeItem]] = None
@@ -98,9 +97,7 @@ class Tecnico(BaseModel):
         "populate_by_name": True,   
         "extra": "ignore",          
     }
-    
-
-    
+        
 class Cliente(BaseModel):
     cliente_ticket_n: Optional[str] = None
     cliente_del: Optional[str] = None
@@ -124,6 +121,103 @@ class ReportData(BaseModel):
     tecnico: Optional[Tecnico] = None
     cliente: Optional[Cliente] = None  
     
+
+# --- REPORT POST VENDITA ---
+class PosaCliente(BaseModel):
+    cliente: str
+    ordine: str
+    squadra_posatori: str
+    data: str
+    stato_posa: str
+    resta_da_fare: str
+    pulizia_vetri: bool
+    giro_cliente: bool
+    consegna_documenti: bool
+    giro_cliente_conformita: bool
+    consegna_libretto: bool
+    ddt_verbal_firmati: bool
+    difetti_vetri: bool
+    difetti_profili: bool
+    difetti_muratura: bool
+    danni_arrecati: bool
+    signature: str
+
+class Materiale(BaseModel):
+    materiale: str
+    ordinare: bool
+    magazzino: bool
+    verificare: bool
+
+class ReportFotografico(BaseModel):
+    foto_danni_inizio: bool
+    danni_posa_cliente: bool
+    foto_giunti_posa: bool
+    foto_lavoro_ultimato: bool
+    lavoro_non_completato_nostro: bool
+    lavoro_non_completato_cliente: bool
+
+class Errori(BaseModel):
+    errore_progettazione: bool
+    errore_scelta_profili_accessori: bool
+    errore_misure_nel_rilievo: bool
+    difficolta_trasporto_non_segnalate: bool
+    errore_calcolo_tempo_disp: bool
+
+class Posatori(BaseModel):
+    vetro_rotto_durante_la_posa: bool
+    materiali_danneggiati_durante_posa: bool
+    mancanza_attr_non_caricate: bool
+    danneggiamento_casa_cliente: bool
+    errore_calcolo_tempo_disp: bool
+
+class Ufficio(BaseModel):
+    errore_misure_ordine: bool
+    errore_calcolo_tempo: bool
+
+class Coomerciale(BaseModel):
+    errore_materiale_contratto: bool
+    errore_scelta_profili_accessori_comm: bool
+
+class Magazzino(BaseModel):
+    vetro_rotto_difettoso: bool
+    materiale_mancante_non_caricato: bool
+    materiali_posa_mancanti_noncaricati: bool
+    difficolta_trasporto_non_segnalate: bool
+    errore_calcolo_tempo_disp: bool
+
+class Fornitore(BaseModel):
+    materiale_difettoso_causa_fornitore: bool
+    errore_tipologia_materiale_causa_fornitore: bool
+    vetro_rotto_diffettoso_causa_fornitore: bool
+    materiale_mancante_causa_fornitore: bool
+
+class PosaCommessa(BaseModel):
+    cliente_cliente: str
+    cliente_ordine: str
+    cliente_squadra_posatori: str
+    cliente_data: str
+    cliente_stato_posa: str
+    cliente_materiale_mancante: List[Materiale]
+    cliente_materiale_rientrato: List[Materiale]
+    ore_previste_finitura: str
+    per_numero_posatori: str
+    report_fotografico: ReportFotografico
+    errori: Errori
+    posatori: Posatori
+    ufficio: Ufficio
+    coomerciale: Coomerciale
+    magazzino: Magazzino
+    fornitore: Fornitore
+    signature_cliente: str
+
+class ReportPostVendita(BaseModel):
+    posa_cliente: PosaCliente
+    posa_commessa: PosaCommessa
+
+
+
+
+
 
 def signature_block(pdf, text, sig_data, left_w=140, right_w=50, line_h=8, pad=3):
     """
@@ -1453,7 +1547,6 @@ def build_pdf_report_tecnico(data):
     content = pdf.output(dest='S')
     return content.encode('latin-1') if isinstance(content, str) else content
 
-
 def build_pdf_report_cliente(data):
     
     def add_pdf_header(pdf: FPDF, title: str, *, left_ratio=0.66, h=26, pad=6):
@@ -2007,3 +2100,347 @@ def build_pdf_report_cliente(data):
     content = pdf.output(dest='S')
     return content.encode('latin-1') if isinstance(content, str) else content
 
+
+
+def build_pdf_report_posa_cliente(data):
+    
+    def add_pdf_header(pdf: FPDF, title: str, *, left_ratio=0.66, h=26, pad=6):
+        #geometry
+        x0, y0 = pdf.l_margin, pdf.get_y()
+        full_w = pdf.w - pdf.l_margin - pdf.r_margin
+        left_w  = full_w / 2.0               # <-- exact middle
+        right_w = full_w - left_w
+
+        # Left pane (no border so the center stays exact)
+        pdf.set_fill_color(255, 255, 255)
+        pdf.rect(x0, y0, left_w, h, 'F')
+
+        # Right pane
+        pdf.set_fill_color(110, 207, 246)    # your mint color
+        pdf.rect(x0 + left_w, y0, right_w, h, 'F')
+
+        # One outer border + a center divider (optional but crisp)
+        pdf.set_draw_color(190, 190, 190)
+        pdf.rect(x0, y0, full_w, h, 'D')             # outer frame
+        pdf.line(x0 + left_w, y0, x0 + left_w, y0 + h)  # center split
+
+        # ---- draw Mulattieri mark ----
+        # red icon
+        icon = h * 0.68
+        ix = x0 + pad
+        iy = y0 + (h - icon) / 2
+        pdf.set_fill_color(230, 0, 0)
+        pdf.rect(ix, iy, icon, icon, "F")
+        # two white “windows”
+        m = icon * 0.16
+        w = icon * 0.26
+        g = icon * 0.12
+        pdf.set_fill_color(255, 255, 255)
+        pdf.rect(ix + m,           iy + m, w, icon - 2*m, "F")
+        pdf.rect(ix + m + w + g,   iy + m, w, icon - 2*m, "F")
+
+        # “MULATTIERI”
+        tx = ix + icon + pad
+        pdf.set_text_color(34, 64, 180)        # deep blue
+        pdf.set_font("Arial", "B", 18)
+        pdf.set_xy(tx, y0 + 3)
+        pdf.cell(left_w - (tx - x0) - 4, h/2, "MULATTIERI", border=0, align="L")
+
+        # tagline
+        pdf.set_text_color(130, 130, 130)
+        pdf.set_font("Arial", "", 14)
+        pdf.set_xy(tx, y0 + h/2 + 1)
+        pdf.cell(left_w - (tx - x0) - 4, h/2, "porte e finestre", border=0, align="L")
+
+        # ---- right green title block ----
+        pdf.set_xy(x0 + left_w, y0)
+        pdf.set_fill_color(110, 207, 246)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("Arial", "B", 18)
+        pdf.cell(right_w, h, title, border=0, fill=True, align="C")
+
+        # move below header
+        pdf.ln(h + 2)
+
+        # restore defaults so later table borders don’t inherit colors
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_fill_color(255, 255, 0)
+
+    t = getattr(data, "posa_cliente", None) or type("Empty", (), {})()
+    pdf = FPDF()
+    pdf.add_page()
+    add_pdf_header(pdf, title="Report Posa Cliente")
+    pdf.set_font("Arial", size=12)
+    
+    def gv(name, default=""):
+        """get value from tecnico, defaulting to '' (or provided) if missing/None"""
+        return getattr(t, name, None) if getattr(t, name, None) is not None else default
+
+    def gvl(name):
+        """get list value"""
+        v = getattr(t, name, None)
+        return v if isinstance(v, list) else []
+
+    def gvb(name):
+        """get boolean value"""
+        v = getattr(t, name, None)
+        return bool(v) if v is not None else False
+
+    def fmt_dt(dt):
+        v = gv(dt, None)
+        if not v:
+            return "", ""
+        try:
+            # pydantic may give datetime already; otherwise ISO string
+            d = v if isinstance(v, datetime) else datetime.fromisoformat(str(v))
+            return d.strftime("%d/%m/%Y"), d.strftime("%H:%M")
+        except Exception:
+            return str(v), ""
+
+    def ensure_space(pdf: FPDF, needed_h: float):
+        """Start a new page if the next block won't fit."""
+        if pdf.get_y() + needed_h > pdf.page_break_trigger:
+            pdf.add_page()
+
+    def ensure_block(pdf: FPDF, block_h: float):
+        """If the next block wouldn't fit, start a new page first."""
+        if pdf.get_y() + block_h > pdf.page_break_trigger:
+            pdf.add_page()        # (optionally call your add_pdf_header(...) here)
+
+    def write_cell(w, h, text='', fill=False, align='L', bold=False):
+        family = pdf.font_family or "Arial"
+        size = pdf.font_size_pt or 12
+        style = "B" if bold else ""
+        pdf.set_font(family, style=style, size=size)
+        pdf.cell(w, h, text or "", border=1, fill=fill, align=align)
+
+    def green_rule(height=3):
+        """Draw a full-width green bar at the current Y, then move cursor down."""
+        x = pdf.l_margin
+        y = pdf.get_y()
+        w = pdf.w - pdf.l_margin - pdf.r_margin
+        # draw filled green rect (no border)
+        pdf.set_fill_color(0, 128, 0)
+        pdf.rect(x, y, w, height, style='F')
+        pdf.ln(height)
+        # restore your default fill color (yellow for cells, per your code)
+        pdf.set_fill_color(255, 255, 0)
+    
+    def draw_checkbox(pdf, x, y, size=5, checked=False):
+        # outer yellow box
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_fill_color(255, 235, 59)  # soft yellow (#FFEB3B)
+        pdf.rect(x, y, size, size, 'DF')
+
+        # inner light square
+        pad = 1.2
+        pdf.set_fill_color(245, 245, 245)  # very light gray
+        pdf.rect(x + pad, y + pad, size - 2*pad, size - 2*pad, 'F')
+
+        # checkmark if selected
+        if checked:
+            pdf.set_draw_color(0, 128, 0)
+            pdf.set_line_width(0.6)
+            pdf.line(x + 0.8, y + size*0.55, x + size*0.45, y + size - 0.9)
+            pdf.line(x + size*0.45, y + size - 0.9, x + size - 0.8, y + 1.0)
+        pdf.set_line_width(0.2)  # reset
+
+    def checkbox_cell_split(pdf, cell_w, cell_h, label, checked, *,
+                        font_size=12, box_col_w=10, gap=2,
+                        green_rgb=(0, 255, 0), yellow_rgb=(255, 255, 0)):
+        """
+        [ left column (green if checked, yellow if not) | label column ]
+        """
+        x0, y0 = pdf.get_x(), pdf.get_y()
+
+        # Save current font
+        cur_font, cur_style, cur_size = pdf.font_family, pdf.font_style, pdf.font_size_pt
+
+        # --- Left column (checkbox area background) ---
+        if checked:
+            pdf.set_fill_color(*green_rgb)   # green if checked
+        else:
+            pdf.set_fill_color(*yellow_rgb)  # yellow if not checked
+        pdf.rect(x0, y0, box_col_w, cell_h, 'DF')
+
+        # draw the checkbox square inside
+        size = 5
+        bx = x0 + (box_col_w - size) / 2
+        by = y0 + (cell_h - size) / 2
+        draw_checkbox(pdf, bx, by, size=size, checked=checked)
+
+        # --- Right column (label) ---
+        pdf.set_fill_color(255, 255, 255)  # always white
+        pdf.rect(x0 + box_col_w, y0, cell_w - box_col_w, cell_h, 'DF')
+        pdf.set_font(cur_font, cur_style, font_size)
+        pdf.set_xy(x0 + box_col_w + gap, y0)
+        pdf.cell(cell_w - box_col_w - 2*gap, cell_h, label or "", border=0, align="L")
+
+    def one_checkbox_cell_right(
+        pdf,
+        cell_h,
+        materiale,
+        checked=None,                      # True -> green + check, False -> yellow empty, None -> only horizontals
+        *,
+        left_w=160,                        # width of "materiale" cell
+        box_w=30,                          # width of the right checkbox cell
+        green_rgb=(0, 255, 0),
+        yellow_rgb=(255, 255, 0),
+        mat_fill_rgb=(255, 255, 255),      # fill for "materiale"
+        empty_fill_rgb=None,               # optional fill for empty state; None keeps only horizontals
+    ):
+        """
+        Draws: [  materiale (left_w)  |  checkbox (box_w)  ]
+        Borders: left cell has LEFT+TOP+BOTTOM; no right border (to avoid vertical seam).
+                Right cell: filled (F) with no borders for checked/unchecked; only top/bottom lines for empty.
+        """
+        x0, y0 = pdf.get_x(), pdf.get_y()
+
+        # --- Left "materiale" cell ---
+        pdf.set_fill_color(*mat_fill_rgb)
+        pdf.rect(x0, y0, left_w, cell_h, 'F')                 # fill only
+        pdf.set_draw_color(0, 0, 0)
+        pdf.line(x0, y0, x0, y0 + cell_h)                     # left border
+        pdf.line(x0, y0, x0 + left_w, y0)                     # top
+        pdf.line(x0, y0 + cell_h, x0 + left_w, y0 + cell_h)   # bottom
+        pdf.set_xy(x0 + 2, y0)
+        pdf.set_font("Arial", "", 12)
+        pdf.cell(left_w - 4, cell_h, materiale or "", border=0, align="L")
+
+        # --- Right checkbox cell ---
+        x_box = x0 + left_w
+        state = (
+            "checked"   if checked is True else
+            "unchecked" if checked is False else
+            "empty"
+        )
+
+        if state in ("checked", "unchecked"):
+            # background fill without borders
+            pdf.set_fill_color(*(green_rgb if state == "checked" else yellow_rgb))
+            pdf.rect(x_box, y0, box_w, cell_h, 'DF')
+
+            # checkbox graphic
+            size = 5
+            bx = x_box + (box_w - size) / 2
+            by = y0 + (cell_h - size) / 2
+            draw_checkbox(pdf, bx, by, size=size, checked=(state == "checked"))
+
+        else:  # empty -> only horizontals (optional fill)
+            if empty_fill_rgb is not None:
+                pdf.set_fill_color(*empty_fill_rgb)
+                pdf.rect(x_box, y0, box_w, cell_h, 'DF')
+            pdf.set_draw_color(0, 0, 0)
+            pdf.line(x_box, y0, x_box + box_w, y0)                # top
+            pdf.line(x_box, y0 + cell_h, x_box + box_w, y0 + cell_h)  # bottom
+
+        # erase any left seam from previous cell (defensive)
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_line_width(0.2)
+        pdf.line(x_box, y0, x_box, y0 + cell_h)
+        pdf.set_line_width(0.2)
+        pdf.set_draw_color(0, 0, 0)
+
+        # move to next row
+        pdf.set_xy(x0, y0 + cell_h)
+
+    
+    checkbox_groups = [
+        (
+            "STATO POSA",
+            [
+                ("Completato", gvb("stato_posa"), 60),
+                ("Da Completare", not gvb("stato_posa"), 82),
+            ],
+        ),
+    ]    
+
+    sections = [
+
+        # --- Second block: TECNICO ---
+        {
+            "header": "ALTRI CAMPI",
+            "rows": [
+                ("PULIZIA DEI VETRI E/O FINESTRE",                                            gvb("pulizia_vetri"),               (230, 230, 230)),
+                ("GIRO CON IL CLIENTE SU CORRETTA FUNZIONALITA",                              gvb("giro_cliente"),            (230, 230, 230)),
+                ("GIRO CON IL CLIENTE SU CORRETTA CONFORMITA",                                gvb("giro_cliente_conformita"),          (230, 230, 230)),
+                ("CONSEGNA DEI DOCUMENTI ES. ENEA",                                           gvb("consegna_documenti"),      (230, 230, 230)),
+                ("CONSEGNA LIBRETTO USO E MANUTENZIONE",                                      gvb("consegna_libretto"),        (230, 230, 230)),
+                ("DDT E VERBALE DI COLLAUDO FIRMATI",                                         gvb("ddt_verbal_firmati"),          (230, 230, 230)),
+                ("DIFETTI PRESENTI SUI VETRI",                                                gvb("difetti_vetri"),             (230, 230, 230)),
+                ("DIFETTI PRESENTI SUI PROFILI",                                              gvb("difetti_profili"),        (230, 230, 230)),
+                ("DIFETTI SPIEGATI AL CLIENTE DOVUTI ALLA MURATURA NON DI NOSTRA COMPETENZA", gvb("difetti_muratura"),      (230, 230, 230)),
+                ("SONO STATI ARRECATI DANNI SCRIVERE LE SPECIFICHE NELLE NOTE",               gvb("danni_arrecati"),        (230, 230, 230)),
+            ],
+        },
+    ]
+    
+    # Cliente, ordine, squadra postatori, data
+    pdf.set_fill_color(230, 230, 230)
+    ensure_space(pdf, 8)
+    write_cell(30, 8, "Cliente°", fill=True, bold=True)
+    write_cell(65, 8, gv("cliente"))
+    write_cell(30, 8, "Ordine", fill=True, bold=True)
+    write_cell(65, 8, gv("ordine"))
+    pdf.ln()
+    
+    pdf.set_fill_color(230, 230, 230)
+    ensure_space(pdf, 8)
+    write_cell(40, 8, "Squadra Posatori", fill=True, bold=True)
+    write_cell(55, 8, gv("squadra_posatori"))
+    write_cell(30, 8, "Data", fill=True, bold=True)
+    write_cell(65, 8, gv("data"))
+    pdf.ln()
+    green_rule(height=2)  
+    
+    # stato lavoro,
+    for title, checkboxes in checkbox_groups:
+        pdf.set_fill_color(110, 207, 246)
+        ensure_space(pdf, 8)
+        write_cell(50, 8, title, bold=True, fill=True)
+        for cb in checkboxes:
+            if len(cb) == 3:
+                label, checked, width = cb
+                checkbox_cell_split(pdf, width, 8, label, checked=checked)
+            else:
+                label, checked, width, font_size = cb
+                checkbox_cell_split(pdf, width, 8, label, checked=checked, font_size=font_size)
+        pdf.ln()
+        green_rule(height=2)
+        
+    # resta da fare
+    ensure_space(pdf, 8)
+    note_box(
+        pdf,
+        title="Resta da fare (descrivere brevemente cosa manca e perché):",
+        body=gv("resta_da_fare"),
+        height=55,       
+        end_gap=5       
+    )
+    green_rule(height=2)
+    
+    
+    # altri campi
+    for section in sections:
+        if section["header"]:
+            pdf.set_fill_color(230, 230, 230)
+            write_cell(190, 8, f" {section['header']}", bold=True, fill=True)
+            pdf.ln()
+
+        for label, check_value, bg_color in section["rows"]:
+            ensure_space(pdf, 8)
+            one_checkbox_cell_right(
+                pdf, 8,
+                materiale=label,
+                checked=check_value,
+                left_w=160,
+                box_w=30,
+                mat_fill_rgb=bg_color,
+                empty_fill_rgb=None,
+            )
+        pdf.ln()
+    
+    
+    content = pdf.output(dest='S')
+    return content.encode('latin-1') if isinstance(content, str) else content
