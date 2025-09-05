@@ -26,26 +26,26 @@ async def generate_from_json(
     try:
         # Generate PDF TECNICO & CLIENTE
         pdf_tecnico = build_pdf_report_tecnico(data)
-        #pdf_cliente = build_pdf_report_cliente(data)
+        pdf_cliente = build_pdf_report_cliente(data)
 
         # SEND EMAIL
-        # background_tasks.add_task(send_email_with_retry, email, pdf_tecnico, "report_intervento_tecnico.pdf")
-        # background_tasks.add_task(send_email_with_retry, email, pdf_cliente, "report_intervento_cliente.pdf")
+        background_tasks.add_task(send_email_with_retry, email, pdf_tecnico, "report_intervento_tecnico.pdf")
+        background_tasks.add_task(send_email_with_retry, email, pdf_cliente, "report_intervento_cliente.pdf")
 
-        # return JSONResponse(
-        #     {
-        #         "ok": True,
-        #         "message": "Reports generated successfully.",
-        #     },
-        #     status_code=status.HTTP_200_OK,
-        # )
+        return JSONResponse(
+            {
+                "ok": True,
+                "message": "Reports generated successfully.",
+            },
+            status_code=status.HTTP_200_OK,
+        )
         
-        # return pdf file 
-        buffer = io.BytesIO(pdf_tecnico)
-        #buffer = io.BytesIO(pdf_cliente)
-        return StreamingResponse(buffer, media_type="application/pdf", headers={
-            "Content-Disposition": "attachment; filename=posa_layout.pdf"
-        })
+        # # INSPECT PDF FILE
+        # buffer = io.BytesIO(pdf_tecnico)
+        # #buffer = io.BytesIO(pdf_cliente)
+        # return StreamingResponse(buffer, media_type="application/pdf", headers={
+        #     "Content-Disposition": "attachment; filename=posa_layout.pdf"
+        # })
 
     except Exception as e:
         return JSONResponse(
@@ -82,7 +82,7 @@ async def generate_reports(
             status_code=status.HTTP_200_OK,
         )
         
-        # # return pdf file 
+        # # INSPECT PDF FILE
         # buffer = io.BytesIO(pdf_posa_commessa)
         # #buffer = io.BytesIO(pdf_posa_cliente)
         # return StreamingResponse(buffer, media_type="application/pdf", headers={
