@@ -5,6 +5,7 @@ import sys
 import os
 from typing import List
 from sqlmodel import Session, select
+from itertools import groupby
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
@@ -15,30 +16,39 @@ from dependecies import get_db
 
 router = APIRouter()
 
-def group_for_frontend(records):
-    result = {}
+def group_for_frontend(rows):
+    
+    # Stable order so partitioning is deterministic
+    rows_sorted = sorted(rows, key=lambda r: (r.zona or "", r.modello or "", r.id))
+    out = []
 
-    for record in records:
-        zona = record.zona
+    for (zona, modello), grp in groupby(rows_sorted, key=lambda r: (r.zona or "", r.modello or "")):
+        batches = []
+        current, seen = [], set()
 
-        if zona not in result:
-            result[zona] = {
-                "zona": zona,
-                "modello": record.modello,
-                "steps": {}
-            }
+        for r in list(grp):
+            
+            # If this colonna already exists in the current batch, start a new batch
+            if r.colonna in seen:
+                batches.append(current)
+                current, seen = [], set()
+            current.append(r)
+            seen.add(r.colonna)
 
-        colonna = record.colonna
+        if current:
+            batches.append(current)
 
-        # Keep only one step per colonna
-        if colonna not in result[zona]["steps"]:
-            result[zona]["steps"][colonna] = IWorkInProgressRead.model_validate(record)
+        # Emit one WorkInProgressGrouped per batch
+        for batch in batches:
+            steps = [
+                (IWorkInProgressRead.model_validate(x) if hasattr(IWorkInProgressRead, "model_validate")
+                 else IWorkInProgressRead.from_orm(x))
+                for x in batch
+            ]
+            out.append(WorkInProgressGrouped(zona=zona, modello=modello, steps=steps))
 
-    # Flatten steps dictionary into a list
-    for zona in result:
-        result[zona]["steps"] = list(result[zona]["steps"].values())
+    return out
 
-    return list(result.values())
 
 
 # Create
@@ -70,6 +80,7 @@ def read_workinprogress(commessa_id: int, db: Session = Depends(get_db)):
 # Update
 @router.put("/{work_id}", response_model=IWorkInProgressRead)
 def update_workinprogress(work_id: int, update_data: IWorkInProgressUpdate, db: Session = Depends(get_db)):
+    #print("Update data:", update_data)
     work = db.get(WorkInProgress, work_id)
     if not work:
         raise HTTPException(status_code=404, detail="Work in progress not found")

@@ -161,6 +161,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                         # print(f"    - {prod}")
                         
                     for col in colonne:
+                        print('hrer')
                         work_item = WorkInProgress(
                             commesse_id=new_commessa.id,
                             zona=code,
