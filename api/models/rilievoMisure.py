@@ -17,6 +17,7 @@ class RilievoMisure(SQLModel, table=True):
     persone_presenti_scarico: Optional[bool] = Field(default=None)
     numero_persone_scarico: Optional[int] = Field(default=None)
     ztl: Optional[bool] = Field(default=None)
+    piani: Optional[str] = Field(default=None)
     trasporto_difficile_piedi_m: Optional[float] = Field(default=None)
     note: Optional[str] = Field(default=None)
     image_paths: Optional[List[str]] = Field(
