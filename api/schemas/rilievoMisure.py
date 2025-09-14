@@ -18,7 +18,10 @@ class IRilievoBase(BaseModel):
     ztl: Optional[bool] = None
     trasporto_difficile_piedi_m: Optional[float] = None
     note: Optional[str] = None
-    piani: Optional[str] = None
+    piani_gru_0_1: Optional[str] = None
+    piani_2_3: Optional[str] = None
+    piani_4_5: Optional[str] = None
+    piani_6_7: Optional[str] = None
     image_paths: Optional[List[str]] = []
 
 
@@ -43,7 +46,10 @@ class IRilievoRead(SQLModel):
     ztl: Optional[bool] = None
     trasporto_difficile_piedi_m: Optional[float] = None
     note: Optional[str] = None
-    piani: Optional[str] = None
+    piani_gru_0_1: Optional[str] = None
+    piani_2_3: Optional[str] = None
+    piani_4_5: Optional[str] = None
+    piani_6_7: Optional[str] = None
     image_paths: Optional[List[str]] = []
 
     class Config:
@@ -65,5 +71,8 @@ class IRilievoUpdate(BaseModel):
     ztl: Optional[bool] = None
     trasporto_difficile_piedi_m: Optional[float] = None
     note: Optional[str] = None
-    piani: Optional[str] = None
+    piani_gru_0_1: Optional[str] = None
+    piani_2_3: Optional[str] = None
+    piani_4_5: Optional[str] = None
+    piani_6_7: Optional[str] = None
     image_paths: Optional[List[str]] = None
