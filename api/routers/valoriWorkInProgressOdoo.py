@@ -92,7 +92,7 @@ def _pick_value(p: dict):
     return v
 
 
-@router.get("/odoo/",)
+@router.get("/myOdoo",)
 async def get_odoo_product_template():
     tmpl_id = 13485  
     products = rpc_call(
