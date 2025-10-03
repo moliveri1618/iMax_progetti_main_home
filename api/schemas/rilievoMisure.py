@@ -5,7 +5,7 @@ from sqlmodel import SQLModel
 
 # Base schema — used for Create & Update
 class IRilievoBase(BaseModel):
-    workInProgress_id: Optional[int] = None
+    commesse_id: Optional[int] = None
     strada_idonea: Optional[bool] = None
     scala_arrivare_piano: Optional[bool] = None
     ascensore_montacarichi: Optional[bool] = None
@@ -33,7 +33,7 @@ class IRilievoCreate(IRilievoBase):
 # Read schema — used for API responses
 class IRilievoRead(SQLModel):
     id: int
-    workInProgress_id: Optional[int] = None
+    commesse_id: Optional[int] = None
     strada_idonea: Optional[bool] = None
     scala_arrivare_piano: Optional[bool] = None
     ascensore_montacarichi: Optional[bool] = None
@@ -58,7 +58,7 @@ class IRilievoRead(SQLModel):
 
 # Update schema — for PATCH operations
 class IRilievoUpdate(BaseModel):
-    workInProgress_id: Optional[int] = None
+    commesse_id: Optional[int] = None
     strada_idonea: Optional[bool] = None
     scala_arrivare_piano: Optional[bool] = None
     ascensore_montacarichi: Optional[bool] = None

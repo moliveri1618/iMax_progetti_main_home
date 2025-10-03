@@ -17,7 +17,7 @@ from dependecies import get_db
 router = APIRouter()
 
 
-@router.get("/by-workInProgress-id/{work_id}", response_model=List[IRilievoRead])
+@router.get("/by-commessa-id/{commessa_id}", response_model=List[IRilievoRead])
 def get_rilievi_by_work_id(work_id: int, db: Session = Depends(get_db)):
     rilievi = db.exec(
         select(RilievoMisure).where(RilievoMisure.workInProgress_id == work_id)
@@ -32,7 +32,7 @@ def get_rilievi_by_work_id(work_id: int, db: Session = Depends(get_db)):
 @router.post("/upsert", response_model=IRilievoRead)
 def upsert_rilievo(input_data: IRilievoCreate, db: Session = Depends(get_db)):
     existing_rilievo = db.exec(
-        select(RilievoMisure).where(RilievoMisure.workInProgress_id == input_data.workInProgress_id)
+        select(RilievoMisure).where(RilievoMisure.commesse_id == input_data.commesse_id)
     ).first()
 
     if existing_rilievo:
@@ -54,11 +54,11 @@ def upsert_rilievo(input_data: IRilievoCreate, db: Session = Depends(get_db)):
 
 
 
-# Delete rilievo
-@router.delete("/{rilievo_id}", status_code=204)
-def delete_rilievo(rilievo_id: int, db: Session = Depends(get_db)):
-    rilievo = db.get(RilievoMisure, rilievo_id)
-    if not rilievo:
-        raise HTTPException(status_code=404, detail="Rilievo not found")
-    db.delete(rilievo)
-    db.commit()
+# # Delete rilievo
+# @router.delete("/{rilievo_id}", status_code=204)
+# def delete_rilievo(rilievo_id: int, db: Session = Depends(get_db)):
+#     rilievo = db.get(RilievoMisure, rilievo_id)
+#     if not rilievo:
+#         raise HTTPException(status_code=404, detail="Rilievo not found")
+#     db.delete(rilievo)
+#     db.commit()
