@@ -18,9 +18,9 @@ router = APIRouter()
 
 
 @router.get("/by-commessa-id/{commessa_id}", response_model=List[IRilievoRead])
-def get_rilievi_by_work_id(work_id: int, db: Session = Depends(get_db)):
+def get_rilievi_by_work_id(commessa_id: int, db: Session = Depends(get_db)):
     rilievi = db.exec(
-        select(RilievoMisure).where(RilievoMisure.workInProgress_id == work_id)
+        select(RilievoMisure).where(RilievoMisure.commesse_id == commessa_id)
     ).all()
     
     if not rilievi:
