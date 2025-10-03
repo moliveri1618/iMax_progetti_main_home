@@ -52,8 +52,6 @@ def upsert_rilievo(input_data: IRilievoCreate, db: Session = Depends(get_db)):
         return new_rilievo
 
 
-
-
 # # Delete rilievo
 # @router.delete("/{rilievo_id}", status_code=204)
 # def delete_rilievo(rilievo_id: int, db: Session = Depends(get_db)):

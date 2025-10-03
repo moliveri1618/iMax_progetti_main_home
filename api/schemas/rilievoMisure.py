@@ -12,6 +12,8 @@ class IRilievoBase(BaseModel):
     uso_mezzo_vicoli: Optional[bool] = None
     autoscala_tiro_piano: Optional[bool] = None
     spazio_manovra: Optional[bool] = None
+    smontaggio_vecchio: Optional[bool] = None
+    taglio_telai: Optional[bool] = None
     cantiere_nuova_costruzione: Optional[bool] = None
     persone_presenti_scarico: Optional[bool] = None
     numero_persone_scarico: Optional[int] = None
@@ -41,6 +43,8 @@ class IRilievoRead(SQLModel):
     autoscala_tiro_piano: Optional[bool] = None
     spazio_manovra: Optional[bool] = None
     cantiere_nuova_costruzione: Optional[bool] = None
+    smontaggio_vecchio: Optional[bool] = None
+    taglio_telai: Optional[bool] = None
     persone_presenti_scarico: Optional[bool] = None
     numero_persone_scarico: Optional[int] = None
     ztl: Optional[bool] = None
@@ -65,6 +69,8 @@ class IRilievoUpdate(BaseModel):
     uso_mezzo_vicoli: Optional[bool] = None
     autoscala_tiro_piano: Optional[bool] = None
     spazio_manovra: Optional[bool] = None
+    smontaggio_vecchio: Optional[bool] = None
+    taglio_telai: Optional[bool] = None
     cantiere_nuova_costruzione: Optional[bool] = None
     persone_presenti_scarico: Optional[bool] = None
     numero_persone_scarico: Optional[int] = None

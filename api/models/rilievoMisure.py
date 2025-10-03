@@ -11,6 +11,8 @@ class RilievoMisure(SQLModel, table=True):
     scala_arrivare_piano: Optional[bool] = Field(default=None)
     ascensore_montacarichi: Optional[bool] = Field(default=None)
     uso_mezzo_vicoli: Optional[bool] = Field(default=None)
+    smontaggio_vecchio: Optional[bool] = Field(default=None)
+    taglio_telai: Optional[bool] = Field(default=None)
     autoscala_tiro_piano: Optional[bool] = Field(default=None)
     spazio_manovra: Optional[bool] = Field(default=None)
     cantiere_nuova_costruzione: Optional[bool] = Field(default=None)
