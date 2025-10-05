@@ -14,3 +14,4 @@ class HelpdeskTicket(SQLModel, table=True):
     team: str
     created: str
     type: str  
+    completato: Optional[bool]= Field(default=False) 

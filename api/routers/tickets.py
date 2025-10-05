@@ -8,11 +8,12 @@ from fastapi import Query
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.tickets import HelpdeskTicket
+from schemas.tickets import TicketCreate, TicketRead, TicketUpdate
 from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
 
 router = APIRouter()
 
-
+# ---------- GET ALL
 @router.get("/all", response_model=List[HelpdeskTicket])
 def get_all_tickets(
     db: Session = Depends(get_db),
@@ -32,6 +33,42 @@ def get_all_tickets(
         print(f"Error retrieving tickets: {e}")
         raise HTTPException(status_code=500, detail="Error retrieving tickets from database.")
 
+
+# ---------- GET BY ID 
+@router.get("/{ticket_id}", response_model=TicketRead)
+def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
+    ticket = db.get(HelpdeskTicket, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found.")
+    return ticket
+
+
+# ---------- EDIT BY ID ----------
+@router.patch("/{ticket_id}", response_model=TicketRead)
+def update_ticket(ticket_id: int, payload: TicketUpdate, db: Session = Depends(get_db)):
+    ticket = db.get(HelpdeskTicket, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found.")
+
+    try:
+        # Pydantic v2
+        updates = payload.model_dump(exclude_unset=True)
+
+        # Optional normalization
+        if "type" in updates and updates["type"] is not None:
+            updates["type"] = updates["type"].lower()
+
+        for field, value in updates.items():
+            setattr(ticket, field, value)
+
+        db.add(ticket)
+        db.commit()
+        db.refresh(ticket)
+        return ticket
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating ticket {ticket_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error updating ticket.")
 
 
 
