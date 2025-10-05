@@ -34,25 +34,16 @@ def get_all_tickets(
         raise HTTPException(status_code=500, detail="Error retrieving tickets from database.")
 
 
-# ---------- GET BY ID 
-@router.get("/{ticket_id}", response_model=TicketRead)
-def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
-    ticket = db.get(HelpdeskTicket, ticket_id)
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found.")
-    return ticket
-
-
-# ---------- EDIT BY ID ----------
-@router.patch("/{ticket_id}", response_model=TicketRead)
+# ---------- EDIT BY ID
+@router.put("/{ticket_id}", response_model=TicketRead)
 def update_ticket(ticket_id: int, payload: TicketUpdate, db: Session = Depends(get_db)):
     ticket = db.get(HelpdeskTicket, ticket_id)
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found.")
 
     try:
-        # Pydantic v2
-        updates = payload.model_dump(exclude_unset=True)
+        # With PUT we expect full object, so no exclude_unset
+        updates = payload.model_dump()
 
         # Optional normalization
         if "type" in updates and updates["type"] is not None:
@@ -65,10 +56,12 @@ def update_ticket(ticket_id: int, payload: TicketUpdate, db: Session = Depends(g
         db.commit()
         db.refresh(ticket)
         return ticket
+
     except Exception as e:
         db.rollback()
         print(f"Error updating ticket {ticket_id}: {e}")
         raise HTTPException(status_code=500, detail="Error updating ticket.")
+
 
 
 
