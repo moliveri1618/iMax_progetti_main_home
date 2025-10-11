@@ -45,7 +45,7 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
     inserted_rows_parametriDaInserire = replace_or_insert_parametriDaInserire(session=session,user_id=user_id,rows=rows,treat_empty_list_as_template=True,)
     
     # Calculate and save PARAMETRI for user_id
-    inserted_rows_parametri, result_parametri = replace_or_insert_parametri(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id)
+    inserted_rows_parametri, result_parametri = replace_or_insert_calcoli(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id)
     
     # Calculate and save Conteggi Commessa for user_id
     #inserted_rows_conteggiCommessa = replace_or_insert_conteggi_commessa(session=session,user_id=user_id,parametri=result_parametri)
@@ -112,6 +112,18 @@ def get_ordini_premi_by_user(
     rows.sort(key=lambda r: month_key(r.mese))
     return rows
 
+
+
+# READ ALL or filter by user id if provided
+@router.get("", response_model=List[ParametriDaInserireRead])
+def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)):
+    stmt = select(ParametriDaInserire)
+    if user_id:
+        stmt = stmt.where(ParametriDaInserire.user_id == user_id)
+    items = session.exec(stmt).all()  
+    return items
+
+
 # @router.post("/bulk", response_model=List[ParametriDaInserireRead])
 # def bulk_upsert(
 #     payload: ParametriBulkUpdate,
@@ -159,16 +171,6 @@ def get_ordini_premi_by_user(
 #         session.commit()
 #         session.refresh(db_parametro)
 #         return db_parametro
-
-
-# READ ALL or filter by user id if provided
-@router.get("", response_model=List[ParametriDaInserireRead])
-def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)):
-    stmt = select(ParametriDaInserire)
-    if user_id:
-        stmt = stmt.where(ParametriDaInserire.user_id == user_id)
-    items = session.exec(stmt).all()  
-    return items
 
 
 # # READ BY ID

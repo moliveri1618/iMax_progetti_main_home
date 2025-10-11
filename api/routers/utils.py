@@ -701,12 +701,12 @@ def replace_or_insert_budget_venduto_calcoli(session: Session, user_id: str, row
         session.rollback()
         raise
 
-def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: str):
+def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: str):
     """
     Calculate and save the parametri for the given user_id.
     This function should be called after replace_or_seed_parametri_for_user_core.
     """
-    #print('parametriDaInserire', parametriDaInserire)
+    print('parametriDaInserire', parametriDaInserire)
     
     # Force Gen→Dic order
     ordered = order_rows_by_month([dict(r) for r in parametriDaInserire])
@@ -752,20 +752,7 @@ def replace_or_insert_parametri(parametriDaInserire, session: Session, user_id: 
         # TOtale ragg budget trimestrale
         ragg_budget_val = premio_ragg_budget_trimestrale[i] if premio_ragg_budget_trimestrale[i] is not None else 0
         totale_ragg_budget_trimestrale += ragg_budget_val
-        
-        
-        # obiettivi = [row["obiettivo_mensile"] for row in parametriDaInserire]                                       #obiettivo_mensile
-        # prog_mensili = compute_progressivi_mensili(obiettivi)                                                       #progressivo_mensile
-        # prog_trimestrali = compute_progressivi_trimestrali(obiettivi)                                               #progressivo_trimestrale
-        # venduto_reale = compute_venduto_reale(session, year=None) 
-        # consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale)
-        # perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali)     
-        # perc_ragg_fatturato_trimestrale = compute_perc_ragg_fatturato_trimestrale(parametriDaInserire)
-        # premio_ragg_budget_trimestrale = compute_premio_ragg_budget_trimestrale(obiettivi, venduto_reale, parametriDaInserire)
-        # valori1, valori2, valori3, valori4 = compute_valori_all_trimestri(obiettivi)
-        # perc_al_100 = [row["perc_100_budget"] for row in parametriDaInserire]
-        # perc_trim_1_arr, perc_trim_2_arr, perc_trim_3_arr, perc_trim_4_arr = compute_perc_trim_arrays(perc_al_100, perc_rispetto_budget)
-        
+
         
         res.append({
             "user_id": user_id,
