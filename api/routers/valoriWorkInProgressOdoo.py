@@ -72,7 +72,6 @@ ALIAS = {
     "Costo sviluppo disegni Home": "Elaborazione dati",
     "Costo gestione ordine Home": "Ordine a Fornitore",
     "Costo trasporto al cliente": "Trasporto al cliente",
-    # add a few variants just in case the label changes slightly:
     "Costo trasporto al piano": "Trasporto al piano",
     "Costo Trasporto al piano": "Trasporto al piano",
     "Costo Smontaggio Vecchio Serramento": "Smontaggio vecchio",
