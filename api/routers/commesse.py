@@ -197,6 +197,28 @@ def read_commessa_by_id(commessa_id: int, db: Session = Depends(get_db)):
     return commessa
 
 
+@router.put("/update_column/{commessa_id}")
+def update_commessa_column(
+    commessa_id: int,
+    column_name: str,
+    column_value: str,
+    db: Session = Depends(get_db),
+):
+    commessa = db.get(iCommesse, commessa_id)
+    if not commessa:
+        raise HTTPException(status_code=404, detail="Commessa not found")
+
+    if not hasattr(commessa, column_name):
+        raise HTTPException(status_code=400, detail=f"Invalid column name: {column_name}")
+
+    setattr(commessa, column_name, column_value)
+    db.add(commessa)
+    db.commit()
+    db.refresh(commessa)
+
+    return {"message": "Column updated successfully", "updated": {column_name: column_value}}
+
+
 # # Delete
 # @router.delete("/{commessa_id}", status_code=204)
 # def delete_commessa(commessa_id: int, db: Session = Depends(get_db)):
