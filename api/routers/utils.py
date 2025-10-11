@@ -405,18 +405,14 @@ def compute_venduto_reale(db, year=None):
 
     return sums
 
-def compute_consuntivo_venduto_trimestrale(venduto):
-    """
-    Quarter-to-date cumulative of Venduto REALE.
-    Emit value only at quarter end months; None elsewhere.
-    """
+def compute_consuntivo_venduto_trimestrale(venduto, fatturato_del_trimestre):
     out = []
-    acc = 0.0
-    for i, v in enumerate(venduto):
-        acc += float(v or 0)
-        if (i % 3) == 2:        # Mar, Jun, Sep, Dec
-            out.append(acc)
-            acc = 0.0
+    for i, _ in enumerate(venduto):
+        # end of quarter months are indices 2, 5, 8, 11, ...
+        if (i % 3) == 2:
+            q_num = (i // 3) % 4 + 1  # 1..4 cycling
+            key = f"{q_num}_trimestre"
+            out.append(float(fatturato_del_trimestre.get(key)) if key in fatturato_del_trimestre else None)
         else:
             out.append(None)
     return out
@@ -701,12 +697,12 @@ def replace_or_insert_budget_venduto_calcoli(session: Session, user_id: str, row
         session.rollback()
         raise
 
-def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: str):
+def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: str, fatturato_del_trimestre):
     """
     Calculate and save the parametri for the given user_id.
     This function should be called after replace_or_seed_parametri_for_user_core.
     """
-    print('parametriDaInserire', parametriDaInserire)
+    #print('parametriDaInserire', parametriDaInserire)
     
     # Force Gen→Dic order
     ordered = order_rows_by_month([dict(r) for r in parametriDaInserire])
@@ -716,7 +712,7 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     prog_mensili = compute_progressivi_mensili(obiettivi)
     prog_trimestrali = compute_progressivi_trimestrali(obiettivi) 
     venduto_reale = compute_venduto_reale(session, year=None)
-    consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale)
+    consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale, fatturato_del_trimestre)
     perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali)
     perc_ragg_fatturato_trimestrale = compute_perc_ragg_fatturato_trimestrale(parametriDaInserire)
     premio_ragg_budget_trimestrale = compute_premio_ragg_budget_trimestrale(obiettivi, venduto_reale, parametriDaInserire)

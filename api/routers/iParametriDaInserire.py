@@ -41,11 +41,21 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
     # Convert payload to dict if not None
     rows = json_to_dict(rows) 
     
+    # TODO: replace with real API call
+    # Export from ODoo
+    fatturato_del_trimestre = {
+        '1_trimestre': 10000.0,
+        '2_trimestre': 15000.0,
+        '3_trimestre': 20000.0,
+        '4_trimestre': 25000.0
+    }
+
+    
     # Insert PARAMETRI DA INSERIRE for user_id
-    inserted_rows_parametriDaInserire = replace_or_insert_parametriDaInserire(session=session,user_id=user_id,rows=rows,treat_empty_list_as_template=True,)
+    inserted_rows_parametriDaInserire = replace_or_insert_parametriDaInserire(session=session,user_id=user_id,rows=rows,treat_empty_list_as_template=True)
     
     # Calculate and save PARAMETRI for user_id
-    inserted_rows_parametri, result_parametri = replace_or_insert_calcoli(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id)
+    inserted_rows_parametri, result_parametri = replace_or_insert_calcoli(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id, fatturato_del_trimestre=fatturato_del_trimestre)
     
     # Calculate and save Conteggi Commessa for user_id
     #inserted_rows_conteggiCommessa = replace_or_insert_conteggi_commessa(session=session,user_id=user_id,parametri=result_parametri)
