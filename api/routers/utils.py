@@ -847,7 +847,7 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     Calculate and save the parametri for the given user_id.
     This function should be called after replace_or_seed_parametri_for_user_core.
     """
-    #print('parametriDaInserire', parametriDaInserire)
+    print('parametriDaInserire', parametriDaInserire)
     
     # Force Gen→Dic order
     ordered = order_rows_by_month([dict(r) for r in parametriDaInserire])
@@ -864,7 +864,7 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     premio_ragg_budget_trimestrale = compute_premio_ragg_budget_trimestrale(obiettivi, venduto_reale, parametriDaInserire)
     valori1, valori2, valori3, valori4 = compute_valori_all_trimestri(obiettivi)
     perc_al_100 = [row["perc_100_budget"] for row in parametriDaInserire]
-    perc_trim_1_arr, perc_trim_2_arr, perc_trim_3_arr, perc_trim_4_arr = compute_perc_trim_arrays(perc_al_100, perc_rispetto_budget)
+    perc_trim_1_arr, perc_trim_2_arr, perc_trim_3_arr, perc_trim_4_arr = compute_perc_trim_arrays(perc_al_100, calcolo_percentuale_venduto)
     
     res = []
     totale_obiettivo_mensile = 0 
@@ -920,7 +920,6 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
             "perc_trim_3": perc_trim_3_arr[i],
             "perc_trim_4": perc_trim_4_arr[i],
             "valore_limite_perc": parametriDaInserire[i]["valore_limite"],
-            
         })
         
     # Add extra "totali" row after the loop
