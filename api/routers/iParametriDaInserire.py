@@ -43,7 +43,7 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
     
     # Export from ODoo
     fatturato_del_trimestre = compute_quarter_totals_for_user(session=session, user_id=user_id)
-    #print('fatturato_del_trimestreeeee', fatturato_del_trimestre)
+    print('fatturato_del_trimestre', fatturato_del_trimestre)
     
     # Insert PARAMETRI DA INSERIRE for user_id
     inserted_rows_parametriDaInserire = replace_or_insert_parametriDaInserire(session=session,user_id=user_id,rows=rows,treat_empty_list_as_template=True)

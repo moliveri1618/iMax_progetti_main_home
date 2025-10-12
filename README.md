@@ -160,5 +160,5 @@ aws cognito-idp initiate-auth --client-id obemnph8vgsfrcip0s3bg4flm --auth-flow 
 
 SECTION VENDITE
 - get vendite for calculations "calcoli" {'/vendite/odoo' Get Vendite From Odoo}
-  PROBLEM: vendite dont come with user ID, needs to FIX
+  PROBLEM: vendite dont come with user ID, needs to FIX for now i use Alberto MOscatelli, just do project search for this name front end and back end 
 - after run calculations hitting ednpoint {'/iParametriDaInserire/parametri/user_id'}

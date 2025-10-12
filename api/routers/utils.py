@@ -360,33 +360,42 @@ from datetime import datetime
 from typing import Dict
 
 def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
-    """
-    Compute quarterly totals (same shape as the previous hardcoded dict)
-    based on VenditeImax.subtotale for the given venditore/user_id.
-    """
     rows = session.exec(
-        select(VenditeImax).where(VenditeImax.venditore == user_id)
+        select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")
     ).all()
 
-    # helper to extract month
     def parse_month(date_str: str) -> int | None:
         if not date_str:
             return None
         s = date_str.strip()
 
-        # YYYY-MM or YYYY-MM-DD
+        # 1) Fast path: ISO timestamps like "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DDTHH:MM:SS"
+        try:
+            # normalize 'T' to space; drop trailing 'Z' if present
+            s_iso = s.replace("T", " ").replace("Z", "")
+            return datetime.fromisoformat(s_iso).month
+        except ValueError:
+            pass
+
+        # 2) If there is a time part, strip it and try again
+        if " " in s:
+            s = s.split(" ", 1)[0]
+        if "T" in s:
+            s = s.split("T", 1)[0]
+
+        # 3) yyyy-mm or yyyy-mm-dd
         m = re.match(r"^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$", s)
         if m:
             mm = int(m.group(2))
             return mm if 1 <= mm <= 12 else None
 
-        # DD/MM/YYYY
+        # 4) dd/mm/yy(yy)
         m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2,4})$", s)
         if m:
             mm = int(m.group(2))
             return mm if 1 <= mm <= 12 else None
 
-        # fallback: try datetime parse
+        # 5) Final fallbacks
         for fmt in ("%Y-%m-%d", "%Y-%m", "%d/%m/%Y", "%d/%m/%y"):
             try:
                 return datetime.strptime(s, fmt).month
@@ -394,19 +403,17 @@ def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
                 continue
         return None
 
-    # sum subtotale by month
     month_totals = defaultdict(float)
-    for row in rows:
-        mm = parse_month(row.data)
+    for r in rows:
+        mm = parse_month(r.data)
         if mm:
-            month_totals[mm] += float(row.subtotale or 0.0)
+            month_totals[mm] += float(r.subtotale or 0.0)
 
-    # roll up quarters (exact same shape)
     return {
-        '1_trimestre': month_totals[1] + month_totals[2] + month_totals[3],
-        '2_trimestre': month_totals[4] + month_totals[5] + month_totals[6],
-        '3_trimestre': month_totals[7] + month_totals[8] + month_totals[9],
-        '4_trimestre': month_totals[10] + month_totals[11] + month_totals[12],
+        '1_trimestre': month_totals[1] + month_totals[2] + month_totals[3],     # Jan–Mar
+        '2_trimestre': month_totals[4] + month_totals[5] + month_totals[6],     # Apr–Jun
+        '3_trimestre': month_totals[7] + month_totals[8] + month_totals[9],     # Jul–Sep
+        '4_trimestre': month_totals[10] + month_totals[11] + month_totals[12],  # Oct–Dec
     }
 
         
