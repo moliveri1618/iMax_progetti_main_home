@@ -140,3 +140,5 @@ def get_vendite_from_odoo(db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Error fetching sale order lines: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+

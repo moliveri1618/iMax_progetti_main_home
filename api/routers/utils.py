@@ -417,6 +417,38 @@ def compute_consuntivo_venduto_trimestrale(venduto, fatturato_del_trimestre):
             out.append(None)
     return out
 
+def compute_calcolo_percentuale_venduto(perc_list):
+    """
+    Maps perc_rispetto_budget -> calcolo_percentuale_venduto using:
+    >=75% -> 100
+    >=50% -> 65
+    >=25% -> 35
+    >=20% -> 25
+    >=15% -> 20
+    >=10% -> 10
+    >=5%  -> 5
+    else  -> 0
+
+    Accepts values in 0–1 or 0–100. Keeps None as None.
+    """
+    def map_one(p):
+        if p is None:
+            return None
+        x = float(p)
+        if x <= 1.0:          # normalize if given as 0–1
+            x *= 100.0
+
+        if x >= 75: return 100.0
+        if x >= 50: return 65.0
+        if x >= 25: return 35.0
+        if x >= 20: return 25.0
+        if x >= 15: return 20.0
+        if x >= 10: return 10.0
+        if x >= 5:  return 5.0
+        return 0.0
+
+    return [map_one(p) for p in perc_list]
+
 def compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_q, prog_trimestrale):
     """
     Percentage only on quarter ends, None elsewhere.
@@ -713,7 +745,8 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     prog_trimestrali = compute_progressivi_trimestrali(obiettivi) 
     venduto_reale = compute_venduto_reale(session, year=None)
     consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale, fatturato_del_trimestre)
-    perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali)
+    perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali) # qui
+    calcolo_percentuale_venduto = compute_calcolo_percentuale_venduto(perc_rispetto_budget)
     perc_ragg_fatturato_trimestrale = compute_perc_ragg_fatturato_trimestrale(parametriDaInserire)
     premio_ragg_budget_trimestrale = compute_premio_ragg_budget_trimestrale(obiettivi, venduto_reale, parametriDaInserire)
     valori1, valori2, valori3, valori4 = compute_valori_all_trimestri(obiettivi)
@@ -759,7 +792,7 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
             "venduto_reale": venduto_reale[i],
             "consuntivo_venduto": consuntivo_venduto[i], 
             "perc_rispetto_budget": perc_rispetto_budget[i],
-            "calcolo_percentuale_venduto": perc_rispetto_budget[i],
+            "calcolo_percentuale_venduto": calcolo_percentuale_venduto[i],
             "valore_premio": None,
             "perc_ragg_fatturato_trimestrale": perc_ragg_fatturato_trimestrale[i],
             "premio_ragg_budget_trimestrale": premio_ragg_budget_trimestrale[i],
@@ -795,7 +828,7 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     
     
     result = replace_or_insert_budget_venduto_calcoli(session, user_id, res)
-    return result, res
+    return result
 
 def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametri):
     
