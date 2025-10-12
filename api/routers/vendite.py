@@ -209,39 +209,39 @@ def get_vendite_from_odoo(
     }
 
 
-@router.get("/calculate-conteggi-commessa/{user_name}")
-def get_conteggi_commessa(user_name: str, db: Session = Depends(get_db)):
+# @router.get("/calculate-conteggi-commessa/{user_name}")
+# def get_conteggi_commessa(user_name: str, db: Session = Depends(get_db)):
     
     
-    #1: return all VenditeImax records as a list of dictionaries
-    try:
-        query = select(VenditeImax).where(VenditeImax.venditore == user_name)
-        vendite_list = db.exec(query).all()
-        data = [to_dict(v) for v in vendite_list]
-    except Exception as e:
-        print(f"Error retrieving conteggi commessa for user {user_name}: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving conteggi commessa.")
+#     #1: return all VenditeImax records as a list of dictionaries
+#     try:
+#         query = select(VenditeImax).where(VenditeImax.venditore == user_name)
+#         vendite_list = db.exec(query).all()
+#         data = [to_dict(v) for v in vendite_list]
+#     except Exception as e:
+#         print(f"Error retrieving conteggi commessa for user {user_name}: {e}")
+#         raise HTTPException(status_code=500, detail="Error retrieving conteggi commessa.")
     
     
-    # 2 Perform calculations
-    mapped: List[Dict[str, Any]] = []
-    for row in data:
-        venduto_a = _num(row.get("costo_unitario")) 
-        acquistato_a = _num(row.get("subtotale"))  
-        margine = venduto_a - acquistato_a
+#     # 2 Perform calculations
+#     mapped: List[Dict[str, Any]] = []
+#     for row in data:
+#         venduto_a = _num(row.get("costo_unitario")) 
+#         acquistato_a = _num(row.get("subtotale"))  
+#         margine = venduto_a - acquistato_a
         
-        mapped.append({
-            "user_id": row.get("venditore"),
-            "ordine_numero": row.get("ordine"),
-            "cliente": row.get("cliente"),
-            "prodotto": row.get("prodotto"),
-            "mese": to_month_str(row.get("data")),
-            "venduto_a": venduto_a,
-            "costo_totale_acquisto": acquistato_a,
-            "margine":margine,
-            "percentuale_ricarico": (margine / acquistato_a * 100) if acquistato_a != 0 else None,
-            # "percentuale_premio": None,
-            # "valore_premio_lordo": None,
-        })
+#         mapped.append({
+#             "user_id": row.get("venditore"),
+#             "ordine_numero": row.get("ordine"),
+#             "cliente": row.get("cliente"),
+#             "prodotto": row.get("prodotto"),
+#             "mese": to_month_str(row.get("data")),
+#             "venduto_a": venduto_a,
+#             "costo_totale_acquisto": acquistato_a,
+#             "margine":margine,
+#             "percentuale_ricarico": (margine / acquistato_a * 100) if acquistato_a != 0 else None,
+#             # "percentuale_premio": None,
+#             # "valore_premio_lordo": None,
+#         })
     
     return data
