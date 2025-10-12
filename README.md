@@ -152,3 +152,13 @@ aws cognito-idp initiate-auth --client-id obemnph8vgsfrcip0s3bg4flm --auth-flow 
 ## 🔬 Testing with Postman
 
 🔗 [Postman Collection](https://web.postman.co/workspace/My-Workspace~e4916e62-c107-4dd5-8724-e2f204dc267d/request/38129126-5750757c-3e17-45c0-8bbf-f03d6e6e748f)
+
+
+
+## Additional 
+
+
+SECTION VENDITE
+- get vendite for calculations "calcoli" {'/vendite/odoo' Get Vendite From Odoo}
+  PROBLEM: vendite dont come with user ID, needs to FIX
+- after run calculations hitting ednpoint {'/iParametriDaInserire/parametri/user_id'}
