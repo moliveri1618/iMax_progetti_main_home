@@ -217,7 +217,119 @@ class ReportPostVendita(BaseModel):
 
 
 
+default_vendite = [
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00305",
+            "cliente": "Fashion Estetica Totale",
+            "data_ordine": "2025-03-31 14:17:40",
+            "prodotto_costo": 50.00,
+            "totale_imponibile": 90.00
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00298",
+            "cliente": "Mori Isabella",
+            "data_ordine": "2025-03-27 09:21:15",
+            "prodotto_costo": 86.73,
+            "totale_imponibile": 180.33
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00293",
+            "cliente": "Torretta Flavio",
+            "data_ordine": "2025-03-26 14:10:34",
+            "prodotto_costo": 205.07,
+            "totale_imponibile": 295.08
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00245",
+            "cliente": "Vernengo Marcello",
+            "data_ordine": "2025-03-13 15:32:53",
+            "prodotto_costo": 1363.00,
+            "totale_imponibile": 4426.24
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00205",
+            "cliente": "Welcome Group S.r.l.",
+            "data_ordine": "2025-03-05 15:54:47",
+            "prodotto_costo": 194.00,
+            "totale_imponibile": 430.00
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00202",
+            "cliente": "Cirami Alessandro",
+            "data_ordine": "2025-03-05 09:17:06",
+            "prodotto_costo": 139.00,
+            "totale_imponibile": 262.40
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00192",
+            "cliente": "Danese Antonio",
+            "data_ordine": "2025-02-28 17:31:20",
+            "prodotto_costo": 150.00,
+            "totale_imponibile": 295.09
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00190",
+            "cliente": "BERNARDINI GIUSEPPE",
+            "data_ordine": "2025-02-28 14:38:39",
+            "prodotto_costo": 35.00,
+            "totale_imponibile": 57.38
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00184",
+            "cliente": "Ceccarelli Andrea",
+            "data_ordine": "2025-02-27 13:43:53",
+            "prodotto_costo": 86.00,
+            "totale_imponibile": 140.91
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00187",
+            "cliente": "Gerali Massimo",
+            "data_ordine": "2025-02-27 11:49:12",
+            "prodotto_costo": 70.00,
+            "totale_imponibile": 120.00
+        },
+        {
+            "addetto_vendite": "Alberto Moscatelli",
+            "ordine_correlato": "S00183",
+            "cliente": "Del Fiandra Giovanna",
+            "data_ordine": "2025-02-27 09:18:49",
+            "prodotto_costo": 505.12,
+            "totale_imponibile": 863.64
+        },
+    ]
 
+
+
+
+def to_month_str(d: Optional[str]) -> Optional[str]:
+    if not d:
+        return None
+    # accept both datetime string and date-only
+    try:
+        return datetime.fromisoformat(d).strftime("%Y-%m")
+    except Exception:
+        try:
+            return datetime.strptime(d, "%Y-%m-%d").strftime("%Y-%m")
+        except Exception:
+            return None
+        
+        
+# SQLModel/Pydantic models support .dict() (v1) / .model_dump() (v2).
+# Use whichever exists to stay compatible.
+def to_dict(record):
+    if hasattr(record, "model_dump"):
+        return record.model_dump()
+    return record.dict()
 
 def signature_block(pdf, text, sig_data, left_w=140, right_w=50, line_h=8, pad=3):
     """
@@ -830,23 +942,23 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     result = replace_or_insert_budget_venduto_calcoli(session, user_id, res)
     return result
 
-def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametri):
+# def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametri):
     
-    # Get vendite for the user
-    vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Diana Joita")).scalars().all() # to change!
-    vendite = [v.dict() for v in vendite]
-    #pprint(parametri)
-    #pprint(vendite)
+#     # Get vendite for the user
+#     vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Diana Joita")).scalars().all() # to change!
+#     vendite = [v.dict() for v in vendite]
+#     #pprint(parametri)
+#     #pprint(vendite)
     
-    # Create ordiniPremi object 
-    res = create_ordiniPremi_obj(vendite, parametri, user_id)
-    # print("res:")
-    # pprint(res) 
+#     # Create ordiniPremi object 
+#     res = create_ordiniPremi_obj(vendite, parametri, user_id)
+#     # print("res:")
+#     # pprint(res) 
     
-    # delete_replace_ordini_premi
-    result = delete_replace_ordini_premi(session, user_id, res)
+#     # delete_replace_ordini_premi
+#     result = delete_replace_ordini_premi(session, user_id, res)
    
-    return result
+#     return result
 
 def send_email(receiver_email, filename, pdf_bytes=None):
     print("Sending email...")
