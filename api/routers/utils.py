@@ -309,7 +309,8 @@ default_vendite = [
     ]
 
 
-
+def _num(x):
+    return float(x or 0)
 
 def to_month_str(d: Optional[str]) -> Optional[str]:
     if not d:
@@ -759,7 +760,7 @@ def delete_replace_ordini_premi(session, user_id: str, rows: List[Dict]) -> int:
     """
     try:
         # 1) Cancella righe esistenti per questo user
-        session.exec(delete(OrdiniPremi).where(OrdiniPremi.user_id == user_id))
+        session.exec(delete(OrdiniPremi).where(OrdiniPremi.user_id == "Alberto Moscatelli"))
 
         # 2) Inserisci nuove righe
         objs = [OrdiniPremi(user_id=user_id, **{k: v for k, v in row.items() if k != "user_id"}) for row in rows]
@@ -907,7 +908,7 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
             "calcolo_percentuale_venduto": calcolo_percentuale_venduto[i],
             "valore_premio": None,
             "perc_ragg_fatturato_trimestrale": perc_ragg_fatturato_trimestrale[i],
-            "premio_ragg_budget_trimestrale": premio_ragg_budget_trimestrale[i],
+            "premio_ragg_budget_trimestrale": 0,
             "premio_ragg_budget_annuale": parametriDaInserire[i]["perc_premio_annuale"],
             "valori_1_trim": valori1[i],  
             "valori_2_trim": valori2[i],  
@@ -940,25 +941,41 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     
     
     result = replace_or_insert_budget_venduto_calcoli(session, user_id, res)
-    return result
+    return result, res
 
-# def replace_or_insert_conteggi_commessa(session: Session, user_id: str, parametri):
+def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli):
     
-#     # Get vendite for the user
-#     vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Diana Joita")).scalars().all() # to change!
-#     vendite = [v.dict() for v in vendite]
-#     #pprint(parametri)
-#     #pprint(vendite)
+    # Get vendite for the user
+    vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")).all() 
+    vendite = [v.model_dump() for v in vendite]
+    #pprint(calcoli)
+    #pprint(vendite)
     
-#     # Create ordiniPremi object 
-#     res = create_ordiniPremi_obj(vendite, parametri, user_id)
-#     # print("res:")
-#     # pprint(res) 
+    # 2 Perform calculations
+    mapped: List[Dict[str, Any]] = []
+    for row in vendite:
+        venduto_a = _num(row.get("costo_unitario")) 
+        acquistato_a = _num(row.get("subtotale"))  
+        margine = venduto_a - acquistato_a
+        
+        mapped.append({
+            "user_id": row.get("venditore"),
+            "ordine_numero": row.get("ordine"),
+            "cliente": row.get("cliente"),
+            "prodotto": row.get("prodotto"),
+            "mese": to_month_str(row.get("data")),
+            "venduto_a": venduto_a,
+            "costo_totale_acquisto": acquistato_a,
+            "margine":margine,
+            "percentuale_ricarico": (margine / acquistato_a * 100) if acquistato_a != 0 else None,
+            "percentuale_premio": None,
+            "valore_premio_lordo": None,
+        })
     
-#     # delete_replace_ordini_premi
-#     result = delete_replace_ordini_premi(session, user_id, res)
+    # delete_replace_ordini_premi
+    result = delete_replace_ordini_premi(session, "Alberto Moscatelli", mapped)
    
-#     return result
+    return result
 
 def send_email(receiver_email, filename, pdf_bytes=None):
     print("Sending email...")

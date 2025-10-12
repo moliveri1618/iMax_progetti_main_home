@@ -10,7 +10,8 @@ from datetime import datetime
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.vendite import VenditeImax
-from routers.utils import to_dict, to_month_str, default_vendite
+from models.iConteggiCommessa import OrdiniPremi
+from routers.utils import to_dict, to_month_str, default_vendite, _num
 from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
 
 
@@ -24,6 +25,18 @@ def get_all_vendite(db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Error retrieving vendite: {e}")
         raise HTTPException(status_code=500, detail="Error retrieving vendite from database.")
+
+
+@router.get("/conteggi-commessa/{user_name}")
+def get_conteggi_commessa_by_user(user_name: str, db: Session = Depends(get_db)):
+    try:
+        conteggi_list = db.exec(
+            select(OrdiniPremi).where(OrdiniPremi.user_id == user_name)
+        ).all()
+        return conteggi_list
+    except Exception as e:
+        print(f"Error retrieving conteggi commessa for user {user_name}: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving conteggi commessa from database.")
 
 
 
@@ -213,22 +226,22 @@ def get_conteggi_commessa(user_name: str, db: Session = Depends(get_db)):
     # 2 Perform calculations
     mapped: List[Dict[str, Any]] = []
     for row in data:
+        venduto_a = _num(row.get("costo_unitario")) 
+        acquistato_a = _num(row.get("subtotale"))  
+        margine = venduto_a - acquistato_a
+        
         mapped.append({
             "user_id": row.get("venditore"),
             "ordine_numero": row.get("ordine"),
             "cliente": row.get("cliente"),
             "prodotto": row.get("prodotto"),
             "mese": to_month_str(row.get("data")),
-            "venduto_a": _num(row.get("subtotale") or _num(row.get("quantita")) * _num(row.get("prezzo_unitario"))),
-            "costo_totale_acquisto": _num(row.get("quantita")) * _num(row.get("costo_unitario")),
-            "margine": (_num(row.get("subtotale") or 0) - (_num(row.get("quantita")) * _num(row.get("costo_unitario")))),
-            "percentuale_ricarico": (
-                (_num(row.get("subtotale") or 0) - (_num(row.get("quantita")) * _num(row.get("costo_unitario"))))
-                / (_num(row.get("quantita")) * _num(row.get("costo_unitario"))) * 100
-                if _num(row.get("quantita")) * _num(row.get("costo_unitario")) > 0 else None
-            ),
-            "percentuale_premio": None,
-            "valore_premio_lordo": None,
+            "venduto_a": venduto_a,
+            "costo_totale_acquisto": acquistato_a,
+            "margine":margine,
+            "percentuale_ricarico": (margine / acquistato_a * 100) if acquistato_a != 0 else None,
+            # "percentuale_premio": None,
+            # "valore_premio_lordo": None,
         })
     
     return data

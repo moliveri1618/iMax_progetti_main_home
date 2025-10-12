@@ -50,20 +50,20 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
         '4_trimestre': 25000.0
     }
 
-    # # Calculate and save Conteggi Commessa for user_id
-    # inserted_rows_conteggiCommessa = replace_or_insert_conteggi_commessa(session=session,user_id=user_id,parametri=result_parametri)
-    
     # Insert PARAMETRI DA INSERIRE for user_id
     inserted_rows_parametriDaInserire = replace_or_insert_parametriDaInserire(session=session,user_id=user_id,rows=rows,treat_empty_list_as_template=True)
     
     # Calculate and save PARAMETRI for user_id
-    inserted_rows_parametri = replace_or_insert_calcoli(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id, fatturato_del_trimestre=fatturato_del_trimestre)
+    inserted_rows_parametri, result_calcoli = replace_or_insert_calcoli(rows if rows else TEMPLATE_ROWS,session=session,user_id=user_id, fatturato_del_trimestre=fatturato_del_trimestre)
+    
+    # Calculate and save Conteggi Commessa for user_id
+    inserted_rows_conteggiCommessa = replace_or_insert_conteggi_commessa(session=session,user_id=user_id,calcoli=result_calcoli)
     
     
     return {
         "inserted_rows_parametriDaInserire": inserted_rows_parametriDaInserire,
         "inserted_rows_parametri": inserted_rows_parametri,
-        #"inserted_rows_conteggiCommessa": inserted_rows_conteggiCommessa,
+        "inserted_rows_conteggiCommessa": inserted_rows_conteggiCommessa,
     }
 
 
