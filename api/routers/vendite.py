@@ -146,29 +146,54 @@ def get_vendite_from_odoo(
     #     return JSONResponse(content={"error": str(e)}, status_code=500)
 
     # Map odoo data to VenditeImax model & insert into db 
-    mapped_vendite = []
-    for item in default_vendite:
-        vendita = VenditeImax(
-            ordine=item["ordine_correlato"],
-            data=item["data_ordine"],
-            venditore=item["addetto_vendite"],
-            team="",
-            cliente=item["cliente"],
-            prodotto="",
-            descrizione="",
-            quantita=0,
-            prezzo_unitario=0,
-            costo_unitario=item["prodotto_costo"],
-            ricarico=0,
-            subtotale=item["totale_imponibile"],
-        )
-        mapped_vendite.append(vendita)
+    inserted = 0
+    updated = 0
 
-    # Insert all into DB
-    db.add_all(mapped_vendite)
+    for item in vendite:
+        ordine = item["ordine_correlato"]
+
+        existing = db.exec(
+            select(VenditeImax).where(VenditeImax.ordine == ordine)
+        ).first()
+
+        if existing:
+            # update fields
+            existing.data = item["data_ordine"]
+            existing.venditore = item["addetto_vendite"]
+            existing.team = ""
+            existing.cliente = item["cliente"]
+            existing.prodotto = ""
+            existing.descrizione = ""
+            existing.quantita = 0
+            existing.prezzo_unitario = 0
+            existing.costo_unitario = item["prodotto_costo"]
+            existing.ricarico = 0
+            existing.subtotale = item["totale_imponibile"]
+            updated += 1
+        else:
+            db.add(VenditeImax(
+                ordine=ordine,
+                data=item["data_ordine"],
+                venditore=item["addetto_vendite"],
+                team="",
+                cliente=item["cliente"],
+                prodotto="",
+                descrizione="",
+                quantita=0,
+                prezzo_unitario=0,
+                costo_unitario=item["prodotto_costo"],
+                ricarico=0,
+                subtotale=item["totale_imponibile"],
+            ))
+            inserted += 1
+
     db.commit()
 
-    return {"message": "Data inserted successfully", "inserted": len(mapped_vendite)}
+    return {
+        "message": "Upsert completed",
+        "inserted": inserted,
+        "updated": updated
+    }
 
 
 @router.get("/calculate-conteggi-commessa/{user_name}")
