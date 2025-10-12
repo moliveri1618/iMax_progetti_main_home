@@ -1047,7 +1047,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli)
     for row in vendite:
         venduto_a = _num(row.get("costo_unitario")) 
         acquistato_a = _num(row.get("subtotale"))  
-        margine = venduto_a - acquistato_a
+        margine = abs(venduto_a - acquistato_a)
         
         mapped.append({
             "user_id": row.get("venditore"),
