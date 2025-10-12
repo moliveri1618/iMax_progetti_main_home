@@ -14,6 +14,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 import inspect
+from collections import defaultdict
+import re
 
 import sys
 import os
@@ -323,7 +325,90 @@ def to_month_str(d: Optional[str]) -> Optional[str]:
             return datetime.strptime(d, "%Y-%m-%d").strftime("%Y-%m")
         except Exception:
             return None
-        
+
+def _parse_month_from_str(s: str) -> int | None:
+    if not s:
+        return None
+    s = s.strip()
+
+    # YYYY-MM or YYYY-MM-DD
+    m = re.match(r"^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$", s)
+    if m:
+        mm = int(m.group(2))
+        return mm if 1 <= mm <= 12 else None
+
+    # DD/MM/YYYY or D/M/YY etc.
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2,4})$", s)
+    if m:
+        mm = int(m.group(2))
+        return mm if 1 <= mm <= 12 else None
+
+    # Try a permissive fallback (handles many formats if present)
+    for fmt in ("%Y-%m-%d", "%Y-%m", "%d/%m/%Y", "%d/%m/%y"):
+        try:
+            dt = datetime.strptime(s, fmt)
+            return dt.month
+        except ValueError:
+            pass
+
+    return None
+
+from collections import defaultdict
+from sqlmodel import select
+import re
+from datetime import datetime
+from typing import Dict
+
+def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
+    """
+    Compute quarterly totals (same shape as the previous hardcoded dict)
+    based on VenditeImax.subtotale for the given venditore/user_id.
+    """
+    rows = session.exec(
+        select(VenditeImax).where(VenditeImax.venditore == user_id)
+    ).all()
+
+    # helper to extract month
+    def parse_month(date_str: str) -> int | None:
+        if not date_str:
+            return None
+        s = date_str.strip()
+
+        # YYYY-MM or YYYY-MM-DD
+        m = re.match(r"^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$", s)
+        if m:
+            mm = int(m.group(2))
+            return mm if 1 <= mm <= 12 else None
+
+        # DD/MM/YYYY
+        m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2,4})$", s)
+        if m:
+            mm = int(m.group(2))
+            return mm if 1 <= mm <= 12 else None
+
+        # fallback: try datetime parse
+        for fmt in ("%Y-%m-%d", "%Y-%m", "%d/%m/%Y", "%d/%m/%y"):
+            try:
+                return datetime.strptime(s, fmt).month
+            except ValueError:
+                continue
+        return None
+
+    # sum subtotale by month
+    month_totals = defaultdict(float)
+    for row in rows:
+        mm = parse_month(row.data)
+        if mm:
+            month_totals[mm] += float(row.subtotale or 0.0)
+
+    # roll up quarters (exact same shape)
+    return {
+        '1_trimestre': month_totals[1] + month_totals[2] + month_totals[3],
+        '2_trimestre': month_totals[4] + month_totals[5] + month_totals[6],
+        '3_trimestre': month_totals[7] + month_totals[8] + month_totals[9],
+        '4_trimestre': month_totals[10] + month_totals[11] + month_totals[12],
+    }
+
         
 # SQLModel/Pydantic models support .dict() (v1) / .model_dump() (v2).
 # Use whichever exists to stay compatible.
@@ -847,7 +932,7 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     Calculate and save the parametri for the given user_id.
     This function should be called after replace_or_seed_parametri_for_user_core.
     """
-    print('parametriDaInserire', parametriDaInserire)
+    #print('parametriDaInserire', parametriDaInserire)
     
     # Force Gen→Dic order
     ordered = order_rows_by_month([dict(r) for r in parametriDaInserire])

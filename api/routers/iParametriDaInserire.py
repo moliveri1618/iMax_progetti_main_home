@@ -41,15 +41,10 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
     # Convert payload to dict if not None
     rows = json_to_dict(rows) 
     
-    # TODO: replace with real API call
     # Export from ODoo
-    fatturato_del_trimestre = {
-        '1_trimestre': 10000.0,
-        '2_trimestre': 15000.0,
-        '3_trimestre': 20000.0,
-        '4_trimestre': 25000.0
-    }
-
+    fatturato_del_trimestre = compute_quarter_totals_for_user(session=session, user_id=user_id)
+    #print('fatturato_del_trimestreeeee', fatturato_del_trimestre)
+    
     # Insert PARAMETRI DA INSERIRE for user_id
     inserted_rows_parametriDaInserire = replace_or_insert_parametriDaInserire(session=session,user_id=user_id,rows=rows,treat_empty_list_as_template=True)
     
@@ -58,7 +53,6 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
     
     # Calculate and save Conteggi Commessa for user_id
     inserted_rows_conteggiCommessa = replace_or_insert_conteggi_commessa(session=session,user_id=user_id,calcoli=result_calcoli)
-    
     
     return {
         "inserted_rows_parametriDaInserire": inserted_rows_parametriDaInserire,
