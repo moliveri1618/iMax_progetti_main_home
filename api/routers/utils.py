@@ -610,17 +610,28 @@ def compute_venduto_reale(db, year=None):
 
     return sums
 
-def compute_consuntivo_venduto_trimestrale(venduto, fatturato_del_trimestre):
-    out = []
-    for i, _ in enumerate(venduto):
-        # end of quarter months are indices 2, 5, 8, 11, ...
-        if (i % 3) == 2:
-            q_num = (i // 3) % 4 + 1  # 1..4 cycling
-            key = f"{q_num}_trimestre"
-            out.append(float(fatturato_del_trimestre.get(key)) if key in fatturato_del_trimestre else None)
-        else:
-            out.append(None)
+def compute_consuntivo_venduto_trimestrale(fatturato_del_trimestre):
+    """
+    Build a 12-length list with values only at quarter-end months:
+      Marzo, Giugno, Settembre, Dicembre.
+    These come from fatturato_del_trimestre["1_trimestre"] … ["4_trimestre"].
+    Other months → None.
+    """
+    out = [None] * 12
+    trimestri_keys = [
+        "1_trimestre",
+        "2_trimestre",
+        "3_trimestre",
+        "4_trimestre",
+    ]
+    # Quarter-end month indices (0-based)
+    quarter_ends = [2, 5, 8, 11]
+
+    for idx, key in zip(quarter_ends, trimestri_keys):
+        out[idx] = float(fatturato_del_trimestre.get(key)) if key in fatturato_del_trimestre else None
+
     return out
+
 
 def compute_calcolo_percentuale_venduto(perc_list):
     """
@@ -867,6 +878,35 @@ def delete_replace_ordini_premi(session, user_id: str, rows: List[Dict]) -> int:
         session.rollback()
         raise
 
+def compute_venduto_reale_quarter_rule(consuntivo_venduto, prog_trimestrali, ordered_rows):
+    """
+    Apply IF(SUM(H5) ≥ $D$5, SUM(H5) * $E$5, 0) only on months:
+      Marzo (idx 2), Giugno (idx 5), Settembre (idx 8)
+    H5 = consuntivo_venduto
+    D5 = prog_trimestrali
+    E5 = ordered_rows[i]['perc_premio_trimestrale']
+    Non-quarter months -> None
+    """
+    quarter_end_idxs = {2, 5, 8}  # Mar, Jun, Sep
+    out = []
+    for i, (h, d) in enumerate(zip(consuntivo_venduto, prog_trimestrali)):
+        if i in quarter_end_idxs:
+            # get perc as a fraction (e.g. 0.05 for 5%)
+            if isinstance(ordered_rows[i], dict):
+                perc = ordered_rows[i].get("perc_premio_trimestrale")
+            else:
+                perc = getattr(ordered_rows[i], "perc_premio_trimestrale", None)
+
+            if h is None or d is None or perc is None:
+                out.append(0.0)
+            else:
+                h = float(h)
+                d = float(d)
+                perc = float(perc or 0.0)
+                out.append(h * perc if h >= d else 0.0)
+        else:
+            out.append(None)
+    return out
 
 
 def replace_or_insert_parametriDaInserire(
@@ -948,8 +988,8 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     obiettivi = [row["obiettivo_mensile"] for row in ordered]
     prog_mensili = compute_progressivi_mensili(obiettivi)
     prog_trimestrali = compute_progressivi_trimestrali(obiettivi) 
-    venduto_reale = compute_venduto_reale(session, year=None)
-    consuntivo_venduto = compute_consuntivo_venduto_trimestrale(venduto_reale, fatturato_del_trimestre)
+    consuntivo_venduto = compute_consuntivo_venduto_trimestrale(fatturato_del_trimestre)
+    venduto_reale = compute_venduto_reale_quarter_rule(consuntivo_venduto, prog_trimestrali, ordered)
     perc_rispetto_budget = compute_pct_consuntivo_vs_prog_trimestrale(consuntivo_venduto, prog_trimestrali) # qui
     calcolo_percentuale_venduto = compute_calcolo_percentuale_venduto(perc_rispetto_budget)
     perc_ragg_fatturato_trimestrale = compute_perc_ragg_fatturato_trimestrale(parametriDaInserire)
@@ -987,14 +1027,13 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
         ragg_budget_val = premio_ragg_budget_trimestrale[i] if premio_ragg_budget_trimestrale[i] is not None else 0
         totale_ragg_budget_trimestrale += ragg_budget_val
 
-        
         res.append({
             "user_id": user_id,
             "mese": month,                              
             "obiettivo_mensile": obiettivi[i],
             "progressivo_mensile": prog_mensili[i],
             "progressivo_trimestrale": prog_trimestrali[i],        
-            "venduto_reale": venduto_reale[i],
+            "venduto_reale": venduto_reale[i], # sarebbe Premio trimestrale sul RAGGIUNGIMENTO FATTURATO TRIMESTRALE in AAA MASTER
             "consuntivo_venduto": consuntivo_venduto[i], 
             "perc_rispetto_budget": perc_rispetto_budget[i],
             "calcolo_percentuale_venduto": calcolo_percentuale_venduto[i],
