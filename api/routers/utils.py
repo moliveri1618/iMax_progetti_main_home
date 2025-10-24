@@ -1090,25 +1090,32 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
             "valori_3_trim": valori3[i],  
             "valori_4_trim": valori4[i],  
             "perc_al_100": perc_al_100[i],
-            "perc_trim_1": perc_trim_1_arr[i],
-            "perc_trim_2": perc_trim_2_arr[i],
-            "perc_trim_3": perc_trim_3_arr[i],
-            "perc_trim_4": perc_trim_4_arr[i],
+    "perc_trim_1": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_1_arr[i],
+    "perc_trim_2": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_2_arr[i],
+    "perc_trim_3": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_3_arr[i],
+    "perc_trim_4": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_4_arr[i],
             "valore_limite_perc": parametriDaInserire[i]["valore_limite"],
         })
         
-    # Add extra "totali" row after the loop
+    # Add extra "totali BUDGET ANNUALI" & "TOTALI" row after the loop
     res.append({
         "user_id": user_id,
-        "mese": "totali",
+        "mese": "totali BUDGET ANNUALI",
         "obiettivo_mensile": totale_obiettivo_mensile,
-        "progressivo_mensile": None,
         "progressivo_trimestrale": totale_obiettivo_trimestrale,
-        "venduto_reale": totale_venduto_reale,
-        "consuntivo_venduto": totale_consuntivo_venduto,
-        "valore_premio": None,
-        "premio_ragg_budget_trimestrale": totale_ragg_budget_trimestrale,
-        "premio_ragg_budget_annuale": parametriDaInserire[0]["perc_premio_annuale"]
+        "perc_al_100": -3,
+        "perc_trim_1": -3,
+        "perc_trim_2": -3,
+        "perc_trim_3": -3,
+        "perc_trim_4": -3,
+    })
+    res.append({
+        "user_id": user_id,
+        "mese": "totali ",
+        "perc_trim_1": -5,
+        "perc_trim_2": -5,
+        "perc_trim_3": -5,
+        "perc_trim_4": -5,
     })
     # print("res")
     # pprint(res)
