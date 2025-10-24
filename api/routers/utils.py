@@ -632,6 +632,41 @@ def compute_consuntivo_venduto_trimestrale(fatturato_del_trimestre):
 
     return out
 
+def apply_formula(  
+    percentuale_ricarico, 
+    mese, 
+    valori_1_trim, 
+    valori_2_trim, 
+    valori_3_trim, 
+    valori_4_trim, 
+    valori_limite
+):
+    print("\n--- DEBUG: apply_formula ---")
+    print(f"percentuale_ricarico: {percentuale_ricarico}")
+    print(f"valori_limite: {valori_limite}")
+    print(f"valori_1_trim: {valori_1_trim}")
+
+    res = 0.0
+
+    # Loop from highest limit to lowest
+    for i in range(len(valori_limite)):
+        idx = i
+        limite = valori_limite[idx]
+        premio = valori_1_trim[idx]
+
+        print(f"Checking valori_limite={limite}, valori_1_trim={premio}")
+        if percentuale_ricarico > limite:
+            res = premio
+            print(f"✅ Match found: {percentuale_ricarico} > {limite}, res={res}")
+            break  # stop once we find the first valid tier
+        else:
+            print(f"❌ No match for limite={limite}")
+
+    print(f"Result returned: {res}")
+    print("--- END DEBUG ---\n")
+
+    return res
+
 
 def compute_calcolo_percentuale_venduto(perc_list):
     """
@@ -1073,7 +1108,7 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     result = replace_or_insert_budget_venduto_calcoli(session, user_id, res)
     return result, res
 
-def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli):
+def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli, parametriDiVendita):
     
     # Get vendite for the user
     vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")).all() 
@@ -1083,22 +1118,45 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli)
     
     # 2 Perform calculations
     mapped: List[Dict[str, Any]] = []
+    valori_1_trim = [c.get("perc_trim_1", 0.0) for c in calcoli if c.get("mese") != "totali"]
+    valori_2_trim = [c.get("perc_trim_2", 0.0) for c in calcoli if c.get("mese") != "totali"]
+    valori_3_trim = [c.get("perc_trim_3", 0.0) for c in calcoli if c.get("mese") != "totali"]
+    valori_4_trim = [c.get("perc_trim_4", 0.0) for c in calcoli if c.get("mese") != "totali"]
+    valori_limite = [c.get("valore_limite", 0.0) for c in parametriDiVendita if c.get("mese") != "totali"]
+    print("valori_limite", valori_limite)
+    print("valori_1_trim", valori_1_trim)
+    print("valori_2_trim", valori_2_trim)
+    print("valori_3_trim", valori_3_trim)
+    print("valori_4_trim", valori_4_trim)
+    
     for row in vendite:
-        venduto_a = _num(row.get("costo_unitario")) 
-        acquistato_a = _num(row.get("subtotale"))  
+        venduto_a = _num(row.get("subtotale"))  
+        acquistato_a = _num(row.get("costo_unitario"))   
         margine = abs(venduto_a - acquistato_a)
+        percentuale_ricarico = (margine / acquistato_a * 100) if acquistato_a != 0 else None
+        mese = to_month_str(row.get("data"))
+        percentuale_premio = apply_formula( 
+                                        percentuale_ricarico, 
+                                        mese, 
+                                        valori_1_trim,
+                                        valori_2_trim,
+                                        valori_3_trim,
+                                        valori_4_trim,
+                                        valori_limite
+                                    )
+        
         
         mapped.append({
             "user_id": row.get("venditore"),
             "ordine_numero": row.get("ordine"),
             "cliente": row.get("cliente"),
             "prodotto": row.get("prodotto"),
-            "mese": to_month_str(row.get("data")),
+            "mese": mese,
             "venduto_a": venduto_a,
             "costo_totale_acquisto": acquistato_a,
             "margine":margine,
             "percentuale_ricarico": (margine / acquistato_a * 100) if acquistato_a != 0 else None,
-            "percentuale_premio": None,
+            "percentuale_premio": percentuale_premio,
             "valore_premio_lordo": None,
         })
     
