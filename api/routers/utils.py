@@ -410,7 +410,8 @@ def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
             month_totals[mm] += float(r.subtotale or 0.0)
 
     return {
-        '1_trimestre': month_totals[1] + month_totals[2] + month_totals[3],     # Jan–Mar
+        # '1_trimestre': month_totals[1] + month_totals[2] + month_totals[3],     # Jan–Mar
+        '1_trimestre': 70000,     # TEST
         '2_trimestre': month_totals[4] + month_totals[5] + month_totals[6],     # Apr–Jun
         '3_trimestre': month_totals[7] + month_totals[8] + month_totals[9],     # Jul–Sep
         '4_trimestre': month_totals[10] + month_totals[11] + month_totals[12],  # Oct–Dec
@@ -1135,15 +1136,15 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
         margine = abs(venduto_a - acquistato_a)
         percentuale_ricarico = (margine / acquistato_a * 100) if acquistato_a != 0 else None
         mese = to_month_str(row.get("data"))
-        percentuale_premio = apply_formula( 
-                                        percentuale_ricarico, 
-                                        mese, 
-                                        valori_1_trim,
-                                        valori_2_trim,
-                                        valori_3_trim,
-                                        valori_4_trim,
-                                        valori_limite
-                                    )
+        # percentuale_premio = apply_formula( 
+        #                                 percentuale_ricarico, 
+        #                                 mese, 
+        #                                 valori_1_trim,
+        #                                 valori_2_trim,
+        #                                 valori_3_trim,
+        #                                 valori_4_trim,
+        #                                 valori_limite
+        #                             )
         
         
         mapped.append({
@@ -1156,7 +1157,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
             "costo_totale_acquisto": acquistato_a,
             "margine":margine,
             "percentuale_ricarico": (margine / acquistato_a * 100) if acquistato_a != 0 else None,
-            "percentuale_premio": percentuale_premio,
+            "percentuale_premio": None,
             "valore_premio_lordo": None,
         })
     
