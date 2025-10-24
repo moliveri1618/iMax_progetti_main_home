@@ -113,7 +113,7 @@ TRIM_WEIGHTS = [0.75, 0.50, 0.25, 0.20, 0.15, 0.10, 0.05]  # 75%, 50%, ...
 TRIM_STARTS = [0, 3, 6, 9]
 
 # Ordered list of months
-MONTHS_LIST = [r["mese"] for r in TEMPLATE_ROWS]
+MONTHS_LIST = [r["mese"] for r in TEMPLATE_ROWS[:12]]
 
 # Set of months (for membership / equality checks)
 MONTHS = set(MONTHS_LIST)

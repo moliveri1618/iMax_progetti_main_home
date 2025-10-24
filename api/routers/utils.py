@@ -531,8 +531,9 @@ def note_box(pdf, title, body=None, *, height=85, title_fs=12, end_gap=10):
     pdf.set_draw_color(0, 0, 0)
 
 def order_rows_by_month(rows: Iterable[Dict]) -> List[Dict]:
-    """Return rows ordered Gen→Dic using MONTH_ORDER."""
-    return sorted(rows, key=lambda r: MONTH_ORDER[str(r["mese"]).strip().lower()])
+    """Return rows ordered Gen→Dic using MONTH_ORDER (ignora righe totali)."""
+    valid_rows = [r for r in rows if str(r.get("mese", "")).strip().lower() in MONTH_ORDER]
+    return sorted(valid_rows, key=lambda r: MONTH_ORDER[str(r["mese"]).strip().lower()])
 
 def json_to_dict(rows: Optional[Sequence[Any]]) -> Optional[List[Dict[str, Any]]]:
     if rows is None:
@@ -821,7 +822,7 @@ def compute_perc_trim_arrays(perc_al_100, calcolo_percentuale_venduto):
     def normalize_h(x):
         x = nz(x)
         # If it's percentage like 83 (meaning 83%), scale to 0.83
-        return x / 100.0 if x > 1 else x
+        return x / 100.0
 
     # Pick H at quarter ends
     h_mar = normalize_h(calcolo_percentuale_venduto[2])   # H5
@@ -960,6 +961,7 @@ def replace_or_insert_parametriDaInserire(
       - Seed from TEMPLATE_ROWS.
     """
     uid = str(user_id)
+    print(rows)
 
     # Decide source data
     if rows is None or (treat_empty_list_as_template and rows == []):
@@ -968,12 +970,18 @@ def replace_or_insert_parametriDaInserire(
         incoming = [dict(r) for r in rows]  
         for r in incoming:
             r["mese"] = r["mese"].strip().lower()
-        months = [r["mese"] for r in incoming]
-        if len(incoming) != 12 or len(set(months)) != 12 or set(months) != MONTHS:
-            raise HTTPException(
-                status_code=422,
-                detail="Payload must contain exactly one row for each month (gennaio..dicembre).",
-            )
+        
+        # # Prendi solo i mesi validi per la validazione
+        # mesi_validi = [r for r in incoming if r["mese"] in MONTHS]
+        # mesi_presenti = {r["mese"] for r in mesi_validi}
+        
+        # if len(mesi_validi) != 12 or mesi_presenti != MONTHS:
+        #     raise HTTPException(
+        #         status_code=422,
+        #         detail="Payload deve contenere almeno una riga per ciascun mese (gennaio..dicembre).",
+        #     )
+
+        # Ora puoi tenere anche righe aggiuntive (es. totali)
         source = incoming
 
     # Replace atomically: delete then insert
