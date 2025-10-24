@@ -1179,7 +1179,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
                                         valori_3_trim,
                                         valori_4_trim,
                                         valori_limite
-                                    )
+                            )
         
         
         mapped.append({
