@@ -643,31 +643,51 @@ def apply_formula(
     valori_4_trim, 
     valori_limite
 ):
-    print("\n--- DEBUG: apply_formula ---")
-    print(f"percentuale_ricarico: {percentuale_ricarico}")
-    print(f"valori_limite: {valori_limite}")
-    print(f"valori_1_trim: {valori_1_trim}")
+    # Extract month number from various formats (e.g. "2025-03", "03", "marzo")
+    mese_str = str(mese).strip().lower()
+
+    # Try to extract numeric month from formats like "2025-03"
+    mese_num = None
+    if "-" in mese_str:
+        try:
+            mese_num = int(mese_str.split("-")[1])
+        except:
+            pass
+    elif mese_str.isdigit():
+        mese_num = int(mese_str)
+    else:
+        # Convert Italian month names to numbers
+        mesi = {
+            "gennaio": 1, "febbraio": 2, "marzo": 3,
+            "aprile": 4, "maggio": 5, "giugno": 6,
+            "luglio": 7, "agosto": 8, "settembre": 9,
+            "ottobre": 10, "novembre": 11, "dicembre": 12,
+        }
+        mese_num = mesi.get(mese_str)
+
+    if mese_num is None or not (1 <= mese_num <= 12):
+        raise ValueError(f"Mese non valido: {mese}")
+
+    # Determine trimestre based on month number
+    if mese_num in [1, 2, 3]:
+        valori_trim = valori_1_trim
+    elif mese_num in [4, 5, 6]:
+        valori_trim = valori_2_trim
+    elif mese_num in [7, 8, 9]:
+        valori_trim = valori_3_trim
+    else:  # 10, 11, 12
+        valori_trim = valori_4_trim
 
     res = 0.0
 
     # Loop from highest limit to lowest
-    for i in range(len(valori_limite)):
-        idx = i
-        limite = valori_limite[idx]
-        premio = valori_1_trim[idx]
-
-        print(f"Checking valori_limite={limite}, valori_1_trim={premio}")
+    for limite, premio in zip(valori_limite, valori_trim):
         if percentuale_ricarico > limite:
             res = premio
-            print(f"✅ Match found: {percentuale_ricarico} > {limite}, res={res}")
-            break  # stop once we find the first valid tier
-        else:
-            print(f"❌ No match for limite={limite}")
-
-    print(f"Result returned: {res}")
-    print("--- END DEBUG ---\n")
+            break
 
     return res
+
 
 
 def compute_calcolo_percentuale_venduto(perc_list):
@@ -1090,10 +1110,10 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
             "valori_3_trim": valori3[i],  
             "valori_4_trim": valori4[i],  
             "perc_al_100": perc_al_100[i],
-    "perc_trim_1": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_1_arr[i],
-    "perc_trim_2": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_2_arr[i],
-    "perc_trim_3": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_3_arr[i],
-    "perc_trim_4": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_4_arr[i],
+            "perc_trim_1": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_1_arr[i],
+            "perc_trim_2": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_2_arr[i],
+            "perc_trim_3": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_3_arr[i],
+            "perc_trim_4": -1 if i >= len(MONTHS_LIST) -1 else perc_trim_4_arr[i],
             "valore_limite_perc": parametriDaInserire[i]["valore_limite"],
         })
         
@@ -1134,11 +1154,11 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
     
     # 2 Perform calculations
     mapped: List[Dict[str, Any]] = []
-    valori_1_trim = [c.get("perc_trim_1", 0.0) for c in calcoli if c.get("mese") != "totali"]
-    valori_2_trim = [c.get("perc_trim_2", 0.0) for c in calcoli if c.get("mese") != "totali"]
-    valori_3_trim = [c.get("perc_trim_3", 0.0) for c in calcoli if c.get("mese") != "totali"]
-    valori_4_trim = [c.get("perc_trim_4", 0.0) for c in calcoli if c.get("mese") != "totali"]
-    valori_limite = [c.get("valore_limite", 0.0) for c in parametriDiVendita if c.get("mese") != "totali"]
+    valori_1_trim = [c.get("perc_trim_1", 0.0) for c in calcoli]
+    valori_2_trim = [c.get("perc_trim_2", 0.0) for c in calcoli]
+    valori_3_trim = [c.get("perc_trim_3", 0.0) for c in calcoli]
+    valori_4_trim = [c.get("perc_trim_4", 0.0) for c in calcoli]
+    valori_limite = [c.get("valore_limite", 0.0) for c in parametriDiVendita]
     print("valori_limite", valori_limite)
     print("valori_1_trim", valori_1_trim)
     print("valori_2_trim", valori_2_trim)
@@ -1151,15 +1171,15 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
         margine = abs(venduto_a - acquistato_a)
         percentuale_ricarico = (margine / acquistato_a * 100) if acquistato_a != 0 else None
         mese = to_month_str(row.get("data"))
-        # percentuale_premio = apply_formula( 
-        #                                 percentuale_ricarico, 
-        #                                 mese, 
-        #                                 valori_1_trim,
-        #                                 valori_2_trim,
-        #                                 valori_3_trim,
-        #                                 valori_4_trim,
-        #                                 valori_limite
-        #                             )
+        percentuale_premio = apply_formula( 
+                                        percentuale_ricarico, 
+                                        mese, 
+                                        valori_1_trim,
+                                        valori_2_trim,
+                                        valori_3_trim,
+                                        valori_4_trim,
+                                        valori_limite
+                                    )
         
         
         mapped.append({
@@ -1172,8 +1192,8 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
             "costo_totale_acquisto": acquistato_a,
             "margine":margine,
             "percentuale_ricarico": (margine / acquistato_a * 100) if acquistato_a != 0 else None,
-            "percentuale_premio": None,
-            "valore_premio_lordo": None,
+            "percentuale_premio": percentuale_premio,
+            "valore_premio_lordo": (margine*percentuale_premio)/100 if percentuale_premio else None,
         })
     
     # delete_replace_ordini_premi
