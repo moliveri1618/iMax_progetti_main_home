@@ -49,6 +49,16 @@ def group_for_frontend(rows):
 
     return out
 
+def remove_zona_duplicates(groups: list[WorkInProgressGrouped]) -> list[WorkInProgressGrouped]:
+    """Remove duplicate 'zona' entries, keeping only the first occurrence."""
+    seen = set()
+    deduped: list[WorkInProgressGrouped] = []
+    for g in groups:
+        if g.zona in seen:
+            continue
+        seen.add(g.zona)
+        deduped.append(g)
+    return deduped
 
 
 # Create
@@ -74,8 +84,10 @@ def read_workinprogress(commessa_id: int, db: Session = Depends(get_db)):
     results = db.exec(statement).all()
     if not results:
         raise HTTPException(status_code=404, detail="Work in progress not found")
-    return group_for_frontend(results)
-
+    
+    grouped = group_for_frontend(results)
+    deduped = remove_zona_duplicates(grouped)
+    return deduped
 
 # Update
 @router.put("/{work_id}", response_model=IWorkInProgressRead)
