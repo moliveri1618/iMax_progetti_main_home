@@ -16,3 +16,5 @@ class iUsers(SQLModel, table=True):
     company_id: Optional[int] = None
     company_name: Optional[str] = None
     role: UserRole = Field(default=UserRole.USER)
+    capo: Optional[str] = None
+    sub: Optional[str] = None

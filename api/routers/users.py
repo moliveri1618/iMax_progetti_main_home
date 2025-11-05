@@ -107,6 +107,8 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
             company_id=comp[0],
             company_name=comp[1],
             role=role,
+            capo= "Empty",
+            sub= "Empty",
         )
         db.add(entity)
 
