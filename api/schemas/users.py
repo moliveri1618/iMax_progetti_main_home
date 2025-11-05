@@ -10,6 +10,7 @@ class UserBase(BaseModel):
     email: Optional[str] = None
     company_id: Optional[int] = None
     company_name: Optional[str] = None
+    role: Optional[str] = "user"
 
 
 # --- Create schema ---
@@ -25,6 +26,7 @@ class UserRead(SQLModel):
     email: Optional[str] = None
     company_id: Optional[int] = None
     company_name: Optional[str] = None
+    role: Optional[str] = "user"
 
     class Config:
         from_attributes = True
@@ -37,3 +39,4 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
     company_id: Optional[int] = None
     company_name: Optional[str] = None
+    role: Optional[str] = "user"

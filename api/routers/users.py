@@ -60,14 +60,14 @@ def rpc_call(model, method, args=None, kwargs=None):
 # CRUD Endpoints
 # ---------------------------
 
-@router.get("/users", response_model=List[UserRead])
+@router.get("/all", response_model=List[UserRead])
 def list_users(db: Session = Depends(get_db)):
     users = db.exec(select(iUsers)).all()
     return [UserRead.model_validate(u, from_attributes=True) for u in users]
 
 
 
-@router.get("/users/{user_id}", response_model=UserRead)
+@router.get("/{user_id}", response_model=UserRead)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     user = db.get(iUsers, user_id)
     if not user:
@@ -97,12 +97,16 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
             continue
         
         comp = u.get("company_id") or [None, None]
+        email = (u.get("email") or "").strip()
+        role = UserRole.ADMIN if email == "mulsp1@worthtech.cloud" else UserRole.USER
+
         entity = iUsers(
             odoo_id=odoo_user_id,
             name=u.get("name"),
             email=u.get("email"),
             company_id=comp[0],
             company_name=comp[1],
+            role=role,
         )
         db.add(entity)
 
