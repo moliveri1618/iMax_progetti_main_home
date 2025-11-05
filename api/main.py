@@ -96,7 +96,6 @@ app.include_router(
 
 
 
-
 @app.get("/")
 async def root(current_user: dict = Depends(verify_cognito_token)):
     return {"message": "Hello"}
