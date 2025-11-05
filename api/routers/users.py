@@ -76,7 +76,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 
 
 
-@router.post("/", status_code=201)
+@router.post("add", status_code=201)
 def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     
     tmpl_id = 13485  
