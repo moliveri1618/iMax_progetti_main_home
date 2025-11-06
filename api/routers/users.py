@@ -57,6 +57,32 @@ def rpc_call(model, method, args=None, kwargs=None):
         return data["result"]
 
 
+
+def to_labels(src: Dict[str, bool] | None, mapping: Dict[str, str]) -> Dict[str, bool]:
+    if not src:
+        return {}
+
+    internal_keys = set(mapping.keys())
+    label_keys = set(mapping.values())
+    src_keys = set(src.keys())
+
+    has_internal = len(src_keys & internal_keys) > 0
+    has_labels   = len(src_keys & label_keys) > 0
+
+    if has_internal and not has_labels:
+        # Payload sent with internal keys → map to labels (only keys provided)
+        return {mapping[k]: bool(src[k]) for k in src_keys & internal_keys}
+
+    if has_labels:
+        # Payload already uses labels → pass through (only known labels)
+        return {k: bool(src[k]) for k in src_keys & label_keys}
+
+    # Unknown keys → just pass through as-is
+    return {k: bool(v) for k, v in src.items()}
+
+
+
+
 # ---------------------------
 # CRUD Endpoints
 # ---------------------------
@@ -65,8 +91,6 @@ def rpc_call(model, method, args=None, kwargs=None):
 def list_users(db: Session = Depends(get_db)):
     users = db.exec(select(iUsers).order_by(iUsers.odoo_id)).all()
     return [UserRead.model_validate(u, from_attributes=True) for u in users]
-
-
 
 
 @router.get("/sync_odoo", status_code=201)
@@ -235,14 +259,11 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
         "filo_guidatura": "Filo guidatura",
     }
 
-    def to_labels(src: Dict[str, bool], mapping: Dict[str, str]) -> Dict[str, bool]:
-        src = src or {}
-        return {label: bool(src.get(k, False)) for k, label in mapping.items()}
 
     inserted, updated = 0, 0
 
     for it in items:
-        odoo_id = it.get("id")
+        odoo_id = it.get("odoo_id")
         if odoo_id is None:
             continue
 
@@ -251,6 +272,7 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
         # Prepare mapped fields only if present
         home_labels = to_labels(it.get("home"), HOME_MAP) if "home" in it else None
         nautica_labels = to_labels(it.get("nautica"), NAUTICA_MAP) if "nautica" in it else None
+        print("USER:", odoo_id, it.get("name"), home_labels, nautica_labels)
 
         if existing:
             # Update only fields present in payload
