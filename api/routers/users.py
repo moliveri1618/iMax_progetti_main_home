@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from typing import List, Dict, Any
 from sqlmodel import Session, select
 from typing import List
 import sys, os
@@ -207,3 +208,77 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return UserRead.model_validate(user, from_attributes=True)
+
+
+@router.post("/bulk_upsert")
+def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)):
+    HOME_MAP = {
+        "rilievo_misure": "Rilievo Misure",
+        "elaborazione_sviluppo": "Elaborazione dati e SVILUPPO disegni",
+        "ordine_fornitore": "ORDINE e FORNITORE e controllo conferma",
+        "trasporto_cliente": "TRASPORTO AL CLIENTE",
+        "trasporto_piano": "TRASPORTO AL PIANO",
+        "smontaggio_vecchio": "SMONTAGGIO VECCHIO",
+        "taglio_telai": "TAGLIO TELAI",
+        "posa_serramento": "POSA SERRAMENTO",
+        "rivestimento_interno": "RIVESTIMENTO INTERNO",
+    }
+    NAUTICA_MAP = {
+        "rilievo_misure": "Rilievo Misure",
+        "collaudo_sarte": "Collaudo Sarte",
+        "taglio_binario": "Taglio Binario",
+        "binario_assemblato": "Binario Assemblato",
+        "tenda_assemblata": "Tenda Assemblata Bin / Tes Pronta",
+        "emesso_ddt": "Emesso DDT",
+        "attacchi": "Attacchi",
+        "montaggio_a_bordo": "Montaggio a Bordo",
+        "filo_guidatura": "Filo guidatura",
+    }
+
+    def to_labels(src: Dict[str, bool], mapping: Dict[str, str]) -> Dict[str, bool]:
+        src = src or {}
+        return {label: bool(src.get(k, False)) for k, label in mapping.items()}
+
+    inserted, updated = 0, 0
+
+    for it in items:
+        odoo_id = it.get("id")
+        if odoo_id is None:
+            continue
+
+        existing = db.exec(select(iUsers).where(iUsers.odoo_id == odoo_id)).first()
+
+        # Prepare mapped fields only if present
+        home_labels = to_labels(it.get("home"), HOME_MAP) if "home" in it else None
+        nautica_labels = to_labels(it.get("nautica"), NAUTICA_MAP) if "nautica" in it else None
+
+        if existing:
+            # Update only fields present in payload
+            if "name" in it:
+                existing.name = it["name"]
+            if "capo" in it:
+                existing.capo = it["capo"]
+            if "sub" in it:
+                existing.sub = it["sub"]
+            if home_labels is not None:
+                existing.home = home_labels
+            if nautica_labels is not None:
+                existing.nautica = nautica_labels
+            updated += 1
+        else:
+            db.add(iUsers(
+                odoo_id=odoo_id,
+                name=it.get("name"),
+                email=it.get("email"),          # use if provided
+                company_id=it.get("company_id"),
+                company_name=it.get("company_name"),
+                role=UserRole.USER,
+                capo=it.get("capo") or "Empty",
+                sub=it.get("sub") or "Empty",
+                home=home_labels or {},
+                nautica=nautica_labels or {},
+            ))
+            inserted += 1
+
+    db.commit()
+    return {"inserted": inserted, "updated": updated, "total": len(items)}
