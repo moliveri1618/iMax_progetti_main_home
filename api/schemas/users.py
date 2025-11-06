@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 from sqlmodel import SQLModel
 from pydantic import BaseModel
 
@@ -13,6 +13,8 @@ class UserBase(BaseModel):
     role: Optional[str] = "user"
     capo: Optional[str] = None
     sub: Optional[str] = None
+    nautica: Optional[Dict[str, bool]] = None
+    home: Optional[Dict[str, bool]] = None
 
 
 # --- Create schema ---
@@ -31,6 +33,8 @@ class UserRead(SQLModel):
     role: Optional[str] = "user"
     capo: Optional[str] = None
     sub: Optional[str] = None
+    nautica: Optional[Dict[str, bool]] = None
+    home: Optional[Dict[str, bool]] = None
 
     class Config:
         from_attributes = True
@@ -46,3 +50,5 @@ class UserUpdate(BaseModel):
     role: Optional[str] = "user"
     capo: Optional[str] = None
     sub: Optional[str] = None
+    nautica: Dict[str, bool]
+    home: Dict[str, bool]

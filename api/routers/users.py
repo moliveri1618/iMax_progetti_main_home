@@ -109,8 +109,31 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
             role=role,
             capo= "Empty",
             sub= "Empty",
+            nautica={
+                "Rilievo Misure": False,
+                "Collaudo Sarte": False,
+                "Taglio Binario": False,
+                "Binario Assemblato": False,
+                "Tenda Assemblata Bin / Tes Pronta": False,
+                "Emesso DDT": False,
+                "Attacchi": False,
+                "Montaggio a Bordo": False,
+                "Filo guidatura": False,
+            },
+            home={
+                "Rilievo Misure": False,
+                "Elaborazione dati e SVILUPPO disegni": False,
+                "ORDINE e FORNITORE e controllo conferma": False,
+                "TRASPORTO AL CLIENTE": False,
+                "TRASPORTO AL PIANO": False,
+                "SMONTAGGIO VECCHIO": False,
+                "TAGLIO TELAI": False,
+                "POSA SERRAMENTO": False,
+                "RIVESTIMENTO INTERNO": False,
+            },
         )
         db.add(entity)
+
 
     db.commit()
     return {"users": len(users)}

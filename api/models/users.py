@@ -1,5 +1,5 @@
-from typing import Optional
-from sqlmodel import SQLModel, Field
+from typing import Optional, Dict
+from sqlmodel import SQLModel, Field, Column, JSON
 from datetime import date
 from enum import Enum
 
@@ -18,3 +18,31 @@ class iUsers(SQLModel, table=True):
     role: UserRole = Field(default=UserRole.USER)
     capo: Optional[str] = None
     sub: Optional[str] = None
+    nautica: Dict[str, bool] = Field(
+            default_factory=lambda: {
+                "Rilievo Misure": False,
+                "Collaudo Sarte": False,
+                "Taglio Binario": False,
+                "Binario Assemblato": False,
+                "Tenda Assemblata Bin / Tes Pronta": False,
+                "Emesso DDT": False,
+                "Attacchi": False,
+                "Montaggio a Bordo": False,
+                "Filo guidatura": False,
+            },
+            sa_column=Column(JSON),
+        )    
+    home: Dict[str, bool] = Field(
+        default_factory=lambda: {
+            "Rilievo Misure": False,
+            "Elaborazione dati e SVILUPPO disegni": False,
+            "ORDINE e FORNITORE e controllo conferma": False,
+            "TRASPORTO AL CLIENTE": False,
+            "TRASPORTO AL PIANO": False,
+            "SMONTAGGIO VECCHIO": False,
+            "TAGLIO TELAI": False,
+            "POSA SERRAMENTO": False,
+            "RIVESTIMENTO INTERNO": False,
+        },
+        sa_column=Column(JSON),
+    )
