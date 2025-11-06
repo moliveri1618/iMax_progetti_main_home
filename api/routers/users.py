@@ -62,22 +62,14 @@ def rpc_call(model, method, args=None, kwargs=None):
 
 @router.get("/all", response_model=List[UserRead])
 def list_users(db: Session = Depends(get_db)):
-    users = db.exec(select(iUsers)).all()
+    users = db.exec(select(iUsers).order_by(iUsers.odoo_id)).all()
     return [UserRead.model_validate(u, from_attributes=True) for u in users]
 
 
 
-@router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.get(iUsers, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return UserRead.model_validate(user, from_attributes=True)
 
-
-
-@router.post("/add", status_code=201)
-def create_user(payload: UserCreate, db: Session = Depends(get_db)):
+@router.get("/sync_odoo", status_code=201)
+def sync_user_from_odoo(db: Session = Depends(get_db)):
     
     tmpl_id = 13485  
     users = rpc_call(
@@ -110,26 +102,26 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
             capo= "Empty",
             sub= "Empty",
             nautica={
-                "Rilievo Misure": False,
-                "Collaudo Sarte": False,
-                "Taglio Binario": False,
-                "Binario Assemblato": False,
-                "Tenda Assemblata Bin / Tes Pronta": False,
-                "Emesso DDT": False,
-                "Attacchi": False,
-                "Montaggio a Bordo": False,
-                "Filo guidatura": False,
+                "Rilievo Misure": True,
+                "Collaudo Sarte": True,
+                "Taglio Binario": True,
+                "Binario Assemblato": True,
+                "Tenda Assemblata Bin / Tes Pronta": True,
+                "Emesso DDT": True,
+                "Attacchi": True,
+                "Montaggio a Bordo": True,
+                "Filo guidatura": True,
             },
             home={
-                "Rilievo Misure": False,
-                "Elaborazione dati e SVILUPPO disegni": False,
-                "ORDINE e FORNITORE e controllo conferma": False,
-                "TRASPORTO AL CLIENTE": False,
-                "TRASPORTO AL PIANO": False,
-                "SMONTAGGIO VECCHIO": False,
-                "TAGLIO TELAI": False,
-                "POSA SERRAMENTO": False,
-                "RIVESTIMENTO INTERNO": False,
+                "Rilievo Misure": True,
+                "Elaborazione dati e SVILUPPO disegni": True,
+                "ORDINE e FORNITORE e controllo conferma": True,
+                "TRASPORTO AL CLIENTE": True,
+                "TRASPORTO AL PIANO": True,
+                "SMONTAGGIO VECCHIO": True,
+                "TAGLIO TELAI": True,
+                "POSA SERRAMENTO": True,
+                "RIVESTIMENTO INTERNO": True,
             },
         )
         db.add(entity)
@@ -146,26 +138,26 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
             capo="Empty",
             sub="Empty",
             nautica={
-                "Rilievo Misure": False,
-                "Collaudo Sarte": False,
-                "Taglio Binario": False,
-                "Binario Assemblato": False,
-                "Tenda Assemblata Bin / Tes Pronta": False,
-                "Emesso DDT": False,
-                "Attacchi": False,
-                "Montaggio a Bordo": False,
-                "Filo guidatura": False,
+                "Rilievo Misure": True,
+                "Collaudo Sarte": True,
+                "Taglio Binario": True,
+                "Binario Assemblato": True,
+                "Tenda Assemblata Bin / Tes Pronta": True,
+                "Emesso DDT": True,
+                "Attacchi": True,
+                "Montaggio a Bordo": True,
+                "Filo guidatura": True,
             },
             home={
-                "Rilievo Misure": False,
-                "Elaborazione dati e SVILUPPO disegni": False,
-                "ORDINE e FORNITORE e controllo conferma": False,
-                "TRASPORTO AL CLIENTE": False,
-                "TRASPORTO AL PIANO": False,
-                "SMONTAGGIO VECCHIO": False,
-                "TAGLIO TELAI": False,
-                "POSA SERRAMENTO": False,
-                "RIVESTIMENTO INTERNO": False,
+                "Rilievo Misure": True,
+                "Elaborazione dati e SVILUPPO disegni": True,
+                "ORDINE e FORNITORE e controllo conferma": True,
+                "TRASPORTO AL CLIENTE": True,
+                "TRASPORTO AL PIANO": True,
+                "SMONTAGGIO VECCHIO": True,
+                "TAGLIO TELAI": True,
+                "POSA SERRAMENTO": True,
+                "RIVESTIMENTO INTERNO": True,
             },
         ),
         iUsers(
@@ -178,26 +170,26 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
             capo="Empty",
             sub="Empty",
             nautica={
-                "Rilievo Misure": False,
-                "Collaudo Sarte": False,
-                "Taglio Binario": False,
-                "Binario Assemblato": False,
-                "Tenda Assemblata Bin / Tes Pronta": False,
-                "Emesso DDT": False,
-                "Attacchi": False,
-                "Montaggio a Bordo": False,
-                "Filo guidatura": False,
+                "Rilievo Misure": True,
+                "Collaudo Sarte": True,
+                "Taglio Binario": True,
+                "Binario Assemblato": True,
+                "Tenda Assemblata Bin / Tes Pronta": True,
+                "Emesso DDT": True,
+                "Attacchi": True,
+                "Montaggio a Bordo": True,
+                "Filo guidatura": True,
             },
             home={
-                "Rilievo Misure": False,
-                "Elaborazione dati e SVILUPPO disegni": False,
-                "ORDINE e FORNITORE e controllo conferma": False,
-                "TRASPORTO AL CLIENTE": False,
-                "TRASPORTO AL PIANO": False,
-                "SMONTAGGIO VECCHIO": False,
-                "TAGLIO TELAI": False,
-                "POSA SERRAMENTO": False,
-                "RIVESTIMENTO INTERNO": False,
+                "Rilievo Misure": True,
+                "Elaborazione dati e SVILUPPO disegni": True,
+                "ORDINE e FORNITORE e controllo conferma": True,
+                "TRASPORTO AL CLIENTE": True,
+                "TRASPORTO AL PIANO": True,
+                "SMONTAGGIO VECCHIO": True,
+                "TAGLIO TELAI": True,
+                "POSA SERRAMENTO": True,
+                "RIVESTIMENTO INTERNO": True,
             },
         )
     ]
@@ -207,3 +199,11 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     return {"users": len(users)}
     
+    
+    
+@router.get("/{user_id}", response_model=UserRead)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.get(iUsers, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserRead.model_validate(user, from_attributes=True)
