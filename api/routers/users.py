@@ -188,7 +188,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
         iUsers(
             odoo_id=1,
             name="MauroDue",
-            email="user1@example.com",
+            email="Ollimauri775@gmail.com",
             company_id=None,
             company_name=None,
             role=UserRole.USER,
