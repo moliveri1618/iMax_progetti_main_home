@@ -133,6 +133,76 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
             },
         )
         db.add(entity)
+        
+    # Add two extra users manually for testing
+    extra_users = [
+        iUsers(
+            odoo_id=0,
+            name="Mauro",
+            email="mauro.oliveri16@gmail.com",
+            company_id=None,
+            company_name=None,
+            role=UserRole.ADMIN,
+            capo="Empty",
+            sub="Empty",
+            nautica={
+                "Rilievo Misure": False,
+                "Collaudo Sarte": False,
+                "Taglio Binario": False,
+                "Binario Assemblato": False,
+                "Tenda Assemblata Bin / Tes Pronta": False,
+                "Emesso DDT": False,
+                "Attacchi": False,
+                "Montaggio a Bordo": False,
+                "Filo guidatura": False,
+            },
+            home={
+                "Rilievo Misure": False,
+                "Elaborazione dati e SVILUPPO disegni": False,
+                "ORDINE e FORNITORE e controllo conferma": False,
+                "TRASPORTO AL CLIENTE": False,
+                "TRASPORTO AL PIANO": False,
+                "SMONTAGGIO VECCHIO": False,
+                "TAGLIO TELAI": False,
+                "POSA SERRAMENTO": False,
+                "RIVESTIMENTO INTERNO": False,
+            },
+        ),
+        iUsers(
+            odoo_id=1,
+            name="MauroDue",
+            email="user1@example.com",
+            company_id=None,
+            company_name=None,
+            role=UserRole.USER,
+            capo="Empty",
+            sub="Empty",
+            nautica={
+                "Rilievo Misure": False,
+                "Collaudo Sarte": False,
+                "Taglio Binario": False,
+                "Binario Assemblato": False,
+                "Tenda Assemblata Bin / Tes Pronta": False,
+                "Emesso DDT": False,
+                "Attacchi": False,
+                "Montaggio a Bordo": False,
+                "Filo guidatura": False,
+            },
+            home={
+                "Rilievo Misure": False,
+                "Elaborazione dati e SVILUPPO disegni": False,
+                "ORDINE e FORNITORE e controllo conferma": False,
+                "TRASPORTO AL CLIENTE": False,
+                "TRASPORTO AL PIANO": False,
+                "SMONTAGGIO VECCHIO": False,
+                "TAGLIO TELAI": False,
+                "POSA SERRAMENTO": False,
+                "RIVESTIMENTO INTERNO": False,
+            },
+        )
+    ]
+    for e in extra_users:
+        db.add(e)
 
     db.commit()
     return {"users": len(users)}
