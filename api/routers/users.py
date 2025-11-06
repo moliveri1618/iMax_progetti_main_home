@@ -134,7 +134,6 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
         )
         db.add(entity)
 
-
     db.commit()
     return {"users": len(users)}
     
