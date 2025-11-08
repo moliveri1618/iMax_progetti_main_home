@@ -275,18 +275,26 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
         print("USER:", odoo_id, it.get("name"), home_labels, nautica_labels)
 
         if existing:
-            # Update only fields present in payload
-            if "name" in it:
-                existing.name = it["name"]
-            if "capo" in it:
+            changed = False
+
+            if "capo" in it and it["capo"] != existing.capo:
                 existing.capo = it["capo"]
-            if "sub" in it:
+                changed = True
+
+            if "sub" in it and it["sub"] != existing.sub:
                 existing.sub = it["sub"]
-            if home_labels is not None:
+                changed = True
+
+            if home_labels is not None and home_labels != existing.home:
                 existing.home = home_labels
-            if nautica_labels is not None:
+                changed = True
+
+            if nautica_labels is not None and nautica_labels != existing.nautica:
                 existing.nautica = nautica_labels
-            updated += 1
+                changed = True
+
+            if changed:
+                updated += 1
         else:
             db.add(iUsers(
                 odoo_id=odoo_id,
@@ -304,3 +312,4 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
 
     db.commit()
     return {"inserted": inserted, "updated": updated, "total": len(items)}
+    # return 1
