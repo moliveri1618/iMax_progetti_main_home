@@ -259,7 +259,6 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
         "filo_guidatura": "Filo guidatura",
     }
 
-
     inserted, updated = 0, 0
 
     for it in items:
@@ -272,7 +271,7 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
         # Prepare mapped fields only if present
         home_labels = to_labels(it.get("home"), HOME_MAP) if "home" in it else None
         nautica_labels = to_labels(it.get("nautica"), NAUTICA_MAP) if "nautica" in it else None
-        print("USER:", odoo_id, it.get("name"), home_labels, nautica_labels)
+        # print("USER:", odoo_id, it.get("name"), home_labels, nautica_labels)
 
         if existing:
             changed = False
