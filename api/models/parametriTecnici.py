@@ -9,3 +9,5 @@ class iParametriTecnici(SQLModel, table=True):
     piano_2_3: Optional[float] = None
     piano_4_5: Optional[float] = None
     piano_6_7: Optional[float] = None
+    report_tecnico_tickets: Optional[str] = None
+    report_tecnico_pv: Optional[str] = None

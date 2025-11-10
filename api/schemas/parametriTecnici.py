@@ -7,6 +7,8 @@ class IParametriTecniciBase(SQLModel):
     piano_2_3: Optional[float] = None
     piano_4_5: Optional[float] = None
     piano_6_7: Optional[float] = None
+    report_tecnico_tickets: Optional[str] = None
+    report_tecnico_pv: Optional[str] = None
 
 class IParametriTecniciCreate(IParametriTecniciBase):
     pass
@@ -19,6 +21,8 @@ class IParametriTecniciUpdate(SQLModel):
     piano_2_3: Optional[float] = None
     piano_4_5: Optional[float] = None
     piano_6_7: Optional[float] = None
+    report_tecnico_tickets: Optional[str] = None
+    report_tecnico_pv: Optional[str] = None
 
 # For convenience: allow upsert by optional id
 class IParametriTecniciUpsert(IParametriTecniciBase):
