@@ -29,13 +29,11 @@ colonne = [
     "Collaudo Finale"
     ]
 
-
 # Get all
 @router.get("/all", response_model=List[ICommesseRead])
 def read_commesse(db: Session = Depends(get_db)):
     commesse = db.exec(select(iCommesse)).all()
     return commesse
-
 
 @router.get("/odoo")
 def get_commesse_from_odoo(db: Session = Depends(get_db)):
@@ -217,7 +215,6 @@ def update_commessa_column(
     db.refresh(commessa)
 
     return {"message": "Column updated successfully", "updated": {column_name: column_value}}
-
 
 
 @router.put("/update_assignedUserIds/{commessa_id}")
