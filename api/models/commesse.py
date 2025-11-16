@@ -1,5 +1,6 @@
-from typing import Optional
-from sqlmodel import SQLModel, Field
+from typing import Optional, List
+from sqlmodel import SQLModel, Field, Column, JSON
+
 from datetime import date
 
 
@@ -14,3 +15,7 @@ class iCommesse(SQLModel, table=True):
     nome_cliente: Optional[str] = None
     address_cliente: Optional[str] = None
     email_cliente: Optional[str] = None
+    assignedUserIds: Optional[List[int]] = Field(
+        default=None,
+        sa_column=Column(JSON)
+    )

@@ -1,7 +1,7 @@
 # schemas/icommesse.py
 
 from pydantic import BaseModel, HttpUrl
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 
 
@@ -15,6 +15,7 @@ class ICommesseBase(BaseModel):
     nome_cliente: Optional[str] = None
     address_cliente: Optional[str] = None
     email_cliente: Optional[str] = None
+    assignedUserIds: Optional[List[int]] = None
 
 
 class ICommesseCreate(ICommesseBase):
@@ -32,3 +33,4 @@ class ICommesseUpdate(BaseModel):
     status: Optional[int] = None
     costo: Optional[float] = None   
     ricarico: Optional[float] = None
+    assignedUserIds: Optional[List[int]] = None
