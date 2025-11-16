@@ -89,8 +89,17 @@ def to_labels(src: Dict[str, bool] | None, mapping: Dict[str, str]) -> Dict[str,
 
 @router.get("/all", response_model=List[UserRead])
 def list_users(db: Session = Depends(get_db)):
-    users = db.exec(select(iUsers).order_by(iUsers.odoo_id)).all()
+    excluded_ids = [0, 1, 2, 46]
+
+    stmt = (
+        select(iUsers)
+        .where(iUsers.odoo_id.not_in(excluded_ids))
+        .order_by(iUsers.odoo_id)
+    )
+
+    users = db.exec(stmt).all()
     return [UserRead.model_validate(u, from_attributes=True) for u in users]
+
 
 
 @router.get("/sync_odoo", status_code=201)
