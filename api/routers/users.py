@@ -292,7 +292,7 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
                 changed = True
                 
             # ✅ auto-admin rule on update (only promote, no demotion)
-            if "manager" in it and it["manager"] and it["manager"] != "Empty":
+            if "manager" in it and it["manager"] != "Empty":
                 if existing.role != UserRole.ADMIN:
                     existing.role = UserRole.ADMIN
                     changed = True
@@ -311,7 +311,6 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
             
             manager_val = it.get("manager") or "Empty"
             role_val = UserRole.ADMIN if (manager_val and manager_val != "Empty") else UserRole.USER
-            f
             db.add(iUsers(
                 odoo_id=odoo_id,
                 name=it.get("name"),
