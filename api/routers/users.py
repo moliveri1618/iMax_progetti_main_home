@@ -124,6 +124,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
             company_id=comp[0],
             company_name=comp[1],
             role=role,
+            manager= "Empty",
             capo= "Empty",
             sub= "Empty",
             nautica={
@@ -160,6 +161,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
             company_id=None,
             company_name=None,
             role=UserRole.ADMIN,
+            manager= "Empty",
             capo="Empty",
             sub="Empty",
             nautica={
@@ -192,6 +194,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
             company_id=None,
             company_name=None,
             role=UserRole.USER,
+            manager= "Empty",
             capo="Empty",
             sub="Empty",
             nautica={
@@ -282,6 +285,10 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
 
             if "sub" in it and it["sub"] != existing.sub:
                 existing.sub = it["sub"]
+                changed = True
+                
+            if "manager" in it and it["manager"] != existing.sub:
+                existing.manager = it["manager"]
                 changed = True
 
             if home_labels is not None and home_labels != existing.home:

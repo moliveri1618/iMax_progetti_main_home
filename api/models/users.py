@@ -16,6 +16,7 @@ class iUsers(SQLModel, table=True):
     company_id: Optional[int] = None
     company_name: Optional[str] = None
     role: UserRole = Field(default=UserRole.USER)
+    manager: Optional[str] = None
     capo: Optional[str] = None
     sub: Optional[str] = None
     nautica: Dict[str, bool] = Field(

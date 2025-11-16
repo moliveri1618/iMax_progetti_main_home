@@ -11,6 +11,7 @@ class UserBase(BaseModel):
     company_id: Optional[int] = None
     company_name: Optional[str] = None
     role: Optional[str] = "user"
+    manager: Optional[str] = None
     capo: Optional[str] = None
     sub: Optional[str] = None
     nautica: Optional[Dict[str, bool]] = None
@@ -30,6 +31,7 @@ class UserRead(SQLModel):
     email: Optional[str] = None
     company_id: Optional[int] = None
     company_name: Optional[str] = None
+    manager: Optional[str] = None
     role: Optional[str] = "user"
     capo: Optional[str] = None
     sub: Optional[str] = None
@@ -47,6 +49,7 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
     company_id: Optional[int] = None
     company_name: Optional[str] = None
+    manager: Optional[str] = None
     role: Optional[str] = "user"
     capo: Optional[str] = None
     sub: Optional[str] = None
