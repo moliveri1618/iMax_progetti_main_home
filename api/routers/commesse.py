@@ -218,3 +218,27 @@ def update_commessa_column(
 
     return {"message": "Column updated successfully", "updated": {column_name: column_value}}
 
+
+
+@router.put("/update_assignedUserIds/{commessa_id}")
+def update_commessa_assigned_users(
+    commessa_id: int,
+    assignedUserIds: List[int],          
+    db: Session = Depends(get_db),
+):
+    commessa = db.get(iCommesse, commessa_id)
+    if not commessa:
+        raise HTTPException(status_code=404, detail="Commessa not found")
+
+    # assign list of ints directly
+    commessa.assignedUserIds = assignedUserIds
+
+    db.add(commessa)
+    db.commit()
+    db.refresh(commessa)
+
+    return {
+        "message": "assignedUserIds updated successfully",
+        "assignedUserIds": commessa.assignedUserIds,
+    }
+

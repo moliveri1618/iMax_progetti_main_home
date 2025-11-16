@@ -1,6 +1,5 @@
 from typing import Optional, List
-from sqlmodel import SQLModel, Field, Column, JSON
-
+from sqlmodel import SQLModel, Field, Column, ARRAY, Integer
 from datetime import date
 
 
@@ -17,5 +16,5 @@ class iCommesse(SQLModel, table=True):
     email_cliente: Optional[str] = None
     assignedUserIds: Optional[List[int]] = Field(
         default=None,
-        sa_column=Column(JSON)
+        sa_column=Column(ARRAY(Integer), nullable=True),
     )
