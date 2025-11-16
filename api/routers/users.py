@@ -311,15 +311,15 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
             
             manager_val = it.get("manager") or "Empty"
             role_val = UserRole.ADMIN if (manager_val and manager_val != "Empty") else UserRole.USER
-            
-            
+            f
             db.add(iUsers(
                 odoo_id=odoo_id,
                 name=it.get("name"),
-                email=it.get("email"),          # use if provided
+                email=it.get("email"),        
                 company_id=it.get("company_id"),
                 company_name=it.get("company_name"),
                 role=role_val,
+                manager=manager_val,
                 capo=it.get("capo") or "Empty",
                 sub=it.get("sub") or "Empty",
                 home=home_labels or {},
