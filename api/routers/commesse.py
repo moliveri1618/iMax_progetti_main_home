@@ -197,7 +197,7 @@ def read_commessa_by_id(commessa_id: int, db: Session = Depends(get_db)):
 
     # Fetch users by the IDs
     user_ids = commessa.assignedUserIds or []
-    users = db.query(iUsers).filter(iUsers.odoo_id.in_(user_ids)).all()
+    users = db.query(iUsers).filter(iUsers.id.in_(user_ids)).all()
     assigned_users_list = [{"id": u.id, "name": u.name} for u in users]
 
     return {
