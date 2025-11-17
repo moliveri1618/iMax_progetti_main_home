@@ -10,6 +10,7 @@ from datetime import datetime
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.commesse import iCommesse
+from models.users import iUsers
 from schemas.commesse import ICommesseCreate, ICommesseRead, ICommesseUpdate
 from models.workInProgress import WorkInProgress
 from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
@@ -192,7 +193,18 @@ def read_commessa_by_id(commessa_id: int, db: Session = Depends(get_db)):
     commessa = db.get(iCommesse, commessa_id)
     if not commessa:
         raise HTTPException(status_code=404, detail="Commessa not found")
-    return commessa
+    
+
+    # Fetch users by the IDs
+    user_ids = commessa.assignedUserIds or []
+    users = db.query(iUsers).filter(iUsers.odoo_id.in_(user_ids)).all()
+    assigned_users_list = [{"id": u.id, "name": u.name} for u in users]
+
+    return {
+        **commessa.__dict__,
+        "_sa_instance_state": None,
+        "assignedUsers": assigned_users_list
+    }
 
 
 @router.put("/update_column/{commessa_id}")

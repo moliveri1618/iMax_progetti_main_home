@@ -4,6 +4,10 @@ from pydantic import BaseModel, HttpUrl
 from typing import Optional, List
 from datetime import date
 
+class AssignedUser(BaseModel):
+    id: int
+    name: str
+
 
 class ICommesseBase(BaseModel):
     ordine: Optional[str] = None
@@ -24,6 +28,7 @@ class ICommesseCreate(ICommesseBase):
 
 class ICommesseRead(ICommesseBase):
     id: int
+    assignedUsers: Optional[List[AssignedUser]] = None
 
 
 class ICommesseUpdate(BaseModel):
