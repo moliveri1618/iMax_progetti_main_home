@@ -1,6 +1,8 @@
-from typing import Optional
-from sqlmodel import SQLModel, Field
+from typing import Optional, List
+from sqlmodel import SQLModel, Field, ARRAY, Integer, Column
 from datetime import date
+
+
 
 class WorkInProgress(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -11,3 +13,7 @@ class WorkInProgress(SQLModel, table=True):
     completato: bool
     completato_da_user: str
     data_completamento: Optional[date] = None
+    step_ids: Optional[List[int]] = Field(
+        default=None,
+        sa_column=Column(ARRAY(Integer), nullable=True),
+    )
