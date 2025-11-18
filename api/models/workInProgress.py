@@ -13,7 +13,7 @@ class WorkInProgress(SQLModel, table=True):
     completato: bool
     completato_da_user: str
     data_completamento: Optional[date] = None
-    step_ids: Optional[List[int]] = Field(
+    assigned_users_ids: Optional[List[int]] = Field(
         default=None,
         sa_column=Column(ARRAY(Integer), nullable=True),
     )

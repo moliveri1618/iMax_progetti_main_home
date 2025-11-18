@@ -12,7 +12,7 @@ class IWorkInProgressBase(BaseModel):
     completato: bool
     completato_da_user: str
     data_completamento: Optional[date] = None
-    assignedUserIds: Optional[List[int]] = None
+    assigned_users_ids: Optional[List[int]] = None
 
 
 class IWorkInProgressCreate(IWorkInProgressBase):
@@ -28,7 +28,7 @@ class IWorkInProgressRead(SQLModel):
     completato: bool
     completato_da_user: str
     data_completamento: Optional[date]
-    assignedUserIds: Optional[List[int]] = None
+    assigned_users_ids: Optional[List[int]] = None
 
     class Config:
         from_attributes = True  # required for SQLModel with Pydantic v2+
@@ -42,7 +42,7 @@ class IWorkInProgressUpdate(BaseModel):
     completato: Optional[bool] = None
     completato_da_user: Optional[str] = None
     data_completamento: Optional[date] = None
-    assignedUserIds: Optional[List[int]] = None
+    assigned_users_ids: Optional[List[int]] = None
 
 class WorkInProgressGrouped(SQLModel):
     zona: str
