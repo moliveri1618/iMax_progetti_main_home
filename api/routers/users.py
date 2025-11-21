@@ -239,6 +239,14 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return UserRead.model_validate(user, from_attributes=True)
 
 
+@router.get("/by-email/{email}", response_model=UserRead)
+def get_user_by_email(email: str, db: Session = Depends(get_db)):
+    user = db.query(iUsers).filter(iUsers.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserRead.model_validate(user, from_attributes=True)
+
+
 @router.post("/bulk_upsert")
 def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)):
     HOME_MAP = {
