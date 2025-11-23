@@ -57,7 +57,6 @@ def rpc_call(model, method, args=None, kwargs=None):
         return data["result"]
 
 
-
 def to_labels(src: Dict[str, bool] | None, mapping: Dict[str, str]) -> Dict[str, bool]:
     if not src:
         return {}
@@ -81,6 +80,40 @@ def to_labels(src: Dict[str, bool] | None, mapping: Dict[str, str]) -> Dict[str,
     return {k: bool(v) for k, v in src.items()}
 
 
+
+def build_teams_from_users(users: List[iUsers]) -> List[TeamRead]:
+    teams: Dict[str, Dict[str, Any]] = {}
+
+    def ensure_team(team_name: str):
+        if team_name not in teams:
+            teams[team_name] = {
+                "name": team_name,
+                "managers": [],
+                "capi": [],
+                "subs": [],
+            }
+
+    for u in users:
+        # Convert SQLModel -> Pydantic once
+        user_read = UserRead.model_validate(u, from_attributes=True)
+
+        # manager team
+        if u.manager and u.manager != "Empty":
+            ensure_team(u.manager)
+            teams[u.manager]["managers"].append(user_read)
+
+        # capo team
+        if u.capo and u.capo != "Empty":
+            ensure_team(u.capo)
+            teams[u.capo]["capi"].append(user_read)
+
+        # sub team
+        if u.sub and u.sub != "Empty":
+            ensure_team(u.sub)
+            teams[u.sub]["subs"].append(user_read)
+
+    # Pydantic will coerce dicts → TeamRead automatically because of response_model
+    return [TeamRead(**t) for t in teams.values()]
 
 
 # ---------------------------
@@ -228,7 +261,12 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
 
     db.commit()
     return {"users": len(users)}
-    
+
+
+@router.get("/teams", response_model=List[TeamRead])
+def list_user_teams(db: Session = Depends(get_db)):
+    users = db.exec(select(iUsers)).all()
+    return build_teams_from_users(users)    
     
     
 @router.get("/{user_id}", response_model=UserRead)
@@ -339,3 +377,4 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
     db.commit()
     return {"inserted": inserted, "updated": updated, "total": len(items)}
     # return 1
+

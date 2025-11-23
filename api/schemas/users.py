@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from sqlmodel import SQLModel
 from pydantic import BaseModel
 
@@ -55,3 +55,10 @@ class UserUpdate(BaseModel):
     sub: Optional[str] = None
     nautica: Dict[str, bool]
     home: Dict[str, bool]
+    
+    
+class TeamRead(BaseModel):
+    name: str
+    managers: List[UserRead] = []
+    capi: List[UserRead] = []
+    subs: List[UserRead] = []
