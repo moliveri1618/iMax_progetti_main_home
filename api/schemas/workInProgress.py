@@ -29,6 +29,7 @@ class IWorkInProgressRead(SQLModel):
     completato_da_user: str
     data_completamento: Optional[date]
     assigned_users_ids: Optional[List[int]] = None
+    percentuale_completamento_collaudo_finale: Optional[float] = None
 
     class Config:
         from_attributes = True  # required for SQLModel with Pydantic v2+
@@ -48,3 +49,28 @@ class WorkInProgressGrouped(SQLModel):
     zona: str
     modello: str
     steps: List[IWorkInProgressRead]
+    
+    
+    
+class ICollaudoFinaleRead(SQLModel):
+    id: int
+    workInProgress_id: Optional[int] = None
+    rilievo_misure: Optional[float] = None
+    collaudo_sarte: Optional[float] = None
+    taglio_binario: Optional[float] = None
+    image_paths_RM: Optional[List[str]] = []
+    image_paths_CS: Optional[List[str]] = []
+    image_paths_TB: Optional[List[str]] = []
+
+    class Config:
+        from_attributes = True
+
+
+class IWorkInProgressWithCollaudo(IWorkInProgressRead):
+    collaudo_finale: Optional[ICollaudoFinaleRead] = None
+
+
+class WorkInProgressGroupedV2(BaseModel):
+    zona: str
+    modello: str
+    steps: List[IWorkInProgressWithCollaudo]
