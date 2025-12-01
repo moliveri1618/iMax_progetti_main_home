@@ -1981,7 +1981,7 @@ def build_pdf_report_cliente(data):
         pdf.set_text_color(0, 0, 0)
         pdf.set_fill_color(255, 255, 0)
 
-    t = getattr(data, "tecnico", None) or type("Empty", (), {})()
+    t = getattr(data, "cliente", None) or type("Empty", (), {})()
     pdf = FPDF()
     pdf.add_page()
     add_pdf_header(pdf, title="Report Intervento Cliente")
