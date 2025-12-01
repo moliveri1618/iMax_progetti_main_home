@@ -1908,7 +1908,7 @@ def build_pdf_report_tecnico(data):
     note_box(
         pdf,
         title="NOTE descrivere eventuali difetti riscontrati o danni causati all'interno dell'abitazione:",
-        body=gv("note"),
+        body=gv("description"),
         height=85,       # your desired size
         end_gap=5       # leave ~12 pts before page bottom
     )
@@ -2461,7 +2461,7 @@ def build_pdf_report_cliente(data):
     note_box(
         pdf,
         title="NOTE descrivere eventuali difetti riscontrati o danni causati all'interno dell'abitazione:",
-        body=gv("note"),
+        body=gv("note_cliente"),
         height=85,       # your desired size
         end_gap=5       # leave ~12 pts before page bottom
     )
