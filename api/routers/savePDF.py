@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 import sys
 import os
 import io
@@ -7,11 +7,21 @@ from fastapi.responses import StreamingResponse
 from typing import Optional
 from fastapi import BackgroundTasks, status
 from fastapi.responses import JSONResponse
+from sqlmodel import Session, select
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
-from routers.utils import send_email_with_retry, ReportData, ReportPostVendita, build_pdf_report_tecnico, build_pdf_report_cliente, build_pdf_report_posa_cliente, build_pdf_report_posa_commessa
-
+from routers.utils import (
+    send_email_with_retry, 
+    ReportData, 
+    ReportPostVendita, 
+    build_pdf_report_tecnico, 
+    build_pdf_report_cliente, 
+    build_pdf_report_posa_cliente, 
+    build_pdf_report_posa_commessa
+)
+from models.parametriTecnici import iParametriTecnici 
+from dependecies import get_db
 
 router = APIRouter()
 
@@ -20,10 +30,23 @@ router = APIRouter()
 async def generate_from_json(
     data: ReportData,
     background_tasks: BackgroundTasks,
-    email:  Optional[str] = "mauro.oliveri16@gmail.com"
+    email:  Optional[str] = "mauro.oliveri16@gmail.com",
+    db: Session = Depends(get_db)
 ):
     
     try:
+        
+        # 1️⃣ LOAD EMAIL FROM DATABASE
+        query = select(iParametriTecnici)
+        config = Session.exec(query).first()
+        if not config or not config.report_tecnico_tickets:
+            return JSONResponse(
+                {"ok": False, "message": "Email not configured in report_tecnico_tickets"},
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        email = config.report_tecnico_tickets
+
+
         # Generate PDF TECNICO & CLIENTE
         pdf_tecnico = build_pdf_report_tecnico(data)
         pdf_cliente = build_pdf_report_cliente(data)
