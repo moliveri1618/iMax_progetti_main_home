@@ -1697,15 +1697,15 @@ def build_pdf_report_tecnico(data):
             ],
         },
         # FORNITORE
-        {
-            "header": "FORNITORE",
-            "rows": [
-                ("VETRO ROTTO DIFETTOSO DA SOTITUIRE CAUSA FORNITORE",  gvb("errore_materiale_contratto"),  (230, 230, 230)),
-                ("MATERIALE MANCANTE CAUSA FORNITORE",                  gvb("mancanza_attrezzature"),       (230, 230, 230)),
-                ("ERRORE TIPOLOGIA MATERIALE CAUSA FORNITORE",          gvb("errore_misure_ordine"),        (230, 230, 230)),
-                ("MATERIALE DIFETTOSO CAUSA FORNITORE",                 gvb("danneggiamento_casa_cliente"), (230, 230, 230))
-            ],
-        },
+        # {
+        #     "header": "FORNITORE",
+        #     "rows": [
+        #         ("VETRO ROTTO DIFETTOSO DA SOTITUIRE CAUSA FORNITORE",  gvb("errore_materiale_contratto"),  (230, 230, 230)),
+        #         ("MATERIALE MANCANTE CAUSA FORNITORE",                  gvb("mancanza_attrezzature"),       (230, 230, 230)),
+        #         ("ERRORE TIPOLOGIA MATERIALE CAUSA FORNITORE",          gvb("errore_misure_ordine"),        (230, 230, 230)),
+        #         ("MATERIALE DIFETTOSO CAUSA FORNITORE",                 gvb("danneggiamento_casa_cliente"), (230, 230, 230))
+        #     ],
+        # },
     ]
 
     pairs = [

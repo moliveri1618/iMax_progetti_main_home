@@ -48,9 +48,7 @@ async def generate_from_json(
                 },
                 status_code=status.HTTP_400_BAD_REQUEST
             )
-        print('yo')
         email = config.report_tecnico_tickets
-        print(email)
 
 
         # Generate PDF TECNICO & CLIENTE
