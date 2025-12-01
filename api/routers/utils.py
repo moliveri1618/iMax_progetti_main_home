@@ -3096,6 +3096,7 @@ def build_pdf_report_posa_cliente(data):
         pdf.set_fill_color(255, 255, 0)
 
     t = getattr(data, "posa_cliente", None) or type("Empty", (), {})()
+    t1 = getattr(data, "posa_commessa", None) or type("Empty", (), {})()
     pdf = FPDF()
     pdf.add_page()
     add_pdf_header(pdf, title="Report Posa Cliente")
@@ -3104,6 +3105,10 @@ def build_pdf_report_posa_cliente(data):
     def gv(name, default=""):
         """get value from tecnico, defaulting to '' (or provided) if missing/None"""
         return getattr(t, name, None) if getattr(t, name, None) is not None else default
+    
+    def gv1(name, default=""):
+        """get value from tecnico, defaulting to '' (or provided) if missing/None"""
+        return getattr(t1, name, None) if getattr(t1, name, None) is not None else default
 
     def gvl(name):
         """get list value"""
@@ -3381,7 +3386,7 @@ def build_pdf_report_posa_cliente(data):
             "informato di eventuali sanzioni disciplinari o addebiti nel caso quanto "
             "dichiarato non corrisponda a verità."
         ),
-        sig_data=gv("cellulare_cliente_posatore"),
+        sig_data=gv1("signature_cliente"),
     )
     
     # Firma del cliente
@@ -3395,18 +3400,18 @@ def build_pdf_report_posa_cliente(data):
             "consegnato non presentano danni o difetti visibili e dichiara che non sono"
             "stati causati danni all' interno dell' abitazione."
         ),
-        sig_data=gv("cellulare_cliente_cliente"),
+        sig_data=gv("signature"),
     )
     
-    # ---------- Note ----------
-    ensure_space(pdf, 8)
-    note_box(
-        pdf,
-        title="NOTE descrivere eventuali difetti riscontrati o danni causati all'interno dell'abitazione:",
-        body=gv("note_cliente"),
-        height=55,       # your desired size
-        end_gap=5       # leave ~12 pts before page bottom
-    )
+    # # ---------- Note ----------
+    # ensure_space(pdf, 8)
+    # note_box(
+    #     pdf,
+    #     title="NOTE descrivere eventuali difetti riscontrati o danni causati all'interno dell'abitazione:",
+    #     body=gv("note_cliente"),
+    #     height=55,       # your desired size
+    #     end_gap=5       # leave ~12 pts before page bottom
+    # )
     
     
     content = pdf.output(dest='S')
