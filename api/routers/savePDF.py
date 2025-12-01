@@ -90,10 +90,26 @@ async def generate_from_json(
 async def generate_reports(
     data: ReportPostVendita,
     background_tasks: BackgroundTasks,
-    email:  Optional[str] = "mauro.oliveri16@gmail.com"
+    email:  Optional[str] = "mauro.oliveri16@gmail.com",
+    db: Session = Depends(get_db)
 ):
     
     try:
+        
+        # 1️⃣ LOAD EMAIL FROM DATABASE
+        config = db.exec(select(iParametriTecnici)).first()
+        if not config:
+            return JSONResponse(
+                {
+                    "ok": False, 
+                    "message": "Email not configured in report_tecnico_tickets",
+                    "config_raw": config
+                },
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        email = config.report_tecnico_tickets
+        
+        
         # Generate PDF TECNICO & CLIENTE
         pdf_posa_commessa = build_pdf_report_posa_commessa(data)
         pdf_posa_cliente = build_pdf_report_posa_cliente(data)
