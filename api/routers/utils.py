@@ -1981,7 +1981,8 @@ def build_pdf_report_cliente(data):
         pdf.set_text_color(0, 0, 0)
         pdf.set_fill_color(255, 255, 0)
 
-    t = getattr(data, "cliente", None) or type("Empty", (), {})()
+    t = getattr(data, "tecnico", None) or type("Empty", (), {})()
+    t_cliente = getattr(data, "cliente", None) or type("Empty", (), {})()
     pdf = FPDF()
     pdf.add_page()
     add_pdf_header(pdf, title="Report Intervento Cliente")
@@ -1990,6 +1991,10 @@ def build_pdf_report_cliente(data):
     def gv(name, default=""):
         """get value from tecnico, defaulting to '' (or provided) if missing/None"""
         return getattr(t, name, None) if getattr(t, name, None) is not None else default
+    
+    def gv_cliente(name, default=""):
+        """get value from tecnico, defaulting to '' (or provided) if missing/None"""
+        return getattr(t_cliente, name, None) if getattr(t_cliente, name, None) is not None else default
 
     def gvl(name):
         """get list value"""
@@ -2003,6 +2008,17 @@ def build_pdf_report_cliente(data):
 
     def fmt_dt(dt):
         v = gv(dt, None)
+        if not v:
+            return "", ""
+        try:
+            # pydantic may give datetime already; otherwise ISO string
+            d = v if isinstance(v, datetime) else datetime.fromisoformat(str(v))
+            return d.strftime("%d/%m/%Y"), d.strftime("%H:%M")
+        except Exception:
+            return str(v), ""
+        
+    def fmt_dt_cliente(dt):
+        v = gv_cliente(dt, None)
         if not v:
             return "", ""
         try:
@@ -2342,9 +2358,9 @@ def build_pdf_report_cliente(data):
     pdf.set_fill_color(230, 230, 230)
     ensure_space(pdf, 8)
     write_cell(30, 8, "Ticket N°", fill=True, bold=True)
-    write_cell(60, 8, gv("ticket_n"))
+    write_cell(60, 8, gv_cliente("cliente_ticket_n"))
     write_cell(30, 8, "Del", fill=True, bold=True)
-    write_cell(70, 8, gv("del"))
+    write_cell(70, 8, gv_cliente("cliente_del"))
     pdf.ln()
     green_rule(height=2)   
 
@@ -2365,9 +2381,9 @@ def build_pdf_report_cliente(data):
     pdf.set_fill_color(230, 230, 230)
     ensure_space(pdf, 8)
     write_cell(50, 8, "Tempo PREVISTO ORE", fill=True, bold=True)
-    write_cell(40, 8, gv("tempo_previsto_ore"))
+    write_cell(40, 8, gv_cliente("tempo_previsto_ore_cliente"))
     write_cell(50, 8, "Intervento pianificato x:", fill=True, bold=True)
-    date_str, time_str = fmt_dt("int_pian_data_ora")
+    date_str, time_str = fmt_dt_cliente("int_pian_data_ora")
     pdf.set_fill_color(255, 255, 0)
     write_cell(30, 8, date_str, fill=True)  
     write_cell(20, 8, time_str, fill=True)  
@@ -2439,7 +2455,7 @@ def build_pdf_report_cliente(data):
             "informato di eventuali sanzioni disciplinari o addebiti nel caso quanto "
             "dichiarato non corrisponda a verità."
         ),
-        sig_data=gv("signature_cliente_posatore"),
+        sig_data=gv_cliente("signature_cliente_posatore"),
     )
     
     # Firma del cliente
@@ -2453,7 +2469,7 @@ def build_pdf_report_cliente(data):
             "consegnato non presentano danni o difetti visibili e dichiara che non sono"
             "stati causati danni all' interno dell' abitazione."
         ),
-        sig_data=gv("signature_cliente_cliente"),
+        sig_data=gv_cliente("signature_cliente_cliente"),
     )
 
     # ---------- Note ----------
@@ -2461,7 +2477,7 @@ def build_pdf_report_cliente(data):
     note_box(
         pdf,
         title="NOTE descrivere eventuali difetti riscontrati o danni causati all'interno dell'abitazione:",
-        body=gv("note_cliente"),
+        body=gv_cliente("note_cliente"),
         height=85,       # your desired size
         end_gap=5       # leave ~12 pts before page bottom
     )
