@@ -2439,7 +2439,7 @@ def build_pdf_report_cliente(data):
             "informato di eventuali sanzioni disciplinari o addebiti nel caso quanto "
             "dichiarato non corrisponda a verità."
         ),
-        sig_data=gv("signature"),
+        sig_data=gv("signature_cliente_posatore"),
     )
     
     # Firma del cliente
@@ -2453,7 +2453,7 @@ def build_pdf_report_cliente(data):
             "consegnato non presentano danni o difetti visibili e dichiara che non sono"
             "stati causati danni all' interno dell' abitazione."
         ),
-        sig_data=gv("signature"),
+        sig_data=gv("signature_cliente_cliente"),
     )
 
     # ---------- Note ----------
