@@ -2383,7 +2383,7 @@ def build_pdf_report_cliente(data):
     write_cell(50, 8, "Tempo PREVISTO ORE", fill=True, bold=True)
     write_cell(40, 8, gv_cliente("tempo_previsto_ore_cliente"))
     write_cell(50, 8, "Intervento pianificato x:", fill=True, bold=True)
-    date_str, time_str = fmt_dt_cliente("int_pian_data_ora")
+    date_str, time_str = fmt_dt_cliente("data_cliente")
     pdf.set_fill_color(255, 255, 0)
     write_cell(30, 8, date_str, fill=True)  
     write_cell(20, 8, time_str, fill=True)  
