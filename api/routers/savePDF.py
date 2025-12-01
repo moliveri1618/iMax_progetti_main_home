@@ -113,6 +113,8 @@ async def generate_reports(
         # Generate PDF TECNICO & CLIENTE
         pdf_posa_commessa = build_pdf_report_posa_commessa(data)
         pdf_posa_cliente = build_pdf_report_posa_cliente(data)
+        
+        #return 1
 
         #SEND EMAIL
         background_tasks.add_task(send_email_with_retry, email, pdf_posa_commessa, "report_posa_commessa.pdf")
@@ -126,12 +128,12 @@ async def generate_reports(
             status_code=status.HTTP_200_OK,
         )
         
-        # # INSPECT PDF FILE
-        # buffer = io.BytesIO(pdf_posa_commessa)
-        # #buffer = io.BytesIO(pdf_posa_cliente)
-        # return StreamingResponse(buffer, media_type="application/pdf", headers={
-        #     "Content-Disposition": "attachment; filename=posa_layout.pdf"
-        # })
+        # # # INSPECT PDF FILE
+        # # buffer = io.BytesIO(pdf_posa_commessa)
+        # # #buffer = io.BytesIO(pdf_posa_cliente)
+        # # return StreamingResponse(buffer, media_type="application/pdf", headers={
+        # #     "Content-Disposition": "attachment; filename=posa_layout.pdf"
+        # # })
     
 
     except Exception as e:
