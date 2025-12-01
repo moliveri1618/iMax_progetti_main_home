@@ -66,7 +66,8 @@ class Tecnico(BaseModel):
     ore_previste_riparazioni: Optional[str] = None
     per_numero_posatori: Optional[str] = None
     note: Optional[str] = None
-        
+    description: Optional[str] = None
+    
     stato_lavoro: Optional[bool] = None
     informazioni: Optional[bool] = None
     tipo_riparazione: Optional[bool] = None
@@ -91,7 +92,6 @@ class Tecnico(BaseModel):
     errore_calcolo_tempo_disposizione: Optional[bool] = None
     errore_materiale_contratto: Optional[bool] = None
     cliente_lavori_eseguiti: Optional[List[ClienteLavoro]] = None
-
 
     signature: Optional[str] = None
 
@@ -1347,6 +1347,8 @@ def build_pdf_report_tecnico(data):
     pdf.add_page()
     add_pdf_header(pdf, title="Report Intervento Tecnico")
     pdf.set_font("Arial", size=12)
+    
+    print(t)
 
     def gv(name, default=""):
         """get value from tecnico, defaulting to '' (or provided) if missing/None"""

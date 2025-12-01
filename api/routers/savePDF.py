@@ -54,6 +54,7 @@ async def generate_from_json(
         # Generate PDF TECNICO & CLIENTE
         pdf_tecnico = build_pdf_report_tecnico(data)
         pdf_cliente = build_pdf_report_cliente(data)
+        print(pdf_tecnico)
 
         # SEND EMAIL
         background_tasks.add_task(send_email_with_retry, email, pdf_tecnico, "report_intervento_tecnico.pdf")
