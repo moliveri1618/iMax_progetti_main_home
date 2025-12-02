@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends, status, Body
 from sqlmodel import Session, select, delete
+from sqlalchemy.exc import IntegrityError
 from typing import Any, Dict, List, Optional, Sequence
 import json
 import sys
@@ -23,6 +24,8 @@ from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
 from schemas.iBudgetVendutoCalcoli import BudgetVendutoCalcoliRead
 from models.iConteggiCommessa import OrdiniPremi
 from schemas.iConteggiCommessa import OrdiniPremiRead
+from models.users import *
+from schemas.users import *
 
 from routers.utils import *
 from dependecies import get_db
@@ -30,10 +33,52 @@ from dependecies import get_db
 router = APIRouter()
 
 
+
 MONTHS_IT = [
     "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
     "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
 ]
+
+@router.get("/calculate/all", response_model=List[str])
+def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
+    users = db.exec(select(iUsers).order_by(iUsers.odoo_id)).all()
+    emails = sorted({u.email for u in users if u.email})
+
+    # existing user_ids in ParametriDaInserire
+    rows = db.exec(select(ParametriDaInserire.user_id).distinct()).all()
+    existing_user_ids = {r[0] if isinstance(r, tuple) else r for r in rows}
+
+    inserted_users: List[str] = []
+
+    for email in emails:
+        if email not in existing_user_ids:
+            print(f"[SEED] Missing ParametriDaInserire for {email} -> inserting TEMPLATE_ROWS")
+
+            for row in TEMPLATE_ROWS:
+                db.add(
+                    ParametriDaInserire(
+                        user_id=email,
+                        mese=row["mese"],
+                        obiettivo_mensile=row["obiettivo_mensile"],
+                        perc_premio_trimestrale=row["perc_premio_trimestrale"],
+                        perc_premio_annuale=row["perc_premio_annuale"],
+                        valore_limite=row["valore_limite"],
+                        perc_100_budget=row["perc_100_budget"],
+                    )
+                )
+            inserted_users.append(email)
+
+    if inserted_users:
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise
+        print(f"[SEED] Inserted template rows for: {inserted_users}")
+
+    return emails
+
+
 
 @router.put("/parametri/{user_id}",response_model=Dict[str, int],status_code=status.HTTP_200_OK,)
 def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[ParametriRowIn]] = Body(default=None),session: Session = Depends(get_db)):
