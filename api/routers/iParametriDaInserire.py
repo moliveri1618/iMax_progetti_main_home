@@ -39,7 +39,7 @@ MONTHS_IT = [
     "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
 ]
 
-@router.get("/calculate/all", response_model=List[str])
+@router.get("/create-parametri-by-user", response_model=List[str])
 def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
     users = db.exec(select(iUsers).order_by(iUsers.odoo_id)).all()
     emails = sorted({u.email for u in users if u.email})
@@ -47,7 +47,6 @@ def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
     # existing user_ids in ParametriDaInserire
     rows = db.exec(select(ParametriDaInserire.user_id).distinct()).all()
     existing_user_ids = {r[0] if isinstance(r, tuple) else r for r in rows}
-
     inserted_users: List[str] = []
 
     for email in emails:
