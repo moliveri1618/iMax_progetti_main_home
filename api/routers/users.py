@@ -15,11 +15,11 @@ from dependecies import get_db
 
 router = APIRouter()
 
-ODOO_URL="https://mulsp-odoocommunitystaging.worthtech.cloud"
-ODOO_URL_LOGIN="https://mulsp-odoocommunitystaging.worthtech.cloud/web/login"
-ODOO_URL_API="https://mulsp-odoocommunitystaging.worthtech.cloud/jsonrpc"
-DB_NAME="mulsp_odoo_staging"
-ODOO_BEARER_TOKEN="cd3e8a50bbb79c9bb232940e767961a306e144c0"
+ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
+ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
+ODOO_URL_API="https://mulsp-odoo-1.worthtech.cloud/jsonrpc"
+DB_NAME="odoodb_cleaned"
+ODOO_BEARER_TOKEN="6c7beeefb78b508ac15f2ff430c4aa8e181b79bc"
 WTH_FIREWALL_TOKEN="xt4GSYYeTKzMYfwGk4u5VYU"
 UID = 2 
 TIMEOUT = 30.0
@@ -131,13 +131,13 @@ def list_users(db: Session = Depends(get_db)):
 @router.get("/sync_odoo", status_code=201)
 def sync_user_from_odoo(db: Session = Depends(get_db)):
     
-    tmpl_id = 13485  
     users = rpc_call(
         "res.users",
         "search_read",
         [[("active", "=", True)]],
         {"fields": ["id", "name", "login", "email", "company_id", "partner_id", "tz", "lang"], "limit": 20}
     )
+    skipped = 0 
     for u in users:
         odoo_user_id = u.get("id")
         if not odoo_user_id:
@@ -146,6 +146,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
         # skip if already in db
         exists = db.exec(select(iUsers).where(iUsers.odoo_id == odoo_user_id)).first()
         if exists:
+            skipped += 1
             continue
         
         comp = u.get("company_id") or [None, None]
@@ -257,10 +258,20 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
         )
     ]
     for e in extra_users:
+        exists = db.exec(select(iUsers).where(iUsers.odoo_id == e.odoo_id)).first()
+        if exists:
+            skipped += 1  
+            continue
         db.add(e)
 
     db.commit()
-    return {"users": len(users)}
+    return {"users": len(users), "skipped": skipped}  
+
+
+
+
+
+
 
 
 @router.get("/teams", response_model=List[TeamRead])
