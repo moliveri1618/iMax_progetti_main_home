@@ -7,15 +7,58 @@ from collections import defaultdict
 import re
 from fastapi.responses import JSONResponse
 from datetime import datetime
+import httpx
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.vendite import VenditeImax
 from models.iConteggiCommessa import OrdiniPremi
 from routers.utils import to_dict, to_month_str, default_vendite, _num
-from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
+from dependecies import get_db
 
 
 router = APIRouter()
+
+ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
+ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
+ODOO_URL_API="https://mulsp-odoo-1.worthtech.cloud/jsonrpc"
+DB_NAME="odoodb_cleaned"
+ODOO_BEARER_TOKEN="6c7beeefb78b508ac15f2ff430c4aa8e181b79bc"
+WTH_FIREWALL_TOKEN="xt4GSYYeTKzMYfwGk4u5VYU"
+UID = 2 
+TIMEOUT = 30.0
+
+def rpc_call(model, method, args=None, kwargs=None):
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "call",
+        "params": {
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+                DB_NAME,
+                UID,
+                ODOO_BEARER_TOKEN,
+                model,
+                method,
+                args or [],
+                kwargs or {}
+            ]
+        },
+        "id": 1
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {ODOO_BEARER_TOKEN}",
+        "x-wth-token": WTH_FIREWALL_TOKEN
+    }
+    with httpx.Client(timeout=TIMEOUT) as client:
+        resp = client.post(ODOO_URL_API, headers=headers, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        if "error" in data:
+            raise Exception(data["error"])
+        return data["result"]
+
 
 @router.get("/all")
 def get_all_vendite(db: Session = Depends(get_db)):
@@ -245,3 +288,24 @@ def get_vendite_from_odoo(
 #         })
     
     return data
+
+
+
+@router.post("/odoo/v2")
+def get_vendite_from_odoo(
+    db: Session = Depends(get_db),
+    vendite: Optional[List[Dict[str, Any]]] = default_vendite
+):
+    
+    try:
+        # Step 1: Get order lines (RPC)
+        sale_order_line_ids = rpc_call(
+            'sale.order.line', 'search',
+            [[['display_type', '=', False]]],
+            {'limit': 50}
+        )
+        print(sale_order_line_ids)
+        
+    except Exception as e:
+        print(f"Error fetching sale order lines: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)

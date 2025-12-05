@@ -12,11 +12,11 @@ import httpx
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
-ODOO_URL="https://mulsp-odoocommunitystaging.worthtech.cloud"
-ODOO_URL_LOGIN="https://mulsp-odoocommunitystaging.worthtech.cloud/web/login"
-ODOO_URL_API="https://mulsp-odoocommunitystaging.worthtech.cloud/jsonrpc"
-DB_NAME="mulsp_odoo_staging"
-ODOO_BEARER_TOKEN="c5daff24357fe7d5ef7c805acb059163a9d25a24"
+ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
+ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
+ODOO_URL_API="https://mulsp-odoo-1.worthtech.cloud/jsonrpc"
+DB_NAME="odoodb_cleaned"
+ODOO_BEARER_TOKEN="6c7beeefb78b508ac15f2ff430c4aa8e181b79bc"
 WTH_FIREWALL_TOKEN="xt4GSYYeTKzMYfwGk4u5VYU"
 UID = 2 
 TIMEOUT = 30.0
@@ -92,8 +92,8 @@ def _pick_value(p: dict):
 
 
 @router.get("/myOdoo",)
-async def get_odoo_product_template():
-    tmpl_id = 13485  
+async def get_odoo_product_template(tmpl_id: int = 1):
+
     products = rpc_call(
         "product.template",
         "search_read",
