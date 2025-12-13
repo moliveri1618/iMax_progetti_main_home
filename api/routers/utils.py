@@ -360,6 +360,10 @@ import re
 from datetime import datetime
 from typing import Dict
 
+
+### IMPORTANT !!!!!!!!!!!!!!!!!
+### !!!!!!!!!!!!!!!!!!!!!!!!!!!
+### dont need venditeimax u can get values from commesse, just need COSATO & RICARICO in commesse oclumns
 ## TO CHANGE HERE FOR USER FILTERING
 ## select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")
 
