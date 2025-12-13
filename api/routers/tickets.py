@@ -207,11 +207,30 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
         
         # 1. Search for tickets (no domain = fetch all)
         ticket_ids = rpc_call(
-            "helpdesk.ticket",
+            "ticket.helpdesk",
             "search",
             [[]]
         )
         print(ticket_ids)
+        
+        # 2) Read ticket data (choose the fields you need)
+        tickets = rpc_call(
+            "ticket.helpdesk",
+            "read",
+            [ticket_ids],
+            {"fields": [
+                "id", 
+                "name", 
+                "customer_id",
+                "customer_name",
+                "subject"
+                "partner_id", 
+                "user_id", 
+                "stage_id", 
+                "create_date", 
+                "write_date"
+            ]}
+        )
         
     except Exception as e:
         return JSONResponse(

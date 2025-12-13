@@ -8,6 +8,7 @@ import re
 from fastapi.responses import JSONResponse
 from datetime import datetime
 import httpx
+from datetime import date
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.vendite import VenditeImax
@@ -294,7 +295,7 @@ def get_vendite_from_odoo(
 @router.post("/odoo/v2")
 def get_vendite_from_odoo(
     db: Session = Depends(get_db),
-    vendite: Optional[List[Dict[str, Any]]] = default_vendite
+    # vendite: Optional[List[Dict[str, Any]]] = default_vendite
 ):
     
     try:
@@ -302,10 +303,74 @@ def get_vendite_from_odoo(
         sale_order_line_ids = rpc_call(
             'sale.order.line', 'search',
             [[['display_type', '=', False]]],
-            {'limit': 50}
         )
-        print(sale_order_line_ids)
+        if not sale_order_line_ids:
+            return {"message": "No sale.order.line found", "inserted": 0, "updated": 0}
+        #print(sale_order_line_ids)
         
+        rows = rpc_call(
+            "sale.order.line",
+            "read",
+            [sale_order_line_ids],
+            {
+                "fields": [
+                    "order_id",
+                    "order_partner_id",
+                    "salesman_id",
+                    "name",
+                    "product_uom_qty",
+                    "qty_invoiced",
+                    "qty_to_invoice",
+                    "price_subtotal",
+                ]
+            }
+        )
+        print(rows)
+        
+        # Load existing ordine values once
+        existing_ordini = {
+            x[0]
+            for x in db.query(VenditeImax.ordine).all()
+            if x[0] is not None
+        }
+        
+        # Insert into db
+        inserted = 0
+        skipped = 0
+        for r in rows:
+            
+            # skip if already present
+            ordine_ref = r["order_id"][1] if r.get("order_id") else None
+            if ordine_ref and ordine_ref in existing_ordini:
+                skipped += 1
+                continue
+            
+            
+            vendita = VenditeImax(
+                ordine=r["order_id"][1] if r.get("order_id") else None,
+                cliente=r["order_partner_id"][0] if r.get("order_partner_id") else None,
+                venditore=r["salesman_id"][0] if r.get("salesman_id") else None,
+                descrizione=r.get("name"),
+                data=date.today(),
+                team="null",
+                prodotto="null",
+                quantita=r.get("product_uom_qty") or 0,
+                prezzo_unitario=r.get("qty_delivered") or 0,
+                costo_unitario=r.get("qty_invoiced") or 0,
+                ricarico=r.get("qty_to_invoice") or 0,
+                subtotale=r.get("price_subtotal") or 0,
+            )
+
+            db.add(vendita)
+            inserted += 1
+            
+            # keep set updated so duplicates within the same batch are skipped too
+            if ordine_ref:
+                existing_ordini.add(ordine_ref)
+
+        db.commit()
+        return {"message": "OK", "inserted": inserted, "skipped": skipped}
+
     except Exception as e:
         print(f"Error fetching sale order lines: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)

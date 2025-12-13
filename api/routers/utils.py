@@ -360,6 +360,18 @@ import re
 from datetime import datetime
 from typing import Dict
 
+## TO CHANGE HERE FOR USER FILTERING
+## select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")
+
+from pathlib import Path
+
+EXPORT_PATH = Path("odoo_import_dump.txt")
+EXPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+def dump(line: str):
+    with EXPORT_PATH.open("a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
 def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
     rows = session.exec(
         select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")

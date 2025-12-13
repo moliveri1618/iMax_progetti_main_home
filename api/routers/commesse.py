@@ -17,6 +17,7 @@ from models.users import iUsers
 from schemas.commesse import ICommesseCreate, ICommesseRead, ICommesseUpdate
 from models.workInProgress import WorkInProgress
 from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
+from routers.utils import dump
 
 router = APIRouter()
 
@@ -245,7 +246,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         )
         if not sale_order_ids:
             return JSONResponse(content={"message": "No sales orders found."}, status_code=404)
-        #print(sale_order_ids)
+        # print(sale_order_ids)
         
         # Step 2: Read sale order data (RPC)
         sale_orders = rpc_call(
@@ -294,13 +295,13 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         )
         #print(sale_order_lines)
         
-        # Step 4: Gest product list as: 
-        #           30: [LAVTENTAPINT] LAVORAZIONE TAPPEZZERIA INTERNA, [TENPACMOT] TENDA A PACCHETTO MOTORIZZATA
+        # Step 4: Get product list as: 
         order_to_products = defaultdict(list)
         for line in sale_order_lines:
             order_id = line['order_id'][0]
             product_name = line['product_template_id'][1] if line['product_template_id'] else "No Product"
-            order_to_products[order_id].append(product_name)
+            product_tmpl_id = line["product_template_id"][0] if line['product_template_id'] else "No ID"
+            order_to_products[order_id].append((product_name, product_tmpl_id))
         #print(order_to_products)
         
         # Step 5: Insert or skip commesse & products in DB
@@ -314,7 +315,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             statement = select(iCommesse).where(iCommesse.ordine == ordine_name)
             exists = db.exec(statement).first()
             if exists:
-                continue 
+                continue
             
             # insert new commessa & products
             try:
@@ -342,7 +343,17 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 # )
                 # db.add(new_commessa)
                 # db.flush() 
-                print(
+                # print(
+                #     "[NEW COMMESSA INPUT]\n"
+                #     f"  ordine: {order['name']}\n"
+                #     f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
+                #     f"  nome_cliente: {partner.get('name', 'N/A')}\n"
+                #     f"  email_cliente: {partner.get('email', 'N/A')}\n"
+                #     f"  address_cliente: {full_address}\n"
+                #     f"  responsabile: {order['user_id'][1] if order.get('user_id') else 'N/A'}\n"
+                #     f"  status: {1 if order.get('invoice_status') == 'to invoice' else 0}\n"
+                # )
+                dump(
                     "[NEW COMMESSA INPUT]\n"
                     f"  ordine: {order['name']}\n"
                     f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
@@ -355,7 +366,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 
                 # Add products to the new commessa
                 products = order_to_products.get(order['id'], [])                
-                for prod in products:
+                for prod, product_tmpl_id in products:
                     match = re.match(r'\[(.*?)\]\s*(.*)', prod)
                     if match:
                         code, desc = match.groups()
@@ -373,7 +384,18 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                         # )
                         # db.add(work_item)
 
-                        print(
+                        # print(
+                        #     "[NEW WORK ITEM]\n"
+                        #     # f"  commesse_id: {new_commessa.id}\n"
+                        #     f"  zona: {code}\n"
+                        #     f"  modello: {desc}\n"
+                        #     f"  colonna: {col}\n"
+                        #     f"  completato: {False}\n"
+                        #     f"  completato_da_user: {''}\n"
+                        #     f"  data_completamento: {None}\n"
+                        #     f"  product id: {product_tmpl_id}\n"
+                        # )
+                        dump(
                             "[NEW WORK ITEM]\n"
                             # f"  commesse_id: {new_commessa.id}\n"
                             f"  zona: {code}\n"
@@ -382,7 +404,65 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                             f"  completato: {False}\n"
                             f"  completato_da_user: {''}\n"
                             f"  data_completamento: {None}\n"
+                            f"  product id: {product_tmpl_id}\n"
                         )
+                        
+                        # --- FETCH PRODUCT.TEMPLATE INFO (after NEW WORK ITEM dump) ---
+                        try:
+                            product_tmpl = rpc_call(
+                                'product.template',
+                                'read',
+                                [[product_tmpl_id]],
+                                {'fields': [
+                                    # screenshot fields
+                                    'name',
+                                    'type',
+                                    'sale_ok',
+                                    'purchase_ok',
+                                    'uom_id',
+                                    'uom_po_id',
+                                    'list_price',
+                                    'standard_price',
+                                    'categ_id',
+                                    'default_code',
+                                    'barcode',
+                                    'company_id',
+
+                                    # TODO: replace with your real x_ field names once discovered
+                                    # 'x_rilievo_misure',
+                                    # 'x_sviluppo_disegni',
+                                    # 'x_ordine_fornitore_conferma',
+                                    # 'x_trasporto_cliente',
+                                    # 'x_smontaggio_vecchio',
+                                    # 'x_taglio_telai',
+                                    # 'x_posa_serramento',
+                                    # 'x_rivestimento_in_est',
+                                    # 'x_collaudo_finale',
+                                ]}
+                            )
+
+                            tmpl = (product_tmpl or [{}])[0]
+
+                            dump(
+                                "[PRODUCT TEMPLATE]\n"
+                                f"  id: {product_tmpl_id}\n"
+                                f"  name: {tmpl.get('name')}\n"
+                                f"  type: {tmpl.get('type')}\n"
+                                f"  sale_ok: {tmpl.get('sale_ok')}\n"
+                                f"  purchase_ok: {tmpl.get('purchase_ok')}\n"
+                                f"  uom_id: {tmpl.get('uom_id')}\n"
+                                f"  uom_po_id: {tmpl.get('uom_po_id')}\n"
+                                f"  list_price: {tmpl.get('list_price')}\n"
+                                f"  standard_price: {tmpl.get('standard_price')}\n"
+                                f"  categ_id: {tmpl.get('categ_id')}\n"
+                                f"  default_code: {tmpl.get('default_code')}\n"
+                                f"  barcode: {tmpl.get('barcode')}\n"
+                                f"  company_id: {tmpl.get('company_id')}\n"
+                            )
+
+                        except Exception as e:
+                            dump(f"[PRODUCT TEMPLATE ERROR] product_tmpl_id={product_tmpl_id} err={repr(e)}")
+                        # --- END FETCH ---
                 
                 db.commit()
                 inserted += 1
