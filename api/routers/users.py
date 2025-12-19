@@ -128,7 +128,7 @@ def list_users(db: Session = Depends(get_db)):
 
 
 
-@router.get("/sync_odoo", status_code=201)
+@router.get("/sync_odoo")
 def sync_user_from_odoo(db: Session = Depends(get_db)):
     
     users = rpc_call(
