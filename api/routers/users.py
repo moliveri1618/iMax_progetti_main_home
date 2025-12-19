@@ -57,6 +57,13 @@ def rpc_call(model, method, args=None, kwargs=None):
     )
     with httpx.Client(timeout=TIMEOUT) as client:
         resp = client.post(ODOO_URL_API, headers=headers, json=payload)
+        
+        if resp.status_code >= 400:
+            logger.error("ODOO STATUS: %s", resp.status_code)
+            logger.error("ODOO BODY: %s", resp.text[:2000])
+            logger.error("ODOO HEADERS: %s", dict(resp.headers))
+        
+        
         resp.raise_for_status()
         data = resp.json()
         if "error" in data:
