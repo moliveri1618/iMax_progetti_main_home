@@ -173,6 +173,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
                 "Attacchi": True,
                 "Montaggio a Bordo": True,
                 "Filo guidatura": True,
+                "Collaudo Finale": True,
             },
             home={
                 "Rilievo Misure": True,
@@ -184,6 +185,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
                 "TAGLIO TELAI": True,
                 "POSA SERRAMENTO": True,
                 "RIVESTIMENTO INTERNO": True,
+                "Collaudo Finale": True,
             },
         )
         db.add(entity)
@@ -210,6 +212,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
                 "Attacchi": True,
                 "Montaggio a Bordo": True,
                 "Filo guidatura": True,
+                "Collaudo Finale": True,
             },
             home={
                 "Rilievo Misure": True,
@@ -221,6 +224,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
                 "TAGLIO TELAI": True,
                 "POSA SERRAMENTO": True,
                 "RIVESTIMENTO INTERNO": True,
+                "Collaudo Finale": True,
             },
         ),
         iUsers(
@@ -243,6 +247,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
                 "Attacchi": True,
                 "Montaggio a Bordo": True,
                 "Filo guidatura": True,
+                "Collaudo Finale": True,
             },
             home={
                 "Rilievo Misure": True,
@@ -254,6 +259,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
                 "TAGLIO TELAI": True,
                 "POSA SERRAMENTO": True,
                 "RIVESTIMENTO INTERNO": True,
+                "Collaudo Finale": True,
             },
         )
     ]
