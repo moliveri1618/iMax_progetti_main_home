@@ -127,7 +127,6 @@ def list_users(db: Session = Depends(get_db)):
     return [UserRead.model_validate(u, from_attributes=True) for u in users]
 
 
-
 @router.get("/sync_odoo")
 def sync_user_from_odoo(db: Session = Depends(get_db)):
     
