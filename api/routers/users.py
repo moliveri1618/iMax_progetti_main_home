@@ -152,142 +152,142 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
         {"fields": ["id", "name", "login", "email", "company_id", "partner_id", "tz", "lang"], "limit": 20}
     )
     
-    return users
-    # skipped = 0 
-    # for u in users:
-    #     odoo_user_id = u.get("id")
-    #     if not odoo_user_id:
-    #         continue
+    #return users
+    skipped = 0 
+    for u in users:
+        odoo_user_id = u.get("id")
+        if not odoo_user_id:
+            continue
 
-    #     # skip if already in db
-    #     exists = db.exec(select(iUsers).where(iUsers.odoo_id == odoo_user_id)).first()
-    #     if exists:
-    #         skipped += 1
-    #         continue
+        # skip if already in db
+        exists = db.exec(select(iUsers).where(iUsers.odoo_id == odoo_user_id)).first()
+        if exists:
+            skipped += 1
+            continue
         
-    #     comp = u.get("company_id") or [None, None]
-    #     email = (u.get("email") or "").strip()
-    #     role = UserRole.ADMIN if email == "mulsp1@worthtech.cloud" else UserRole.USER
+        comp = u.get("company_id") or [None, None]
+        email = (u.get("email") or "").strip()
+        role = UserRole.ADMIN if email == "mulsp1@worthtech.cloud" else UserRole.USER
 
-    #     entity = iUsers(
-    #         odoo_id=odoo_user_id,
-    #         name=u.get("name"),
-    #         email=u.get("email"),
-    #         company_id=comp[0],
-    #         company_name=comp[1],
-    #         role=role,
-    #         manager= "Empty",
-    #         capo= "Empty",
-    #         sub= "Empty",
-    #         nautica={
-    #             "Rilievo Misure": True,
-    #             "Collaudo Sarte": True,
-    #             "Taglio Binario": True,
-    #             "Binario Assemblato": True,
-    #             "Tenda Assemblata Bin / Tes Pronta": True,
-    #             "Emesso DDT": True,
-    #             "Attacchi": True,
-    #             "Montaggio a Bordo": True,
-    #             "Filo guidatura": True,
-    #             "Collaudo Finale": True,
-    #         },
-    #         home={
-    #             "Rilievo Misure": True,
-    #             "Elaborazione dati e SVILUPPO disegni": True,
-    #             "ORDINE e FORNITORE e controllo conferma": True,
-    #             "TRASPORTO AL CLIENTE": True,
-    #             "TRASPORTO AL PIANO": True,
-    #             "SMONTAGGIO VECCHIO": True,
-    #             "TAGLIO TELAI": True,
-    #             "POSA SERRAMENTO": True,
-    #             "RIVESTIMENTO INTERNO": True,
-    #             "Collaudo Finale": True,
-    #         },
-    #     )
-    #     db.add(entity)
+        entity = iUsers(
+            odoo_id=odoo_user_id,
+            name=u.get("name"),
+            email=u.get("email"),
+            company_id=comp[0],
+            company_name=comp[1],
+            role=role,
+            manager= "Empty",
+            capo= "Empty",
+            sub= "Empty",
+            nautica={
+                "Rilievo Misure": True,
+                "Collaudo Sarte": True,
+                "Taglio Binario": True,
+                "Binario Assemblato": True,
+                "Tenda Assemblata Bin / Tes Pronta": True,
+                "Emesso DDT": True,
+                "Attacchi": True,
+                "Montaggio a Bordo": True,
+                "Filo guidatura": True,
+                "Collaudo Finale": True,
+            },
+            home={
+                "Rilievo Misure": True,
+                "Elaborazione dati e SVILUPPO disegni": True,
+                "ORDINE e FORNITORE e controllo conferma": True,
+                "TRASPORTO AL CLIENTE": True,
+                "TRASPORTO AL PIANO": True,
+                "SMONTAGGIO VECCHIO": True,
+                "TAGLIO TELAI": True,
+                "POSA SERRAMENTO": True,
+                "RIVESTIMENTO INTERNO": True,
+                "Collaudo Finale": True,
+            },
+        )
+        db.add(entity)
         
-    # # Add two extra users manually for testing
-    # extra_users = [
-    #     iUsers(
-    #         odoo_id=0,
-    #         name="Mauro",
-    #         email="mauro.oliveri16@gmail.com",
-    #         company_id=None,
-    #         company_name=None,
-    #         role=UserRole.ADMIN,
-    #         manager= "Empty",
-    #         capo="Empty",
-    #         sub="Empty",
-    #         nautica={
-    #             "Rilievo Misure": True,
-    #             "Collaudo Sarte": True,
-    #             "Taglio Binario": True,
-    #             "Binario Assemblato": True,
-    #             "Tenda Assemblata Bin / Tes Pronta": True,
-    #             "Emesso DDT": True,
-    #             "Attacchi": True,
-    #             "Montaggio a Bordo": True,
-    #             "Filo guidatura": True,
-    #             "Collaudo Finale": True,
-    #         },
-    #         home={
-    #             "Rilievo Misure": True,
-    #             "Elaborazione dati e SVILUPPO disegni": True,
-    #             "ORDINE e FORNITORE e controllo conferma": True,
-    #             "TRASPORTO AL CLIENTE": True,
-    #             "TRASPORTO AL PIANO": True,
-    #             "SMONTAGGIO VECCHIO": True,
-    #             "TAGLIO TELAI": True,
-    #             "POSA SERRAMENTO": True,
-    #             "RIVESTIMENTO INTERNO": True,
-    #             "Collaudo Finale": True,
-    #         },
-    #     ),
-    #     iUsers(
-    #         odoo_id=1,
-    #         name="MauroDue",
-    #         email="Ollimauri775@gmail.com",
-    #         company_id=None,
-    #         company_name=None,
-    #         role=UserRole.USER,
-    #         manager= "Empty",
-    #         capo="Empty",
-    #         sub="Empty",
-    #         nautica={
-    #             "Rilievo Misure": True,
-    #             "Collaudo Sarte": True,
-    #             "Taglio Binario": True,
-    #             "Binario Assemblato": True,
-    #             "Tenda Assemblata Bin / Tes Pronta": True,
-    #             "Emesso DDT": True,
-    #             "Attacchi": True,
-    #             "Montaggio a Bordo": True,
-    #             "Filo guidatura": True,
-    #             "Collaudo Finale": True,
-    #         },
-    #         home={
-    #             "Rilievo Misure": True,
-    #             "Elaborazione dati e SVILUPPO disegni": True,
-    #             "ORDINE e FORNITORE e controllo conferma": True,
-    #             "TRASPORTO AL CLIENTE": True,
-    #             "TRASPORTO AL PIANO": True,
-    #             "SMONTAGGIO VECCHIO": True,
-    #             "TAGLIO TELAI": True,
-    #             "POSA SERRAMENTO": True,
-    #             "RIVESTIMENTO INTERNO": True,
-    #             "Collaudo Finale": True,
-    #         },
-    #     )
-    # ]
-    # for e in extra_users:
-    #     exists = db.exec(select(iUsers).where(iUsers.odoo_id == e.odoo_id)).first()
-    #     if exists:
-    #         skipped += 1  
-    #         continue
-    #     db.add(e)
+    # Add two extra users manually for testing
+    extra_users = [
+        iUsers(
+            odoo_id=0,
+            name="Mauro",
+            email="mauro.oliveri16@gmail.com",
+            company_id=None,
+            company_name=None,
+            role=UserRole.ADMIN,
+            manager= "Empty",
+            capo="Empty",
+            sub="Empty",
+            nautica={
+                "Rilievo Misure": True,
+                "Collaudo Sarte": True,
+                "Taglio Binario": True,
+                "Binario Assemblato": True,
+                "Tenda Assemblata Bin / Tes Pronta": True,
+                "Emesso DDT": True,
+                "Attacchi": True,
+                "Montaggio a Bordo": True,
+                "Filo guidatura": True,
+                "Collaudo Finale": True,
+            },
+            home={
+                "Rilievo Misure": True,
+                "Elaborazione dati e SVILUPPO disegni": True,
+                "ORDINE e FORNITORE e controllo conferma": True,
+                "TRASPORTO AL CLIENTE": True,
+                "TRASPORTO AL PIANO": True,
+                "SMONTAGGIO VECCHIO": True,
+                "TAGLIO TELAI": True,
+                "POSA SERRAMENTO": True,
+                "RIVESTIMENTO INTERNO": True,
+                "Collaudo Finale": True,
+            },
+        ),
+        iUsers(
+            odoo_id=1,
+            name="MauroDue",
+            email="Ollimauri775@gmail.com",
+            company_id=None,
+            company_name=None,
+            role=UserRole.USER,
+            manager= "Empty",
+            capo="Empty",
+            sub="Empty",
+            nautica={
+                "Rilievo Misure": True,
+                "Collaudo Sarte": True,
+                "Taglio Binario": True,
+                "Binario Assemblato": True,
+                "Tenda Assemblata Bin / Tes Pronta": True,
+                "Emesso DDT": True,
+                "Attacchi": True,
+                "Montaggio a Bordo": True,
+                "Filo guidatura": True,
+                "Collaudo Finale": True,
+            },
+            home={
+                "Rilievo Misure": True,
+                "Elaborazione dati e SVILUPPO disegni": True,
+                "ORDINE e FORNITORE e controllo conferma": True,
+                "TRASPORTO AL CLIENTE": True,
+                "TRASPORTO AL PIANO": True,
+                "SMONTAGGIO VECCHIO": True,
+                "TAGLIO TELAI": True,
+                "POSA SERRAMENTO": True,
+                "RIVESTIMENTO INTERNO": True,
+                "Collaudo Finale": True,
+            },
+        )
+    ]
+    for e in extra_users:
+        exists = db.exec(select(iUsers).where(iUsers.odoo_id == e.odoo_id)).first()
+        if exists:
+            skipped += 1  
+            continue
+        db.add(e)
 
-    # db.commit()
-    # return {"users": len(users), "skipped": skipped}  
+    db.commit()
+    return {"users": len(users), "skipped": skipped}  
 
 
 
