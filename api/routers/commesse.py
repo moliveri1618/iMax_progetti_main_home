@@ -395,7 +395,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         print(f"Error fetching sales orders: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
     
-    return 1
+    return inserted
 
 
 # Get one commessa by ID

@@ -207,14 +207,59 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
         
         # 1. Search for tickets (no domain = fetch all)
         ticket_ids = rpc_call(
-            "helpdesk.ticket",
+            "ticket.helpdesk",
             "search",
             [[]]
         )
         print(ticket_ids)
+        
+        # 2. Read ticket data
+        tickets = rpc_call(
+            "ticket.helpdesk",
+            "read",
+            [ticket_ids],
+            {
+                "fields": [
+                    "name",         # ticket_ref & name
+                    "priority",     # priority
+                    "customer_id",  # customer
+                    "subject",      #
+                    "stage_id",     # stage
+                    "tags_ids",     # type
+                    "create_date"   # created
+                ]
+            }
+        )
+        print(tickets)
+
+        inserted = 0
+        for t in tickets:
+            row = HelpdeskTicket(  
+                ticket_ref=str(t.get("name") or ""),
+                name=(t.get("name") or ""),
+                priority=str(t.get("priority") or ""),
+                customer=(t["customer_id"][1] if t.get("customer_id") else ""),
+                assigned_to="Unassigned",
+                stage=(t["stage_id"][1] if t.get("stage_id") else ""),
+                team="N/A",
+                created=(t.get("create_date") or ""),
+                type=(
+                    "nautica" if 2 in (t.get("tags_ids") or [])
+                    else "home" if 1 in (t.get("tags_ids") or [])
+                    else ""
+                ),                
+                completato=False,
+            )
+            db.add(row)
+            inserted += 1
+
+        db.commit()
+        return {"inserted": inserted}
         
     except Exception as e:
         return JSONResponse(
             content={"error": str(e)},
             status_code=500
         )
+        
+    return 1
