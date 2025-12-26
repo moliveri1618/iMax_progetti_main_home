@@ -342,16 +342,16 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 )
                 db.add(new_commessa)
                 db.flush() 
-                print(
-                    "[NEW COMMESSA INPUT]\n"
-                    f"  ordine: {order['name']}\n"
-                    f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
-                    f"  nome_cliente: {partner.get('name', 'N/A')}\n"
-                    f"  email_cliente: {partner.get('email', 'N/A')}\n"
-                    f"  address_cliente: {full_address}\n"
-                    f"  responsabile: {order['user_id'][1] if order.get('user_id') else 'N/A'}\n"
-                    f"  status: {1 if order.get('invoice_status') == 'to invoice' else 0}\n"
-                )
+                # print(
+                #     "[NEW COMMESSA INPUT]\n"
+                #     f"  ordine: {order['name']}\n"
+                #     f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
+                #     f"  nome_cliente: {partner.get('name', 'N/A')}\n"
+                #     f"  email_cliente: {partner.get('email', 'N/A')}\n"
+                #     f"  address_cliente: {full_address}\n"
+                #     f"  responsabile: {order['user_id'][1] if order.get('user_id') else 'N/A'}\n"
+                #     f"  status: {1 if order.get('invoice_status') == 'to invoice' else 0}\n"
+                # )
                 
                 # Add products to the new commessa
                 products = order_to_products.get(order['id'], [])                
@@ -373,16 +373,16 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                         )
                         db.add(work_item)
 
-                        print(
-                            "[NEW WORK ITEM]\n"
-                            # f"  commesse_id: {new_commessa.id}\n"
-                            f"  zona: {code}\n"
-                            f"  modello: {desc}\n"
-                            f"  colonna: {col}\n"
-                            f"  completato: {False}\n"
-                            f"  completato_da_user: {''}\n"
-                            f"  data_completamento: {None}\n"
-                        )
+                        # print(
+                        #     "[NEW WORK ITEM]\n"
+                        #     # f"  commesse_id: {new_commessa.id}\n"
+                        #     f"  zona: {code}\n"
+                        #     f"  modello: {desc}\n"
+                        #     f"  colonna: {col}\n"
+                        #     f"  completato: {False}\n"
+                        #     f"  completato_da_user: {''}\n"
+                        #     f"  data_completamento: {None}\n"
+                        # )
                 
                 db.commit()
                 inserted += 1
