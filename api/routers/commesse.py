@@ -331,17 +331,17 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 full_address = ', '.join(part for part in address_parts if part).strip(', ')
                 
                 #create new commessa
-                # new_commessa = iCommesse(
-                #     ordine=order['name'],  # Extract numbers only
-                #     data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
-                #     nome_cliente = partner.get('name', 'N/A'),
-                #     email_cliente=partner.get('email', 'N/A'),
-                #     address_cliente=full_address,
-                #     responsabile=order['user_id'][1] if order['user_id'] else "N/A",
-                #     status=1 if order['invoice_status'] == 'to invoice' else 0
-                # )
-                # db.add(new_commessa)
-                # db.flush() 
+                new_commessa = iCommesse(
+                    ordine=order['name'],  # Extract numbers only
+                    data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
+                    nome_cliente = partner.get('name', 'N/A'),
+                    email_cliente=partner.get('email', 'N/A'),
+                    address_cliente=full_address,
+                    responsabile=order['user_id'][1] if order['user_id'] else "N/A",
+                    status=1 if order['invoice_status'] == 'to invoice' else 0
+                )
+                db.add(new_commessa)
+                db.flush() 
                 print(
                     "[NEW COMMESSA INPUT]\n"
                     f"  ordine: {order['name']}\n"
@@ -362,16 +362,16 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     else:
                         code, desc = prod, ""                        
                     for col in colonne:
-                        # work_item = WorkInProgress(
-                        #     commesse_id=new_commessa.id,
-                        #     zona=code,
-                        #     modello=desc,
-                        #     colonna=col,
-                        #     completato=False,
-                        #     completato_da_user="",
-                        #     data_completamento=None
-                        # )
-                        # db.add(work_item)
+                        work_item = WorkInProgress(
+                            commesse_id=new_commessa.id,
+                            zona=code,
+                            modello=desc,
+                            colonna=col,
+                            completato=False,
+                            completato_da_user="",
+                            data_completamento=None
+                        )
+                        db.add(work_item)
 
                         print(
                             "[NEW WORK ITEM]\n"
