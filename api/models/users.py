@@ -19,6 +19,8 @@ class iUsers(SQLModel, table=True):
     manager: Optional[str] = None
     capo: Optional[str] = None
     sub: Optional[str] = None
+    vendite: Optional[bool] = None
+    tab_lavori: Optional[bool] = None
     nautica: Dict[str, bool] = Field(
             default_factory=lambda: {
                 "Rilievo Misure": False,

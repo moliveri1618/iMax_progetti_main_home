@@ -386,6 +386,14 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
                 existing.nautica = nautica_labels
                 changed = True
 
+            if "vendite" in it and it["vendite"] != existing.vendite:
+                existing.vendite = it["vendite"]
+                changed = True
+
+            if "tab_lavori" in it and it["tab_lavori"] != existing.tab_lavori:
+                existing.tab_lavori = it["tab_lavori"]
+                changed = True
+
             if changed:
                 updated += 1
         else:
@@ -402,6 +410,8 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
                 manager=manager_val,
                 capo=it.get("capo") or "Empty",
                 sub=it.get("sub") or "Empty",
+                vendite=it.get("vendite"),      
+                tab_lavori=it.get("tab_lavori"),
                 home=home_labels or {},
                 nautica=nautica_labels or {},
             ))

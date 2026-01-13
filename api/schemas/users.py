@@ -16,6 +16,8 @@ class UserBase(BaseModel):
     sub: Optional[str] = None
     nautica: Optional[Dict[str, bool]] = None
     home: Optional[Dict[str, bool]] = None
+    vendite: Optional[bool] = None
+    tab_lavori: Optional[bool] = None
 
 
 # --- Create schema ---
@@ -37,6 +39,8 @@ class UserRead(SQLModel):
     sub: Optional[str] = None
     nautica: Optional[Dict[str, bool]] = None
     home: Optional[Dict[str, bool]] = None
+    vendite: Optional[bool] = None
+    tab_lavori: Optional[bool] = None
 
     class Config:
         from_attributes = True
@@ -55,6 +59,8 @@ class UserUpdate(BaseModel):
     sub: Optional[str] = None
     nautica: Dict[str, bool]
     home: Dict[str, bool]
+    vendite: Optional[bool] = None
+    tab_lavori: Optional[bool] = None
     
     
 class TeamRead(BaseModel):
