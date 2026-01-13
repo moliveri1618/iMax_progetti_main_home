@@ -13,6 +13,8 @@ class IRilievoBase(BaseModel):
     autoscala_tiro_piano: Optional[bool] = None
     spazio_manovra: Optional[bool] = None
     smontaggio_vecchio: Optional[bool] = None
+    sottopassaggio: Optional[bool] = None
+    passa_dalle_scale: Optional[bool] = None
     taglio_telai: Optional[bool] = None
     cantiere_nuova_costruzione: Optional[bool] = None
     persone_presenti_scarico: Optional[bool] = None
@@ -44,6 +46,8 @@ class IRilievoRead(SQLModel):
     spazio_manovra: Optional[bool] = None
     cantiere_nuova_costruzione: Optional[bool] = None
     smontaggio_vecchio: Optional[bool] = None
+    sottopassaggio: Optional[bool] = None
+    passa_dalle_scale: Optional[bool] = None
     taglio_telai: Optional[bool] = None
     persone_presenti_scarico: Optional[bool] = None
     numero_persone_scarico: Optional[int] = None
@@ -70,6 +74,8 @@ class IRilievoUpdate(BaseModel):
     autoscala_tiro_piano: Optional[bool] = None
     spazio_manovra: Optional[bool] = None
     smontaggio_vecchio: Optional[bool] = None
+    sottopassaggio: Optional[bool] = None
+    passa_dalle_scale: Optional[bool] = None
     taglio_telai: Optional[bool] = None
     cantiere_nuova_costruzione: Optional[bool] = None
     persone_presenti_scarico: Optional[bool] = None
