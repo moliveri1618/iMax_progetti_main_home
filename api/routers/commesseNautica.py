@@ -15,10 +15,12 @@ if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.commesseNautica import iCommesseNautica
 from models.users import iUsers
 from schemas.commesseNautica import ICommesseNauticaRead
-from models.workInProgress import WorkInProgress
+from models.workInProgressNautica import WorkInProgressNautica
 from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
 
 router = APIRouter()
+
+
 
 colonne = [
     "Elaborazione dati",
