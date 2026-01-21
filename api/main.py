@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import asyncio
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__)) 
-from routers import commesse, vendite, tickets, workInProgress, savePDF, rilievoMisure, collaudoFinale, iParametriDaInserire, parametriTecnici, valoriWorkInProgressOdoo, users, commesseNautica, collaudoFinaleNautica, workInProgressNautica, ticketsNautica
+from routers import commesse, vendite, tickets, workInProgress, savePDF, rilievoMisure, collaudoFinale, iParametriDaInserire, parametriTecnici, valoriWorkInProgressOdoo, users, commesseNautica, collaudoFinaleNautica, workInProgressNautica, ticketsNautica, rilievoMisureNautica
 from dependecies import create_db_and_tables, verify_cognito_token
 
 
@@ -80,6 +80,12 @@ app.include_router(
     rilievoMisure.router, 
     prefix="/rilievoMisure", 
     tags=["rilievoMisure"]
+    )
+
+app.include_router(
+    rilievoMisureNautica.router, 
+    prefix="/rilievoMisureNautica", 
+    tags=["rilievoMisureNautica"]
     )
 
 app.include_router(
