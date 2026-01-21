@@ -355,6 +355,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 #     f"  status: {1 if order.get('invoice_status') == 'to invoice' else 0}\n"
                 # )
                 
+                
                 # Add products to the new commessa
                 products = order_to_products.get(order['id'], [])                
                 for prod in products:
