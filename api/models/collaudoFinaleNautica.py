@@ -6,7 +6,7 @@ from sqlalchemy import Column
 
 class CollaudoFinaleNautica(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    workInProgress_id: int = Field(foreign_key="workinprogress.id")
+    workInProgress_id: int = Field(foreign_key="workinprogressnautica.id")
     rilievo_misure: Optional[float] = Field(default=None)
     collaudo_sarte: Optional[float] = Field(default=None)
     taglio_binario: Optional[float] = Field(default=None)

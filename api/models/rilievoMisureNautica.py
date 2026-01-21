@@ -6,7 +6,7 @@ from sqlalchemy import Column
 
 class RilievoMisureNautica(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    commesse_id: int = Field(foreign_key="icommesse.id") 
+    commesse_id: int = Field(foreign_key="icommessenautica.id") 
     strada_idonea: Optional[bool] = Field(default=None)
     scala_arrivare_piano: Optional[bool] = Field(default=None)
     ascensore_montacarichi: Optional[bool] = Field(default=None)
