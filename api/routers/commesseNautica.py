@@ -364,7 +364,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     else:
                         code, desc = prod, ""                        
                     for col in colonne:
-                        work_item = WorkInProgress(
+                        work_item = WorkInProgressNautica(
                             commesse_id=new_commessa.id,
                             zona=code,
                             modello=desc,
