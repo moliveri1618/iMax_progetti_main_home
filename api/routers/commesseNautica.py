@@ -261,6 +261,9 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 'activity_ids',
                 'amount_total',
                 'invoice_status',
+                'x_studio_imax_api',
+                'x_studio_costo_ok',
+                'x_studio_pagato_ok'
             ]}
         )
         #print(sale_orders)
@@ -308,6 +311,14 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         # Step 5: Insert or skip commesse & products in DB
         inserted = 0
         for order in sale_orders:
+
+            # ✅ only import iMax HOME
+            if not (
+                order.get("x_studio_imax_api") == "imax_home"
+                and order.get("x_studio_costo_ok") is True
+                and order.get("x_studio_pagato_ok") is True
+            ):
+                continue
             
             #check if commessa exists in the db
             ordine_name = order.get('name')
