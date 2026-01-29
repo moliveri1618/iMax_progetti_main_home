@@ -15,14 +15,34 @@ from dependecies import get_db
 
 router = APIRouter()
 
-ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
-ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
-ODOO_URL_API="https://mulsp-odoo-1.worthtech.cloud/jsonrpc"
-DB_NAME="odoodb_cleaned"
-ODOO_BEARER_TOKEN="6c7beeefb78b508ac15f2ff430c4aa8e181b79bc"
-WTH_FIREWALL_TOKEN="xt4GSYYeTKzMYfwGk4u5VYU"
-UID = 2 
+# ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
+# ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
+# ODOO_URL_API="https://mulsp-odoo-1.worthtech.cloud/jsonrpc"
+# DB_NAME="odoodb_cleaned"
+# ODOO_BEARER_TOKEN="6c7beeefb78b508ac15f2ff430c4aa8e181b79bc"
+# WTH_FIREWALL_TOKEN="xt4GSYYeTKzMYfwGk4u5VYU"
+# UID = 2 
 TIMEOUT = 30.0
+
+ODOO_URL="https://odoo.mulattieri.it"
+
+# URL per login web (solo per riferimento, non usato dallo script)
+ODOO_URL_LOGIN="https://odoo.mulattieri.it/web/login"
+
+# URL per API JSON-RPC (usato per autenticazione e chiamate API)
+ODOO_URL_API="https://odoo.mulattieri.it/jsonrpc"
+
+# Nome del database Odoo
+DB_NAME="mulsp-odoo-production"     
+
+# UID dell'utente titolare dell'API Key (id interno Odoo, es. 2)
+UID=85 # iMax_api_user
+
+# API Key / Bearer Token per autenticazione Odoo (OBBLIGATORIO)
+ODOO_BEARER_TOKEN="ocCAF0fVHguW3O*CbTRd*3v9"
+
+# Token per firewall WorthTech (OBBLIGATORIO)
+WTH_FIREWALL_TOKEN="SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
 
 import logging
 logger = logging.getLogger(__name__)
@@ -287,7 +307,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
         db.add(e)
 
     db.commit()
-    return {"users": len(users), "skipped": skipped}  
+    return {"users": len(users), "skipped": skipped, "users_odoo": users}  
 
 
 

@@ -233,7 +233,20 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
         print(tickets)
 
         inserted = 0
+        skipped = 0
         for t in tickets:
+
+
+            # ✅ exists check by ticket_ref
+            ticket_ref = str(t.get("name") or "")
+            if ticket_ref:
+                exists_stmt = select(HelpdeskTicket.id).where(HelpdeskTicket.ticket_ref == ticket_ref)
+                exists = db.exec(exists_stmt).first()
+                if exists:
+                    skipped += 1
+                    continue
+
+
             row = HelpdeskTicket(  
                 ticket_ref=str(t.get("name") or ""),
                 name=(t.get("name") or ""),
