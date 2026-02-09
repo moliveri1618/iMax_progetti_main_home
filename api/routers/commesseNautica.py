@@ -23,17 +23,21 @@ router = APIRouter()
 
 
 colonne = [
-    "Elaborazione dati",
-    "Ordine a Fornitore",
-    "Trasporto al cliente",
-    "Trasporto al piano",
-    "Smontaggio vecchio",
-    "Taglio telai",
-    "Posa serramento",
-    "Rivestimento Interno",
-    "Rilievo Misure",
-    "Collaudo Finale"
-    ]
+    "Rilievo misure",
+    "ORDINE e Sviluppo Progetto",
+    "Taglio Binario",
+    "Binario Assemblato",
+    "TAGLIO TESS Sartoria",
+    "Confezione Sartoria",
+    "Lavorazioni EXTRA Sartoria",
+    "Taglio tessuto TECNICO + lavorazioni",
+    "Bin + Tess. Ass. + imballo",
+    "Montaggio Attacchi",
+    "Scarico Trasporto al piano",
+    "Montaggio Tenda",
+    "GUIDE e Floggiatura"
+]
+
 
 ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
 ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
@@ -209,7 +213,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                         
                     for col in colonne:
                         print('hrer')
-                        work_item = WorkInProgress(
+                        work_item = WorkInProgressNautica(
                             commesse_id=new_commessa.id,
                             zona=code,
                             modello=desc,
@@ -261,9 +265,9 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 'activity_ids',
                 'amount_total',
                 'invoice_status',
-                'x_studio_imax_api',
-                'x_studio_costo_ok',
-                'x_studio_pagato_ok'
+                # 'x_studio_imax_api',
+                # 'x_studio_costo_ok',
+                # 'x_studio_pagato_ok'
             ]}
         )
         #print(sale_orders)
@@ -312,13 +316,12 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         inserted = 0
         for order in sale_orders:
 
-            # ✅ only import iMax HOME
-            if not (
-                order.get("x_studio_imax_api") == "imax_home"
-                and order.get("x_studio_costo_ok") is True
-                and order.get("x_studio_pagato_ok") is True
-            ):
-                continue
+            # # ✅ only import iMax HOME
+            # if not (
+            #     order.get("x_studio_imax_api") == "imax_home"
+            #     and order.get("x_studio_costo_ok") is True
+            # ):
+            #     continue
             
             #check if commessa exists in the db
             ordine_name = order.get('name')

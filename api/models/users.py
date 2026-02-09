@@ -23,15 +23,19 @@ class iUsers(SQLModel, table=True):
     tab_lavori: Optional[bool] = None
     nautica: Dict[str, bool] = Field(
             default_factory=lambda: {
-                "Rilievo Misure": False,
-                "Collaudo Sarte": False,
-                "Taglio Binario": False,
-                "Binario Assemblato": False,
-                "Tenda Assemblata Bin / Tes Pronta": False,
-                "Emesso DDT": False,
-                "Attacchi": False,
-                "Montaggio a Bordo": False,
-                "Filo guidatura": False,
+                "Rilievo misure":True,
+                "ORDINE e Sviluppo Progetto":True,
+                "Taglio Binario":True,
+                "Binario Assemblato":True,
+                "TAGLIO TESS Sartoria":True,
+                "Confezione Sartoria":True,
+                "Lavorazioni EXTRA Sartoria":True,
+                "Taglio tessuto TECNICO + lavorazioni":True,
+                "Bin + Tess. Ass. + imballo":True,
+                "Montaggio Attacchi":True,
+                "Scarico Trasporto al piano":True,
+                "Montaggio Tenda":True,
+                "GUIDE e Floggiatura":True
             },
             sa_column=Column(JSON),
         )    

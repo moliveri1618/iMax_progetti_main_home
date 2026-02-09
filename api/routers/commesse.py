@@ -323,7 +323,6 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             if not (
                 order.get("x_studio_imax_api") == "imax_home"
                 and order.get("x_studio_costo_ok") is True
-                and order.get("x_studio_pagato_ok") is True
             ):
                 continue
             
