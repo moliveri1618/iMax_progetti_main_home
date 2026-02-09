@@ -316,7 +316,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         inserted = 0
         for order in sale_orders:
 
-            # ✅ only import iMax HOME
+            # only import iMax HOME
             if not (
                 order.get("x_studio_imax_api") == "imax_nautica"
                 and order.get("x_studio_costo_ok") is True
