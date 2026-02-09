@@ -39,13 +39,13 @@ colonne = [
 ]
 
 
-ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
-ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
-ODOO_URL_API="https://mulsp-odoo-1.worthtech.cloud/jsonrpc"
-DB_NAME="odoodb_cleaned"
-ODOO_BEARER_TOKEN="6c7beeefb78b508ac15f2ff430c4aa8e181b79bc"
-WTH_FIREWALL_TOKEN="xt4GSYYeTKzMYfwGk4u5VYU"
-UID = 2 
+ODOO_URL="https://odoo.mulattieri.it"
+ODOO_URL_LOGIN="https://odoo.mulattieri.it/web/login"
+ODOO_URL_API="https://odoo.mulattieri.it/jsonrpc"
+DB_NAME="mulsp-odoo-production"
+ODOO_BEARER_TOKEN="ocCAF0fVHguW3O*CbTRd*3v9"
+WTH_FIREWALL_TOKEN="SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
+UID = 85
 TIMEOUT = 30.0
 
 def rpc_call(model, method, args=None, kwargs=None):
@@ -265,9 +265,9 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 'activity_ids',
                 'amount_total',
                 'invoice_status',
-                # 'x_studio_imax_api',
-                # 'x_studio_costo_ok',
-                # 'x_studio_pagato_ok'
+                'x_studio_imax_api',
+                'x_studio_costo_ok',
+                'x_studio_pagato_ok'
             ]}
         )
         #print(sale_orders)
@@ -316,12 +316,12 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         inserted = 0
         for order in sale_orders:
 
-            # # ✅ only import iMax HOME
-            # if not (
-            #     order.get("x_studio_imax_api") == "imax_home"
-            #     and order.get("x_studio_costo_ok") is True
-            # ):
-            #     continue
+            # ✅ only import iMax HOME
+            if not (
+                order.get("x_studio_imax_api") == "imax_nautica"
+                and order.get("x_studio_costo_ok") is True
+            ):
+                continue
             
             #check if commessa exists in the db
             ordine_name = order.get('name')

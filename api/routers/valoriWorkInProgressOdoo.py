@@ -12,14 +12,14 @@ import httpx
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
-ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
-ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
-ODOO_URL_API="https://mulsp-odoo-1.worthtech.cloud/jsonrpc"
-DB_NAME="odoodb_cleaned"
-ODOO_BEARER_TOKEN="6c7beeefb78b508ac15f2ff430c4aa8e181b79bc"
-WTH_FIREWALL_TOKEN="xt4GSYYeTKzMYfwGk4u5VYU"
-UID = 2 
 TIMEOUT = 30.0
+ODOO_URL="https://odoo.mulattieri.it"
+ODOO_URL_LOGIN="https://odoo.mulattieri.it/web/login"
+ODOO_URL_API="https://odoo.mulattieri.it/jsonrpc"
+DB_NAME="mulsp-odoo-production"     
+UID=85 # iMax_api_user
+ODOO_BEARER_TOKEN="ocCAF0fVHguW3O*CbTRd*3v9"
+WTH_FIREWALL_TOKEN="SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
 
 router = APIRouter()
 
