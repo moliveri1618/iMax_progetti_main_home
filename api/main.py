@@ -40,11 +40,11 @@ app.include_router(
     tags=["Commesse Nautica"]
     )
 
-app.include_router(
-    vendite.router, 
-    prefix="/vendite", 
-    tags=["Vendite"]
-    )
+# app.include_router(
+#     vendite.router, 
+#     prefix="/vendite", 
+#     tags=["Vendite"]
+#     )
 
 app.include_router(
     tickets.router, 
