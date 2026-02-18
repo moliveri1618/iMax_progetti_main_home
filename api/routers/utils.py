@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from sqlmodel import Session, select, delete
 from datetime import datetime, date
 from pprint import pprint
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Union
 import json
 from pydantic import BaseModel, Field
 from fpdf import FPDF
@@ -26,7 +26,7 @@ if os.getenv("GITHUB_ACTIONS"):
     
 from models.iParametriDaInserire import ParametriDaInserire  
 from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
-from models.vendite import VenditeImax
+# from models.vendite import VenditeImax
 from models.commesse import iCommesse
 from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
 from models.iConteggiCommessa import OrdiniPremi
@@ -316,6 +316,19 @@ default_vendite = [
 def _num(x):
     return float(x or 0)
 
+def to_month_from_datetime(d: Optional[Union[date, datetime]]) -> Optional[str]:
+    if not d:
+        return None
+
+    # If it's datetime, convert to date first (optional but clean)
+    if isinstance(d, datetime):
+        d = d.date()
+
+    if isinstance(d, date):
+        return d.strftime("%Y-%m")
+
+    return None
+
 def to_month_str(d: Optional[str]) -> Optional[str]:
     if not d:
         return None
@@ -362,13 +375,24 @@ from datetime import datetime
 from typing import Dict
 
 def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
+    # rows = session.exec(
+    #     select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")
+    # ).all()
+
     rows = session.exec(
-        select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")
+        select(iCommesse).where(
+            func.split_part(iCommesse.responsabile, ',', 2) == user_id
+        )
     ).all()
 
     def parse_month(date_str: str) -> int | None:
         if not date_str:
             return None
+        
+        # NEW: if it's already a date/datetime, return the month directly
+        if isinstance(date_str, (date, datetime)):
+            return date_str.month
+        
         s = date_str.strip()
 
         # 1) Fast path: ISO timestamps like "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DDTHH:MM:SS"
@@ -409,7 +433,7 @@ def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
     for r in rows:
         mm = parse_month(r.data)
         if mm:
-            month_totals[mm] += float(r.subtotale or 0.0)
+            month_totals[mm] += float(r.ricarico or 0.0)
 
     return {
         # '1_trimestre': month_totals[1] + month_totals[2] + month_totals[3],     # Jan–Mar
@@ -598,21 +622,22 @@ def _to_datetime(d):
             return None
     return None
 
-def compute_venduto_reale(db, year=None):
-    if year is None:
-        year = date.today().year
+# def compute_venduto_reale(db, year=None):
+#     if year is None:
+#         year = date.today().year
 
-    sums = [0.0] * 12
+#     sums = [0.0] * 12
 
-    vendite = db.exec(select(VenditeImax)).all()
+#     vendite = db.exec(select(VenditeImax)).all()
 
-    for v in vendite:
-        dt = _to_datetime(v.data)
-        if not dt or dt.year != year:
-            continue
-        sums[dt.month - 1] += float(v.quantita or 0)
+#     for v in vendite:
+#         dt = _to_datetime(v.data)
+#         if not dt or dt.year != year:
+#             continue
+#         sums[dt.month - 1] += float(v.quantita or 0)
 
-    return sums
+#     print('sums', sums)
+#     return sums
 
 def compute_consuntivo_venduto_trimestrale(fatturato_del_trimestre):
     """
@@ -889,8 +914,8 @@ def create_ordiniPremi_obj(vendite, parametri, user_id):
     result = []
     for v in vendite:
             data = parse_date(v["data"])
-            venduto_a = v["subtotale"]
-            costo_totale = v["costo_unitario"] * v["quantita"]
+            venduto_a = v["ricarico"]
+            costo_totale = v["costo"] * v["quantita"]
             margine = venduto_a - costo_totale
             percentuale_ricarico = (margine / costo_totale * 100) if costo_totale else None
             percentuale_premio = calcola_percentuale_premio(margine, soglie_premi)
@@ -899,7 +924,7 @@ def create_ordiniPremi_obj(vendite, parametri, user_id):
             obj = {
                 "user_id": user_id,
                 "ordine_numero": v["ordine"],
-                "cliente": v["cliente"],
+                "cliente": v["nome_cliente"],
                 "prodotto": v["prodotto"],
                 "mese": data.strftime("%d/%m/%y"),
                 "venduto_a": venduto_a,
@@ -920,9 +945,10 @@ def delete_replace_ordini_premi(session, user_id: str, rows: List[Dict]) -> int:
     Cancella le righe esistenti in OrdiniPremi per lo user_id e inserisce le nuove.
     Ritorna il numero di righe inserite.
     """
+    print(rows)
     try:
         # 1) Cancella righe esistenti per questo user
-        session.exec(delete(OrdiniPremi).where(OrdiniPremi.user_id == "Alberto Moscatelli"))
+        session.exec(delete(OrdiniPremi).where(OrdiniPremi.user_id == user_id))
 
         # 2) Inserisci nuove righe
         objs = [OrdiniPremi(user_id=user_id, **{k: v for k, v in row.items() if k != "user_id"}) for row in rows]
@@ -1149,6 +1175,8 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
 def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli, parametriDiVendita):
     
     # Get vendite for the user
+    #vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")).all() 
+
     vendite = session.exec(
         select(iCommesse).where(
             func.split_part(iCommesse.responsabile, ',', 2) == user_id
@@ -1156,7 +1184,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
     ).all()
     vendite = [v.model_dump() for v in vendite]
     #pprint(calcoli)
-    #pprint(vendite)
+    pprint(vendite)
     
     # 2 Perform calculations
     mapped: List[Dict[str, Any]] = []
@@ -1165,18 +1193,20 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
     valori_3_trim = [c.get("perc_trim_3", 0.0) for c in calcoli]
     valori_4_trim = [c.get("perc_trim_4", 0.0) for c in calcoli]
     valori_limite = [c.get("valore_limite", 0.0) for c in parametriDiVendita]
-    print("valori_limite", valori_limite)
-    print("valori_1_trim", valori_1_trim)
-    print("valori_2_trim", valori_2_trim)
-    print("valori_3_trim", valori_3_trim)
-    print("valori_4_trim", valori_4_trim)
+    # print("valori_limite", valori_limite)
+    # print("valori_1_trim", valori_1_trim)
+    # print("valori_2_trim", valori_2_trim)
+    # print("valori_3_trim", valori_3_trim)
+    # print("valori_4_trim", valori_4_trim)
     
     for row in vendite:
         venduto_a = _num(row.get("costo"))  
         acquistato_a = _num(row.get("ricarico"))   
         margine = abs(venduto_a - acquistato_a)
         percentuale_ricarico = (margine / acquistato_a * 100) if acquistato_a != 0 else None
-        mese = to_month_str(row.get("data"))
+        #mese = to_month_str(row.get("data"))
+        mese = to_month_from_datetime(row.get("data"))
+        print(mese)
         percentuale_premio = apply_formula( 
                                         percentuale_ricarico, 
                                         mese, 
@@ -1186,7 +1216,6 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
                                         valori_4_trim,
                                         valori_limite
                             )
-        
         
         mapped.append({
             "user_id": row.get("venditore"),
@@ -1203,7 +1232,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
         })
     
     # delete_replace_ordini_premi
-    result = delete_replace_ordini_premi(session, "Alberto Moscatelli", mapped)
+    result = delete_replace_ordini_premi(session, user_id, mapped)
    
     return result
 
