@@ -3298,7 +3298,7 @@ def build_pdf_report_posa_cliente(data):
                 ("PULIZIA DEI VETRI E/O FINESTRE",                                            gvb("pulizia_vetri"),               (230, 230, 230)),
                 ("GIRO CON IL CLIENTE SU CORRETTA FUNZIONALITA",                              gvb("giro_cliente"),            (230, 230, 230)),
                 ("GIRO CON IL CLIENTE SU CORRETTA CONFORMITA",                                gvb("giro_cliente_conformita"),          (230, 230, 230)),
-                ("CONSEGNA DEI DOCUMENTI ES. ENEA",                                           gvb("consegna_documenti"),      (230, 230, 230)),
+                # ("CONSEGNA DEI DOCUMENTI ES. ENEA",                                           gvb("consegna_documenti"),      (230, 230, 230)),
                 ("CONSEGNA LIBRETTO USO E MANUTENZIONE",                                      gvb("consegna_libretto"),        (230, 230, 230)),
                 ("DDT E VERBALE DI COLLAUDO FIRMATI",                                         gvb("ddt_verbal_firmati"),          (230, 230, 230)),
                 ("DIFETTI PRESENTI SUI VETRI",                                                gvb("difetti_vetri"),             (230, 230, 230)),
