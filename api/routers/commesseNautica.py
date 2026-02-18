@@ -267,7 +267,9 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 'invoice_status',
                 'x_studio_imax_api',
                 'x_studio_costo_ok',
-                'x_studio_pagato_ok'
+                'x_studio_pagato_ok',
+                'total_cost_of_lines',
+                'total_recharge'
             ]}
         )
         #print(sale_orders)
@@ -354,7 +356,9 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     email_cliente=partner.get('email', 'N/A'),
                     address_cliente=full_address,
                     responsabile=order['user_id'][1] if order['user_id'] else "N/A",
-                    status=1 if order['invoice_status'] == 'to invoice' else 0
+                    status=1 if order['invoice_status'] == 'to invoice' else 0,
+                    costo=order.get('total_cost_of_lines', 0.0),
+                    ricarico=order.get('total_recharge', 0.0),
                 )
                 db.add(new_commessa)
                 db.flush() 
