@@ -16,7 +16,7 @@ from email.mime.application import MIMEApplication
 import inspect
 from collections import defaultdict
 import re
-
+from sqlalchemy import select, func
 import sys
 import os
 
@@ -1149,7 +1149,11 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
 def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli, parametriDiVendita):
     
     # Get vendite for the user
-    vendite = session.exec(select(iCommesse).where(iCommesse.venditore == "Alberto Moscatelli")).all() 
+    vendite = session.exec(
+        select(iCommesse).where(
+            func.split_part(iCommesse.responsabile, ',', 2) == user_id
+        )
+    ).all()
     vendite = [v.model_dump() for v in vendite]
     #pprint(calcoli)
     #pprint(vendite)
@@ -1168,8 +1172,8 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
     print("valori_4_trim", valori_4_trim)
     
     for row in vendite:
-        venduto_a = _num(row.get("subtotale"))  
-        acquistato_a = _num(row.get("costo_unitario"))   
+        venduto_a = _num(row.get("costo"))  
+        acquistato_a = _num(row.get("ricarico"))   
         margine = abs(venduto_a - acquistato_a)
         percentuale_ricarico = (margine / acquistato_a * 100) if acquistato_a != 0 else None
         mese = to_month_str(row.get("data"))
