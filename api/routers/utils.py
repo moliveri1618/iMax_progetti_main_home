@@ -1208,7 +1208,7 @@ def send_email(receiver_email, filename, pdf_bytes=None):
     #sender_email = "lastiada1@gmail.com"
     #password = "opqexobtkprukiyi"   # Use environment variable in production!
     sender_email = 'imax.mulattieri26@gmail.com'
-    password = 'krxp ppen sjyu bogj' # real for imax
+    password = 'krxpppensjyubogj' # real for imax
 
     subject = "Report Posa iMax - Mulattieri"
     body = ""
