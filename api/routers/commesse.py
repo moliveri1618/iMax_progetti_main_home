@@ -276,6 +276,23 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             ]}
         )
         #print(sale_orders)
+
+        # get users emails 
+        user_ids = list({
+            order['user_id'][0]
+            for order in sale_orders
+            if order.get('user_id')
+        })
+
+        users = rpc_call(
+            'res.users',
+            'read',
+            [user_ids],
+            {'fields': ['id', 'name', 'login', 'email']}
+        )
+        user_info = {u['id']: u for u in users}
+
+
         
         # Step 2.1: Read partners (client) data (RPC)
         partner_ids = list({order['partner_id'][0] for order in sale_orders if order.get('partner_id')})
@@ -350,6 +367,13 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     partner.get('country_id', ['', ''])[1] if partner.get('country_id') else ''
                 ]
                 full_address = ', '.join(part for part in address_parts if part).strip(', ')
+
+                # responsabile info in format: name, email
+                user_id = order.get('user_id')[0] if order.get('user_id') else None
+                user = user_info.get(user_id, {})
+                user_name = user.get('name', 'N/A')
+                user_email = user.get('login') or user.get('email') or 'N/A'
+                responsabile_value = f"{user_name},{user_email}"
                 
                 #create new commessa
                 new_commessa = iCommesse(
@@ -358,7 +382,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     nome_cliente = partner.get('name', 'N/A'),
                     email_cliente=partner.get('email', 'N/A'),
                     address_cliente=full_address,
-                    responsabile=order['user_id'][1] if order['user_id'] else "N/A",
+                    responsabile=responsabile_value,
                     status=1 if order['invoice_status'] == 'to invoice' else 0,
                     costo=order.get('total_cost_of_lines', 0.0),
                     ricarico=order.get('total_recharge', 0.0),

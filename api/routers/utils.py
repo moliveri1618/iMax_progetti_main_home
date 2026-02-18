@@ -27,6 +27,7 @@ if os.getenv("GITHUB_ACTIONS"):
 from models.iParametriDaInserire import ParametriDaInserire  
 from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
 from models.vendite import VenditeImax
+from models.commesse import iCommesse
 from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
 from models.iConteggiCommessa import OrdiniPremi
 logger = logging.getLogger(__name__)
@@ -1148,7 +1149,7 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
 def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli, parametriDiVendita):
     
     # Get vendite for the user
-    vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")).all() 
+    vendite = session.exec(select(iCommesse).where(iCommesse.venditore == "Alberto Moscatelli")).all() 
     vendite = [v.model_dump() for v in vendite]
     #pprint(calcoli)
     #pprint(vendite)
