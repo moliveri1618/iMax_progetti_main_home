@@ -1205,8 +1205,10 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
 def send_email(receiver_email, filename, pdf_bytes=None):
     print("Sending email...")
     
-    sender_email = "lastiada1@gmail.com"
-    password = "opqexobtkprukiyi"   # Use environment variable in production!
+    #sender_email = "lastiada1@gmail.com"
+    #password = "opqexobtkprukiyi"   # Use environment variable in production!
+    sender_email = 'imax.mulattieri26@gmail.com'
+    password = 'krxp ppen sjyu bogj' # real for imax
 
     subject = "Report Posa iMax - Mulattieri"
     body = ""
