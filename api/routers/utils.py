@@ -1208,8 +1208,8 @@ def send_email(receiver_email, filename, pdf_bytes=None):
     sender_email = "lastiada1@gmail.com"
     password = "opqexobtkprukiyi"   # Use environment variable in production!
 
-    subject = "Test Email"
-    body = "Hello, this is a test email sent from Python!"
+    subject = "Report Posa iMax - Mulattieri"
+    body = ""
 
     try:
         
