@@ -35,7 +35,8 @@ colonne = [
     "Montaggio Attacchi",
     "Scarico Trasporto al piano",
     "Montaggio Tenda",
-    "GUIDE e Floggiatura"
+    "GUIDE e Floggiatura",
+    "Collaudo Finale"
 ]
 
 
