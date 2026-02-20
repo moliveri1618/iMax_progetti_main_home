@@ -22,11 +22,11 @@ import os
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
-from models.iParametriDaInserire import ParametriDaInserire  
-from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
-from models.vendite import VenditeImax
-from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
-from models.iConteggiCommessa import OrdiniPremi
+# from models.iParametriDaInserire_Nautica import ParametriDaInserireNautica  
+# from schemas.iParametriDaInserire_Nautica import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
+# from models.vendite import VenditeImax
+# from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
+# from models.iConteggiCommessa import OrdiniPremi
 logger = logging.getLogger(__name__)
 
 

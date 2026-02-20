@@ -24,12 +24,12 @@ import os
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
     
-from models.iParametriDaInserire import ParametriDaInserire  
-from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
+from models.iParametriDaInserire_Nautica import ParametriDaInserireNautica  
+from schemas.iParametriDaInserire_Nautica import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
 # from models.vendite import VenditeImax
-from models.commesse import iCommesse
-from models.iBudgetVendutoCalcoli import BudgetVendutoCalcoli
-from models.iConteggiCommessa import OrdiniPremi
+from models.commesseNautica import iCommesseNautica
+from models.iBudgetVendutoCalcoli_Nautica import BudgetVendutoCalcoliNautica
+from models.iConteggiCommessa_Nautica import OrdiniPremiNautica
 logger = logging.getLogger(__name__)
 
 
@@ -380,8 +380,8 @@ def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
     # ).all()
 
     rows = session.exec(
-        select(iCommesse).where(
-            func.split_part(iCommesse.responsabile, ',', 2) == user_id
+        select(iCommesseNautica).where(
+            func.split_part(iCommesseNautica.responsabile, ',', 2) == user_id
         )
     ).all()
 
@@ -948,10 +948,10 @@ def delete_replace_ordini_premi(session, user_id: str, rows: List[Dict]) -> int:
     print(rows)
     try:
         # 1) Cancella righe esistenti per questo user
-        session.exec(delete(OrdiniPremi).where(OrdiniPremi.user_id == user_id))
+        session.exec(delete(OrdiniPremiNautica).where(OrdiniPremiNautica.user_id == user_id))
 
         # 2) Inserisci nuove righe
-        objs = [OrdiniPremi(user_id=user_id, **{k: v for k, v in row.items() if k != "user_id"}) for row in rows]
+        objs = [OrdiniPremiNautica(user_id=user_id, **{k: v for k, v in row.items() if k != "user_id"}) for row in rows]
         session.add_all(objs)
 
         # 3) Commit
@@ -1034,9 +1034,9 @@ def replace_or_insert_parametriDaInserire(
 
     # Replace atomically: delete then insert
     try:
-        session.exec(delete(ParametriDaInserire).where(ParametriDaInserire.user_id == uid))
+        session.exec(delete(ParametriDaInserireNautica).where(ParametriDaInserireNautica.user_id == uid))
         for r in source:
-            session.add(ParametriDaInserire(
+            session.add(ParametriDaInserireNautica(
                 user_id=uid,
                 mese=r["mese"],
                 obiettivo_mensile=r["obiettivo_mensile"],
@@ -1056,10 +1056,10 @@ def replace_or_insert_budget_venduto_calcoli(session: Session, user_id: str, row
     
     try:
         # 1) Delete old rows for the user
-        session.exec(delete(BudgetVendutoCalcoli).where(BudgetVendutoCalcoli.user_id == user_id))
+        session.exec(delete(BudgetVendutoCalcoliNautica).where(BudgetVendutoCalcoliNautica.user_id == user_id))
 
         # 2) Insert new rows
-        session.add_all([BudgetVendutoCalcoli(**row) for row in rows])
+        session.add_all([BudgetVendutoCalcoliNautica(**row) for row in rows])
         session.commit()
         return len(rows)
     except Exception:
@@ -1178,8 +1178,8 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
     #vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")).all() 
 
     vendite = session.exec(
-        select(iCommesse).where(
-            func.split_part(iCommesse.responsabile, ',', 2) == user_id
+        select(iCommesseNautica).where(
+            func.split_part(iCommesseNautica.responsabile, ',', 2) == user_id
         )
     ).all()
     vendite = [v.model_dump() for v in vendite]
