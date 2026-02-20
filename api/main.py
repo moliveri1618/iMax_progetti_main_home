@@ -119,6 +119,12 @@ app.include_router(
     )
 
 app.include_router(
+    parametriTecnici.router, 
+    prefix="/parametriTecnici", 
+    tags=["parametriTecnici"]
+    )
+
+app.include_router(
     valoriWorkInProgressOdoo.router, 
     prefix="/valoriWorkInProgressOdoo", 
     tags=["valoriWorkInProgressOdoo"]

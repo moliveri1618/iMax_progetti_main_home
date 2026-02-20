@@ -120,7 +120,7 @@ def get_budget_venduto_calcoli_by_user(
     Return all BudgetVendutoCalcoli rows for a given user_id,
     sorted by calendar month (gennaio..dicembre).
     """
-    stmt = select(BudgetVendutoCalcoli).where(BudgetVendutoCalcoli.user_id == user_id)
+    stmt = select(BudgetVendutoCalcoliNautica).where(BudgetVendutoCalcoliNautica.user_id == user_id)
     rows = session.exec(stmt).all() 
 
     def month_key(m: Optional[str]) -> int:
