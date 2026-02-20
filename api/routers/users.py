@@ -342,15 +342,19 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
         "rivestimento_interno": "RIVESTIMENTO INTERNO",
     }
     NAUTICA_MAP = {
-        "rilievo_misure": "Rilievo Misure",
-        "collaudo_sarte": "Collaudo Sarte",
-        "taglio_binario": "Taglio Binario",
-        "binario_assemblato": "Binario Assemblato",
-        "tenda_assemblata": "Tenda Assemblata Bin / Tes Pronta",
-        "emesso_ddt": "Emesso DDT",
-        "attacchi": "Attacchi",
-        "montaggio_a_bordo": "Montaggio a Bordo",
-        "filo_guidatura": "Filo guidatura",
+        'rilievo_misure': "Rilievo misure", 
+        'ord_svl_prog': "ORDINE e Sviluppo Progetto",
+        'taglio_binario': "Taglio Binario",
+        'binario_assemblato': "Binario Assemblato",
+        'taglio_tess_sartoria': "TAGLIO TESS Sartoria",
+        'conf_sartoria': "Confezione Sartoria",
+        'lav_extra_sartoria': "Lavorazioni EXTRA Sartoria",
+        'taglio_tess_tecnico': "Taglio tessuto TECNICO + lavorazioni",
+        'bin_tess_ass_imballo': "Bin + Tess. Ass. + imballo",
+        'montaggio_attacchi': "Montaggio Attacchi",
+        'scarico_trasporto_al_piano': "Scarico Trasporto al piano",
+        'montaggio_tenda': "Montaggio Tenda",
+        'guide_floggiatura': "GUIDE e Floggiatura",
     }
 
     inserted, updated = 0, 0
