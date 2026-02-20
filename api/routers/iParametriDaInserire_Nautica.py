@@ -45,7 +45,7 @@ def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
     emails = sorted({u.email for u in users if u.email})
 
     # existing user_ids in ParametriDaInserire
-    rows = db.exec(select(ParametriDaInserire.user_id).distinct()).all()
+    rows = db.exec(select(ParametriDaInserireNautica.user_id).distinct()).all()
     existing_user_ids = {r[0] if isinstance(r, tuple) else r for r in rows}
     inserted_users: List[str] = []
 
@@ -55,7 +55,7 @@ def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
 
             for row in TEMPLATE_ROWS:
                 db.add(
-                    ParametriDaInserire(
+                    ParametriDaInserireNautica(
                         user_id=email,
                         mese=row["mese"],
                         obiettivo_mensile=row["obiettivo_mensile"],
