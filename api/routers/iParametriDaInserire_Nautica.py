@@ -80,7 +80,7 @@ def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
 
 
 @router.put("/parametri/{user_id}",response_model=Dict[str, int],status_code=status.HTTP_200_OK,)
-def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[ParametriRowIn]] = Body(default=None),session: Session = Depends(get_db)):
+def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[ParametriNauticaRowIn]] = Body(default=None),session: Session = Depends(get_db)):
     
     # Convert payload to dict if not None
     rows = json_to_dict(rows) 
@@ -109,7 +109,7 @@ def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[Parametr
 
 @router.get(
     "/budget-venduto-calcoli/{user_id}",
-    response_model=List[BudgetVendutoCalcoliRead],
+    response_model=List[BudgetVendutoCalcoliNauticaRead],
     status_code=status.HTTP_200_OK,
 )
 def get_budget_venduto_calcoli_by_user(
@@ -137,7 +137,7 @@ def get_budget_venduto_calcoli_by_user(
 
 @router.get(
     "/ordini-premi/{user_id}",
-    response_model=List[OrdiniPremiRead],
+    response_model=List[OrdiniPremiNauticaRead],
     status_code=status.HTTP_200_OK,
 )
 def get_ordini_premi_by_user(
@@ -148,7 +148,7 @@ def get_ordini_premi_by_user(
     Return all OrdiniPremi rows for a given user_id,
     sorted by calendar month (gennaio..dicembre).
     """
-    stmt = select(OrdiniPremi).where(OrdiniPremi.user_id == user_id)
+    stmt = select(OrdiniPremiNautica).where(OrdiniPremiNautica.user_id == user_id)
     rows = session.exec(stmt).all()  # ensure ORM objects
 
     def month_key(m: Optional[str]) -> int:
@@ -165,11 +165,11 @@ def get_ordini_premi_by_user(
 
 
 # READ ALL or filter by user id if provided
-@router.get("", response_model=List[ParametriDaInserireRead])
+@router.get("", response_model=List[ParametriDaInserireNauticaRead])
 def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)):
-    stmt = select(ParametriDaInserire)
+    stmt = select(ParametriDaInserireNautica)
     if user_id:
-        stmt = stmt.where(ParametriDaInserire.user_id == user_id)
+        stmt = stmt.where(ParametriDaInserireNautica.user_id == user_id)
     items = session.exec(stmt).all()  
     return items
 
