@@ -10,6 +10,9 @@ class CollaudoFinaleNautica(SQLModel, table=True):
     rilievo_misure: Optional[float] = Field(default=None)
     collaudo_sarte: Optional[float] = Field(default=None)
     taglio_binario: Optional[float] = Field(default=None)
+    produzione_binari: Optional[float] = Field(default=None)
+    assemblaggio_tenda: Optional[float] = Field(default=None)
+    lavorazione_sartoria: Optional[float] = Field(default=None)
     image_paths_RM: Optional[List[str]] = Field(
         default_factory=list,
         sa_column=Column(JSON)
@@ -22,3 +25,6 @@ class CollaudoFinaleNautica(SQLModel, table=True):
         default_factory=list,
         sa_column=Column(JSON)
     )
+    image_paths_PB: Optional[List[str]] = Field(default_factory=list, sa_column=Column(JSON))
+    image_paths_AT: Optional[List[str]] = Field(default_factory=list, sa_column=Column(JSON))
+    image_paths_LS: Optional[List[str]] = Field(default_factory=list, sa_column=Column(JSON))

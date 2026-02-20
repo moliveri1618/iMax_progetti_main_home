@@ -40,6 +40,7 @@ def get_collaudo_by_work_id(work_id: int, db: Session = Depends(get_db)):
     return entry
 
 
+
 @router.post("/upsertCollaudo", response_model=ICollaudoFinaleNauticaRead)
 def upsert_collaudo(input_data: ICollaudoFinaleNauticaCreate, db: Session = Depends(get_db)):
     existing_entry = db.exec(
