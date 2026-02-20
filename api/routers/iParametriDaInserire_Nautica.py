@@ -27,7 +27,7 @@ from schemas.iConteggiCommessa_Nautica import OrdiniPremiNauticaRead
 from models.users import *
 from schemas.users import *
 
-from routers.utils import *
+from routers.utils_nautica import *
 from dependecies import get_db
 
 router = APIRouter()
