@@ -35,6 +35,42 @@ colonne = [
     "Collaudo Finale"
     ]
 
+def get_props_for_code_category(code, product_templates):
+
+    # find product id using name
+    prod_ids = rpc_call(
+        "product.product", "search",
+        [[("default_code", "=", code)]],
+    )
+    if not prod_ids:
+        print("No product.product found for", code)
+        return False
+    
+    # get product categ id
+    prod = rpc_call(
+        "product.product", "read",
+        [prod_ids],
+        {"fields": ["id", "default_code", "product_tmpl_id", "categ_id"]}
+    )[0]
+    categ_id = prod["categ_id"][0]
+    # print("VARIANT ID:", prod["id"])
+    # print("TEMPLATE ID:", prod["product_tmpl_id"][0], "NAME:", prod["product_tmpl_id"][1])
+    # print("CATEGORY:", prod["categ_id"][0], prod["categ_id"][1])
+
+    # now get right template values for that category
+    for pt in product_templates:
+        categ = pt.get("categ_id")
+
+        if not categ or categ[0] != categ_id:
+            continue
+
+        print("MATCHED TEMPLATE:", pt["id"], "CATEGORY:", categ)
+
+        for p in pt.get("product_properties", []):
+            print("FOUND:", p)
+
+    return p
+
 # ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
 # ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
 # ODOO_URL_API="https://mulsp-odoo-1.worthtech.cloud/jsonrpc"
@@ -342,17 +378,10 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             {"fields": ["id", "x_studio_imax", "categ_id", "product_properties"]}
         )
         template_info = {pt['id']: pt for pt in product_templates}
-        for pt in product_templates:
-            props = pt.get("product_properties", [])
 
-            # Print category
-            categ = pt.get("categ_id")
-            if categ:
-                print("CATEGORY ID:", categ[0])
-                print("CATEGORY NAME:", categ[1])
+        code = "FINPVCBATT"
+        get_props_for_code_category(code, product_templates)
 
-            for p in props:
-                print("FOUND:", p)
 
         # Step 4: Gest product list as: 
         # i.e. 30: [LAVTENTAPINT] LAVORAZIONE TAPPEZZERIA INTERNA, [TENPACMOT] TENDA A PACCHETTO MOTORIZZATA
