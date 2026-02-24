@@ -17,6 +17,7 @@ from models.users import iUsers
 from schemas.commesseNautica import ICommesseNauticaRead
 from models.workInProgressNautica import WorkInProgressNautica
 from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
+log_file = Path(__file__).parent / "debug_output.txt"
 
 router = APIRouter()
 
@@ -38,6 +39,62 @@ colonne = [
     "GUIDE e Floggiatura",
     "Collaudo Finale"
 ]
+
+def normalize(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip().lower()
+
+def get_props_for_code_category(code, product_templates):
+
+    # find product id using name
+    prod_ids = rpc_call(
+        "product.product", "search",
+        [[("default_code", "=", code)]],
+    )
+    if not prod_ids:
+        print("No product.product found for", code)
+        return False
+    
+    # get product categ id
+    prod = rpc_call(
+        "product.product", "read",
+        [prod_ids],
+        {"fields": ["id", "default_code", "product_tmpl_id", "categ_id"]}
+    )[0]
+    categ_id = prod["categ_id"][0]
+    # print("VARIANT ID:", prod["id"])
+    # print("TEMPLATE ID:", prod["product_tmpl_id"][0], "NAME:", prod["product_tmpl_id"][1])
+    # print("CATEGORY:", prod["categ_id"][0], prod["categ_id"][1])
+
+    # now get right template values for that category
+    prop_map: dict[str, float] = {}
+    for pt in product_templates:
+        categ = pt.get("categ_id")
+        if not categ or categ[0] != categ_id:
+            continue
+        #print("MATCHED TEMPLATE:", pt["id"], "CATEGORY:", categ)
+
+        for p in pt.get("product_properties", []):
+            key = normalize(p.get("string"))
+            if not key:
+                continue
+            prop_map[key] = p.get("value")
+
+    #print(prop_map)
+    return prop_map
+
+
+def match_value(norm_col, prop_map):
+    for key, value in prop_map.items():
+        # exact match
+        if norm_col == key:
+            return value
+
+        # partial match (both directions)
+        if norm_col in key or key in norm_col:
+            return value
+
+    return None
+
 
 
 ODOO_URL="https://odoo.mulattieri.it"
@@ -320,14 +377,45 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             {'fields': ['order_id', 'product_template_id']}
         )
         #print(sale_order_lines)
+
+        # ✅ Step 3.1: Read product.template x_studio_imax
+        template_ids = list({
+            line['product_template_id'][0]
+            for line in sale_order_lines
+            if line.get('product_template_id')
+        })
+
+        # step 3.2: Get template details in batch
+        product_templates = rpc_call(
+            'product.template', 'read',
+            [template_ids],
+            {"fields": ["id", "x_studio_imax", "categ_id", "product_properties"]}
+        )
+        template_info = {pt['id']: pt for pt in product_templates}
         
         # Step 4: Gest product list as: 
         #           30: [LAVTENTAPINT] LAVORAZIONE TAPPEZZERIA INTERNA, [TENPACMOT] TENDA A PACCHETTO MOTORIZZATA
         order_to_products = defaultdict(list)
         for line in sale_order_lines:
             order_id = line['order_id'][0]
-            product_name = line['product_template_id'][1] if line['product_template_id'] else "No Product"
-            order_to_products[order_id].append(product_name)
+            
+            # check for imax toggle yes/no
+            if not line.get('product_template_id'):
+                order_to_products[order_id].append({
+                    "name": "No Product",
+                    "x_studio_imax": None,
+                })
+                continue
+
+            tmpl_id = line['product_template_id'][0]
+            tmpl_name = line['product_template_id'][1]
+            imax_value = template_info.get(tmpl_id, {}).get('x_studio_imax')
+
+            order_to_products[order_id].append({
+                "name": tmpl_name,
+                "x_studio_imax": imax_value,
+            })
+
         #print(order_to_products)
         
         # Step 5: Insert or skip commesse & products in DB
@@ -340,6 +428,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 and order.get("x_studio_costo_ok") is True
             ):
                 continue
+
             
             #check if commessa exists in the db
             ordine_name = order.get('name')
@@ -399,14 +488,30 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 
                 
                 # Add products to the new commessa
-                products = order_to_products.get(order['id'], [])                
+                products = order_to_products.get(order['id'], [])
+                code_cache = {}              
                 for prod in products:
-                    match = re.match(r'\[(.*?)\]\s*(.*)', prod)
+                    prod_name = prod["name"]
+                    prod_imax = prod["x_studio_imax"]
+                
+                    # ✅ SKIP if False / None
+                    if not prod_imax:
+                        continue
+
+                    match = re.match(r'\[(.*?)\]\s*(.*)', prod_name)
                     if match:
                         code, desc = match.groups()
                     else:
-                        code, desc = prod, ""                        
+                        code, desc = prod_name, ""   
+
+                    # ✅ find value rilievo misure etc for each product
+                    if code not in code_cache:
+                        code_cache[code] = get_props_for_code_category(code, product_templates)   
+                        
                     for col in colonne:
+                        norm_col = normalize(col)
+                        value = match_value(norm_col, code_cache[code])
+                    
                         work_item = WorkInProgressNautica(
                             commesse_id=new_commessa.id,
                             zona=code,
@@ -414,7 +519,8 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                             colonna=col,
                             completato=False,
                             completato_da_user="",
-                            data_completamento=None
+                            data_completamento=None,
+                            valore=value
                         )
                         db.add(work_item)
 

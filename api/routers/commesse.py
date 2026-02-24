@@ -533,7 +533,6 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                             completato=False,
                             completato_da_user="",
                             data_completamento=None,
-                            x_studio_imax_api=prod_imax,
                             valore=value
                         )
                         db.add(work_item)
