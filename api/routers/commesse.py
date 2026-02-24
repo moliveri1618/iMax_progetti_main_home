@@ -18,12 +18,13 @@ from schemas.commesse import ICommesseCreate, ICommesseRead, ICommesseUpdate
 from models.workInProgress import WorkInProgress
 from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
 from pathlib import Path
+import re
 log_file = Path(__file__).parent / "debug_output.txt"
 
 router = APIRouter()
 
 colonne = [
-    "Elaborazione dati",
+    "Elaborazione dati e SVILUPPO ",
     "Ordine a Fornitore",
     "Trasporto al cliente",
     "Trasporto al piano",
@@ -34,6 +35,9 @@ colonne = [
     "Rilievo Misure",
     "Collaudo Finale"
     ]
+
+def normalize(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip().lower()
 
 def get_props_for_code_category(code, product_templates):
 
@@ -58,18 +62,34 @@ def get_props_for_code_category(code, product_templates):
     # print("CATEGORY:", prod["categ_id"][0], prod["categ_id"][1])
 
     # now get right template values for that category
+    prop_map: dict[str, float] = {}
     for pt in product_templates:
         categ = pt.get("categ_id")
-
         if not categ or categ[0] != categ_id:
             continue
-
-        print("MATCHED TEMPLATE:", pt["id"], "CATEGORY:", categ)
+        #print("MATCHED TEMPLATE:", pt["id"], "CATEGORY:", categ)
 
         for p in pt.get("product_properties", []):
-            print("FOUND:", p)
+            key = normalize(p.get("string"))
+            if not key:
+                continue
+            prop_map[key] = p.get("value")
 
-    return p
+    #print(prop_map)
+    return prop_map
+
+
+def match_value(norm_col, prop_map):
+    for key, value in prop_map.items():
+        # exact match
+        if norm_col == key:
+            return value
+
+        # partial match (both directions)
+        if norm_col in key or key in norm_col:
+            return value
+
+    return None
 
 # ODOO_URL="https://mulsp-odoo-1.worthtech.cloud"
 # ODOO_URL_LOGIN="https://mulsp-odoo-1.worthtech.cloud/web/login"
@@ -379,10 +399,6 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         )
         template_info = {pt['id']: pt for pt in product_templates}
 
-        code = "FINPVCBATT"
-        get_props_for_code_category(code, product_templates)
-
-
         # Step 4: Gest product list as: 
         # i.e. 30: [LAVTENTAPINT] LAVORAZIONE TAPPEZZERIA INTERNA, [TENPACMOT] TENDA A PACCHETTO MOTORIZZATA
         order_to_products = defaultdict(list)
@@ -460,19 +476,19 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     costo=order.get('total_cost_of_lines', 0.0),
                     ricarico=order.get('total_recharge', 0.0),
                 )
-                # db.add(new_commessa)
-                # db.flush() 
-                with open(log_file, "a", encoding="utf-8") as f:
-                    f.write(
-                        "[NEW COMMESSA INPUT]\n"
-                        f"  ordine: {order['name']}\n"
-                        f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
-                        f"  nome_cliente: {partner.get('name', 'N/A')}\n"
-                        f"  email_cliente: {partner.get('email', 'N/A')}\n"
-                        f"  address_cliente: {full_address}\n"
-                        f"  responsabile: {order['user_id'][1] if order.get('user_id') else 'N/A'}\n"
-                        f"  status: {1 if order.get('invoice_status') == 'to invoice' else 0}\n"
-                )
+                db.add(new_commessa)
+                db.flush() 
+                # with open(log_file, "a", encoding="utf-8") as f:
+                #     f.write(
+                #         "[NEW COMMESSA INPUT]\n"
+                #         f"  ordine: {order['name']}\n"
+                #         f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
+                #         f"  nome_cliente: {partner.get('name', 'N/A')}\n"
+                #         f"  email_cliente: {partner.get('email', 'N/A')}\n"
+                #         f"  address_cliente: {full_address}\n"
+                #         f"  responsabile: {order['user_id'][1] if order.get('user_id') else 'N/A'}\n"
+                #         f"  status: {1 if order.get('invoice_status') == 'to invoice' else 0}\n"
+                # )
                 # print(
                 #     "[NEW COMMESSA INPUT]\n"
                 #     f"  ordine: {order['name']}\n"
@@ -485,7 +501,8 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 # )
                 
                 # Add products to the new commessa
-                products = order_to_products.get(order['id'], [])                
+                products = order_to_products.get(order['id'], [])  
+                code_cache = {}              
                 for prod in products:
                     prod_name = prod["name"]
                     prod_imax = prod["x_studio_imax"]
@@ -494,15 +511,20 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     if not prod_imax:
                         continue
 
-
                     match = re.match(r'\[(.*?)\]\s*(.*)', prod_name)  
-
-
                     if match:
                         code, desc = match.groups()
                     else:
-                        code, desc = prod_name, ""                        
+                        code, desc = prod_name, ""
+
+                    # ✅ find value rilievo misure etc for each product
+                    if code not in code_cache:
+                        code_cache[code] = get_props_for_code_category(code, product_templates)   
+
                     for col in colonne:
+                        norm_col = normalize(col)
+                        value = match_value(norm_col, code_cache[code])
+
                         work_item = WorkInProgress(
                             commesse_id=new_commessa.id,
                             zona=code,
@@ -511,22 +533,24 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                             completato=False,
                             completato_da_user="",
                             data_completamento=None,
-                            x_studio_imax_api=prod_imax
+                            x_studio_imax_api=prod_imax,
+                            valore=value
                         )
-                        # db.add(work_item)
+                        db.add(work_item)
 
-                        with open(log_file, "a", encoding="utf-8") as f:
-                            f.write(
-                                "[NEW WORK ITEM]\n"
-                                f"  commesse_id: {new_commessa.id}\n"
-                                f"  zona: {code}\n"
-                                f"  modello: {desc}\n"
-                                f"  colonna: {col}\n"
-                                f"  x_studio_imax_api: {prod_imax}\n"
-                                f"  completato: {False}\n"
-                                f"  completato_da_user: {''}\n"
-                                f"  data_completamento: {None}\n"
-                            )
+                        # with open(log_file, "a", encoding="utf-8") as f:
+                        #     f.write(
+                        #         "[NEW WORK ITEM]\n"
+                        #         f"  commesse_id: {new_commessa.id}\n"
+                        #         f"  zona: {code}\n"
+                        #         f"  modello: {desc}\n"
+                        #         f"  colonna: {col}\n"
+                        #         f"  x_studio_imax_api: {prod_imax}\n"
+                        #         f"  completato: {False}\n"
+                        #         f"  completato_da_user: {''}\n"
+                        #         f"  data_completamento: {None}\n"
+                        #         f"  valore: {value}\n"
+                        #     )
                         # print(
                         #     "[NEW WORK ITEM]\n"
                         #     f"  commesse_id: {new_commessa.id}\n"
