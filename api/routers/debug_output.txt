@@ -1,0 +1,580 @@
+[NEW COMMESSA INPUT]
+  ordine: S00527
+  data: 2026-02-02
+  nome_cliente: Cliente Willi Willi
+  email_cliente: massimoicloud@icloud.com
+  address_cliente: Sarzana, 19038, Italy
+  responsabile: Massimo Mulattieri
+  status: 1
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Elaborazione dati
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Ordine a Fornitore
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al cliente
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al piano
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Smontaggio vecchio
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Taglio telai
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Posa serramento
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rivestimento Interno
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rilievo Misure
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Collaudo Finale
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Elaborazione dati
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Ordine a Fornitore
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al cliente
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al piano
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Smontaggio vecchio
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Taglio telai
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Posa serramento
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rivestimento Interno
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rilievo Misure
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Collaudo Finale
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Elaborazione dati
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Ordine a Fornitore
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al cliente
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al piano
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Smontaggio vecchio
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Taglio telai
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Posa serramento
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rivestimento Interno
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rilievo Misure
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Collaudo Finale
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW COMMESSA INPUT]
+  ordine: S00065
+  data: 2026-01-21
+  nome_cliente: Cuneo Luca Domenico
+  email_cliente: luca.cuneo@gigroup.com
+  address_cliente: Via Dei Missaglia, 8, Milano, 20100, Italy
+  responsabile: Francesco Lorieri
+  status: 1
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Elaborazione dati
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Ordine a Fornitore
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al cliente
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al piano
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Smontaggio vecchio
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Taglio telai
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Posa serramento
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rivestimento Interno
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rilievo Misure
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Collaudo Finale
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW COMMESSA INPUT]
+  ordine: S00079
+  data: 2026-01-15
+  nome_cliente: De Rinaldis Matteo
+  email_cliente: m.derinaldis2@gmail.com
+  address_cliente: Via Paganino da Sarzana, 82, Sarzana, 19038, Italy
+  responsabile: Alberto Moscatelli
+  status: 1
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Elaborazione dati
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Ordine a Fornitore
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al cliente
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Trasporto al piano
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Smontaggio vecchio
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Taglio telai
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Posa serramento
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rivestimento Interno
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Rilievo Misure
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: FINPVCBATT
+  modello: Finestra Finstral a battente ad alto isolamento termico e acustico con terza guarnizione di serie, guarnizioni coestruse e guarnizione pinna centrale, coestruse saldate ad alta tenuta perché prive di giunzioni, montaggio certificato con nastri autoespandenti, nel caso di montaggio Antirumore  la finestra è dotata di quarta guarnizione
+  colonna: Collaudo Finale
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW COMMESSA INPUT]
+  ordine: S00077
+  data: 2026-01-15
+  nome_cliente: Cullino Laura
+  email_cliente: diegobx80@gmail.com
+  address_cliente: Via Mireno Galantini, 22, La Spezia, 19123, Italy
+  responsabile: Francesco Lorieri
+  status: 0
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Elaborazione dati
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Ordine a Fornitore
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Trasporto al cliente
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Trasporto al piano
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Smontaggio vecchio
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Taglio telai
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Posa serramento
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Rivestimento Interno
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Rilievo Misure
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW WORK ITEM]
+  commesse_id: None
+  zona: CONGEN
+  modello: CONTROTELAIO ALLUMINIO VERNICIATO PER PORTAFINESTRA
+  colonna: Collaudo Finale
+  x_studio_imax_api: True
+  completato: False
+  completato_da_user: 
+  data_completamento: None
+[NEW COMMESSA INPUT]
+  ordine: S00407
+  data: 2025-05-19
+  nome_cliente: Mattei Luigina
+  email_cliente: luiginamattei@icloud.com
+  address_cliente: Via San Giuseppe Vecchio 23, Massa, 54100, Italy
+  responsabile: Francesco Rispoli
+  status: 0

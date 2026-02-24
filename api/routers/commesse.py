@@ -17,6 +17,8 @@ from models.users import iUsers
 from schemas.commesse import ICommesseCreate, ICommesseRead, ICommesseUpdate
 from models.workInProgress import WorkInProgress
 from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
+from pathlib import Path
+log_file = Path(__file__).parent / "debug_output.txt"
 
 router = APIRouter()
 
@@ -244,7 +246,8 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
 
 @router.get("/odoo/v2")
 def get_commesse_from_odoo(db: Session = Depends(get_db)):
-    
+    log_file.write_text("")  # ✅ clears file (rewrite)
+
     try:
         
         # Step 1: Search for sale order IDs
@@ -324,14 +327,55 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             {'fields': ['order_id', 'product_template_id']}
         )
         #print(sale_order_lines)
-        
+
+        # ✅ Step 3.1: Read product.template x_studio_imax
+        template_ids = list({
+            line['product_template_id'][0]
+            for line in sale_order_lines
+            if line.get('product_template_id')
+        })
+
+        # step 3.2: Get template details in batch
+        product_templates = rpc_call(
+            'product.template', 'read',
+            [template_ids],
+            {"fields": ["id", "x_studio_imax", "categ_id", "product_properties"]}
+        )
+        template_info = {pt['id']: pt for pt in product_templates}
+        for pt in product_templates:
+            props = pt.get("product_properties", [])
+
+            # Print category
+            categ = pt.get("categ_id")
+            if categ:
+                print("CATEGORY ID:", categ[0])
+                print("CATEGORY NAME:", categ[1])
+
+            for p in props:
+                print("FOUND:", p)
+
         # Step 4: Gest product list as: 
         # i.e. 30: [LAVTENTAPINT] LAVORAZIONE TAPPEZZERIA INTERNA, [TENPACMOT] TENDA A PACCHETTO MOTORIZZATA
         order_to_products = defaultdict(list)
         for line in sale_order_lines:
             order_id = line['order_id'][0]
-            product_name = line['product_template_id'][1] if line['product_template_id'] else "No Product"
-            order_to_products[order_id].append(product_name)
+
+            # check for imax toggle yes/no
+            if not line.get('product_template_id'):
+                order_to_products[order_id].append({
+                    "name": "No Product",
+                    "x_studio_imax": None,
+                })
+                continue
+
+            tmpl_id = line['product_template_id'][0]
+            tmpl_name = line['product_template_id'][1]
+            imax_value = template_info.get(tmpl_id, {}).get('x_studio_imax')
+
+            order_to_products[order_id].append({
+                "name": tmpl_name,
+                "x_studio_imax": imax_value,
+            })
         #print(order_to_products)
         
         # Step 5: Insert or skip commesse & products in DB
@@ -387,8 +431,19 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     costo=order.get('total_cost_of_lines', 0.0),
                     ricarico=order.get('total_recharge', 0.0),
                 )
-                db.add(new_commessa)
-                db.flush() 
+                # db.add(new_commessa)
+                # db.flush() 
+                with open(log_file, "a", encoding="utf-8") as f:
+                    f.write(
+                        "[NEW COMMESSA INPUT]\n"
+                        f"  ordine: {order['name']}\n"
+                        f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
+                        f"  nome_cliente: {partner.get('name', 'N/A')}\n"
+                        f"  email_cliente: {partner.get('email', 'N/A')}\n"
+                        f"  address_cliente: {full_address}\n"
+                        f"  responsabile: {order['user_id'][1] if order.get('user_id') else 'N/A'}\n"
+                        f"  status: {1 if order.get('invoice_status') == 'to invoice' else 0}\n"
+                )
                 # print(
                 #     "[NEW COMMESSA INPUT]\n"
                 #     f"  ordine: {order['name']}\n"
@@ -403,11 +458,21 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 # Add products to the new commessa
                 products = order_to_products.get(order['id'], [])                
                 for prod in products:
-                    match = re.match(r'\[(.*?)\]\s*(.*)', prod)
+                    prod_name = prod["name"]
+                    prod_imax = prod["x_studio_imax"]
+
+                    # ✅ SKIP if False / None
+                    if not prod_imax:
+                        continue
+
+
+                    match = re.match(r'\[(.*?)\]\s*(.*)', prod_name)  
+
+
                     if match:
                         code, desc = match.groups()
                     else:
-                        code, desc = prod, ""                        
+                        code, desc = prod_name, ""                        
                     for col in colonne:
                         work_item = WorkInProgress(
                             commesse_id=new_commessa.id,
@@ -416,16 +481,30 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                             colonna=col,
                             completato=False,
                             completato_da_user="",
-                            data_completamento=None
+                            data_completamento=None,
+                            x_studio_imax_api=prod_imax
                         )
-                        db.add(work_item)
+                        # db.add(work_item)
 
+                        with open(log_file, "a", encoding="utf-8") as f:
+                            f.write(
+                                "[NEW WORK ITEM]\n"
+                                f"  commesse_id: {new_commessa.id}\n"
+                                f"  zona: {code}\n"
+                                f"  modello: {desc}\n"
+                                f"  colonna: {col}\n"
+                                f"  x_studio_imax_api: {prod_imax}\n"
+                                f"  completato: {False}\n"
+                                f"  completato_da_user: {''}\n"
+                                f"  data_completamento: {None}\n"
+                            )
                         # print(
                         #     "[NEW WORK ITEM]\n"
-                        #     # f"  commesse_id: {new_commessa.id}\n"
+                        #     f"  commesse_id: {new_commessa.id}\n"
                         #     f"  zona: {code}\n"
                         #     f"  modello: {desc}\n"
                         #     f"  colonna: {col}\n"
+                        #     f"  x_studio_imax_api: {prod_imax}\n"
                         #     f"  completato: {False}\n"
                         #     f"  completato_da_user: {''}\n"
                         #     f"  data_completamento: {None}\n"
