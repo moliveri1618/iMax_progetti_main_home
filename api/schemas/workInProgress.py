@@ -13,6 +13,7 @@ class IWorkInProgressBase(BaseModel):
     completato_da_user: str
     data_completamento: Optional[date] = None
     assigned_users_ids: Optional[List[int]] = None
+    valore: Optional[float] = None  
 
 
 class IWorkInProgressCreate(IWorkInProgressBase):
@@ -29,6 +30,7 @@ class IWorkInProgressRead(SQLModel):
     completato_da_user: str
     data_completamento: Optional[date]
     assigned_users_ids: Optional[List[int]] = None
+    valore: Optional[float] = None  
     percentuale_completamento_collaudo_finale: Optional[float] = None
 
     class Config:
@@ -44,6 +46,7 @@ class IWorkInProgressUpdate(BaseModel):
     completato_da_user: Optional[str] = None
     data_completamento: Optional[date] = None
     assigned_users_ids: Optional[List[int]] = None
+    valore: Optional[float] = None
 
 class WorkInProgressGrouped(SQLModel):
     zona: str

@@ -17,3 +17,4 @@ class WorkInProgress(SQLModel, table=True):
         default=None,
         sa_column=Column(ARRAY(Integer), nullable=True),
     )
+    valore: Optional[float] = Field(default=None)
