@@ -77,7 +77,10 @@ def get_props_for_code_category(code, product_templates):
             key = normalize(p.get("string"))
             if not key:
                 continue
-            prop_map[key] = p.get("value")
+            val = p.get("value")
+            if val is False or val is None:
+                val = 0.0
+            prop_map[key] = float(val)
 
     #print(prop_map)
     return prop_map
