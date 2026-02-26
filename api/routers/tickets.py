@@ -185,18 +185,17 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
         print('incoming_refs', incoming_refs)
         print('existing refs', existing_refs)
 
-        inserted = 0
+        rows = []
         for t in home:
-            ticket_ref = str(t.get("name") or "")
+            ticket_ref = str(t.get("number") or "")
             if not ticket_ref:
                 continue
 
             if ticket_ref in existing_refs:
-                skipped += 1
                 continue
 
-            row = HelpdeskTicket(  
-                ticket_ref=str(t.get("number") or ""),
+            rows.append(HelpdeskTicket(
+                ticket_ref=ticket_ref,
                 name=(t.get("name") or ""),
                 priority=str(t.get("priority") or ""),
                 customer=(t.get("customer") or ""),
@@ -204,19 +203,19 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
                 stage=(t["stage_id"][1] if t.get("stage_id") else ""),
                 team="N/A",
                 created=(t.get("create_date") or ""),
-                type=('home'),                
+                type='home',
                 completato=False,
-            )
-            db.add(row)
-            inserted += 1
+            ))
 
-        db.commit()
-        return {"inserted": inserted}
-        
+        if rows:
+            db.bulk_save_objects(rows)
+            db.commit()
+            db.commit()
+        return {"inserted": len(rows)} 
+           
     except Exception as e:
         return JSONResponse(
             content={"error": str(e)},
             status_code=500
         )
         
-    return 1

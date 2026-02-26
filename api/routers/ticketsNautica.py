@@ -6,6 +6,7 @@ from xmlrpc import client
 from fastapi.responses import JSONResponse
 from fastapi import Query
 import httpx
+import pprint
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.ticketsNautica import HelpdeskTicketNautica
@@ -107,157 +108,114 @@ def update_ticket(ticket_id: int, payload: TicketNauticaUpdate, db: Session = De
 
 
 
-
-# @router.get("/odoo")
-# def fetch_helpdesk_tickets(db: Session = Depends(get_db)):
-
-#     # Connect to the common service and authenticate
-#     models = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/object')
-#     common = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/common')
-#     user_id = common.authenticate(DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO, {})
-
-#     try:
-#         # 1. Search for tickets (no domain = fetch all)
-#         ticket_ids = models.execute_kw(
-#             DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-#             'helpdesk.ticket', 'search',
-#             [[]]
-#         )
-
-#         # 2. Read ticket data
-#         tickets = models.execute_kw(
-#             DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-#             'helpdesk.ticket', 'read',
-#             [ticket_ids],
-#             {'fields': [
-#                 'ticket_ref',
-#                 'name',
-#                 'priority',
-#                 'partner_id',
-#                 'user_id',
-#                 'stage_id',
-#                 'team_id',
-#                 'create_date',
-#             ]}
-#         )
-
-#         # 3. Check if tickets already exist in the database and insert new ones
-#         count = 0
-#         for t in tickets:
-#             team_name = t['team_id'][1].lower() if t.get('team_id') else ''
-#             ticket_data = {
-#                 'ticket_ref': t.get('ticket_ref', 'N/A'),
-#                 'name': t.get('name', 'N/A'),
-#                 'priority': t.get('priority', 'N/A'),
-#                 'customer': t['partner_id'][1] if t.get('partner_id') else 'N/A',
-#                 'assigned_to': t['user_id'][1] if t.get('user_id') else 'Unassigned',
-#                 'stage': t['stage_id'][1] if t.get('stage_id') else 'N/A',
-#                 'team': t['team_id'][1] if t.get('team_id') else 'N/A',
-#                 'created': t.get('create_date', 'N/A'),
-#                 'type': 'nautica' if "nautica" in team_name else 'home'
-#             }
-
-#             # Check if ticket already exists with the same ticket_ref and type
-#             exists = db.exec(
-#                 select(HelpdeskTicket).where(
-#                     HelpdeskTicket.ticket_ref == ticket_data['ticket_ref'],
-#                     HelpdeskTicket.type == ticket_data['type']
-#                 )
-#             ).first()
-            
-#             # Create a HelpdeskTicket instance and add to DB
-#             if not exists:
-#                 new_ticket = HelpdeskTicket(
-#                     ticket_ref=ticket_data['ticket_ref'],
-#                     name=ticket_data['name'],
-#                     priority=ticket_data['priority'],
-#                     customer=ticket_data['customer'],
-#                     assigned_to=ticket_data['assigned_to'],
-#                     stage=ticket_data['stage'],
-#                     team=ticket_data['team'],
-#                     created=ticket_data['created'],
-#                     type=ticket_data['type']
-#                 )
-#                 db.add(new_ticket)
-#                 count += 1
-
-#         db.commit()
-#         return JSONResponse(
-#             content={
-#                 "message": "Sync complete",
-#                 "inserted": count
-#             },
-#             status_code=200
-#         )
-        
-#     except Exception as e:
-#         return JSONResponse(
-#             content={"error": str(e)},
-#             status_code=500
-#         )
-
-
-
 @router.get("/odoo/v2")
 def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
     
     try:
-        
-        # 1. Search for tickets (no domain = fetch all)
-        ticket_ids = rpc_call(
-            "ticket.helpdesk",
-            "search",
-            [[]]
-        )
-        print(ticket_ids)
-        
-        # 2. Read ticket data
-        tickets = rpc_call(
-            "ticket.helpdesk",
-            "read",
-            [ticket_ids],
-            {
-                "fields": [
-                    "name",         # ticket_ref & name
-                    "priority",     # priority
-                    "customer_id",  # customer
-                    "subject",      #
-                    "stage_id",     # stage
-                    "tags_ids",     # type
-                    "create_date"   # created
-                ]
-            }
-        )
-        print(tickets)
 
-        inserted = 0
+        tickets = rpc_call(
+            "helpdesk.ticket",
+            "search_read",
+            [[
+                ("active", "=", True),
+                ("team_id", "in", [5, 6]),
+                ("stage_id.fold", "=", False),
+            ]],
+            {"fields": [
+                "id", 
+                "number", 
+                "name", 
+                "priority", 
+                "stage_id", 
+                "tag_ids", 
+                "create_date", 
+                "team_id",
+                "partner_id",
+                "partner_email",
+                "user_id"
+            ]}
+        )
+
+        # 1) find user email
+        user_ids = sorted({t["user_id"][0] for t in tickets if t.get("user_id")})
+        if user_ids:
+            users = rpc_call(
+                "res.users",
+                "read",
+                [user_ids],
+                {"fields": ["id", "name", "login", "partner_id"]}
+            )
+            user_by_id = {u["id"]: u for u in users}
+        print(user_ids)
+        print(user_by_id)
+
+        # create tickets
+        nautica, home = [], []
         for t in tickets:
-            row = HelpdeskTicketNautica(  
-                ticket_ref=str(t.get("name") or ""),
+
+            # customer
+            name = t["partner_id"][1] if t.get("partner_id") else "Unknown"
+            email = t.get("partner_email") or "N/A"
+            t["customer"] = f"{name}, {email}"
+
+            # assigned to
+            user_id = t.get("user_id")
+            if user_id:
+                u = user_by_id.get(user_id[0], {})
+                t["assigned_to"] = u.get("name") + ", " + u.get("login")
+
+            # split nautica & home
+            tid = t["team_id"][0] if t.get("team_id") else None
+            if tid == 5: 
+                nautica.append(t)
+            elif tid == 6:
+                home.append(t)
+
+        print("NAUTICA:", len(nautica))
+        pprint.pprint(nautica)
+        print("\nHOME:", len(home))
+        pprint.pprint(home)
+
+        # find existing refs 
+        incoming_refs = [str(t.get("number") or "") for t in home]
+        existing_refs = set()
+        if incoming_refs:
+            stmt = select(HelpdeskTicketNautica.ticket_ref).where(HelpdeskTicketNautica.ticket_ref.in_(incoming_refs))
+            existing_refs = set(db.exec(stmt).all())
+        print('incoming_refs', incoming_refs)
+        print('existing refs', existing_refs)
+
+        rows = []
+        for t in home:
+            ticket_ref = str(t.get("number") or "")
+            if not ticket_ref:
+                continue
+
+            if ticket_ref in existing_refs:
+                continue
+
+            rows.append(HelpdeskTicketNautica(
+                ticket_ref=ticket_ref,
                 name=(t.get("name") or ""),
                 priority=str(t.get("priority") or ""),
-                customer=(t["customer_id"][1] if t.get("customer_id") else ""),
-                assigned_to="Unassigned",
+                customer=(t.get("customer") or ""),
+                assigned_to=(t.get("assigned_to") or ""),
                 stage=(t["stage_id"][1] if t.get("stage_id") else ""),
                 team="N/A",
                 created=(t.get("create_date") or ""),
-                type=(
-                    "nautica" if 2 in (t.get("tags_ids") or [])
-                    else "home" if 1 in (t.get("tags_ids") or [])
-                    else ""
-                ),                
+                type='home',
                 completato=False,
-            )
-            db.add(row)
-            inserted += 1
+            ))
 
-        db.commit()
-        return {"inserted": inserted}
-        
+        if rows:
+            db.bulk_save_objects(rows)
+            db.commit()
+            db.commit()
+        return {"inserted": len(rows)} 
+           
     except Exception as e:
         return JSONResponse(
             content={"error": str(e)},
             status_code=500
         )
         
-    return 1
