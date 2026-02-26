@@ -174,7 +174,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
         
         comp = u.get("company_id") or [None, None]
         email = (u.get("email") or "").strip()
-        role = UserRole.ADMIN if email == "mulsp1@worthtech.cloud" else UserRole.USER
+        role = UserRole.ADMIN if email == "massimo@mulattieri.it" else UserRole.USER
 
         entity = iUsers(
             odoo_id=odoo_user_id,
