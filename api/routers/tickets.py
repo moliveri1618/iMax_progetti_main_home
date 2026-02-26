@@ -146,8 +146,8 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
                 {"fields": ["id", "name", "login", "partner_id"]}
             )
             user_by_id = {u["id"]: u for u in users}
-        print(user_ids)
-        print(user_by_id)
+        # print(user_ids)
+        # print(user_by_id)
 
         # create tickets
         nautica, home = [], []
@@ -173,8 +173,8 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
 
         # print("NAUTICA:", len(nautica))
         # pprint.pprint(nautica)
-        print("\nHOME:", len(home))
-        pprint.pprint(home)
+        # print("\nHOME:", len(home))
+        # pprint.pprint(home)
 
         # find existing refs 
         incoming_refs = [str(t.get("number") or "") for t in home]
@@ -182,8 +182,8 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
         if incoming_refs:
             stmt = select(HelpdeskTicket.ticket_ref).where(HelpdeskTicket.ticket_ref.in_(incoming_refs))
             existing_refs = set(db.exec(stmt).all())
-        print('incoming_refs', incoming_refs)
-        print('existing refs', existing_refs)
+        # print('incoming_refs', incoming_refs)
+        # print('existing refs', existing_refs)
 
         rows = []
         for t in home:
