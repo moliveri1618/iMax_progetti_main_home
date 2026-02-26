@@ -19,7 +19,7 @@ from models.workInProgress import WorkInProgress
 from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
 from pathlib import Path
 import re
-log_file = Path(__file__).parent / "debug_output.txt"
+# log_file = Path(__file__).parent / "debug_output.txt"
 
 router = APIRouter()
 
@@ -305,7 +305,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
 
 @router.get("/odoo/v2")
 def get_commesse_from_odoo(db: Session = Depends(get_db)):
-    log_file.write_text("")  # ✅ clears file (rewrite)
+    # log_file.write_text("")  # ✅ clears file (rewrite)
 
     try:
         
