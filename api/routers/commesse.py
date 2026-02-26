@@ -81,7 +81,6 @@ def get_props_for_code_category(code, product_templates):
     #print(prop_map)
     return prop_map
 
-
 def match_value(norm_col, prop_map):
     for key, value in prop_map.items():
         # exact match
@@ -151,157 +150,6 @@ def read_commesse(db: Session = Depends(get_db)):
     commesse = db.exec(select(iCommesse)).all()
     return commesse
 
-@router.get("/odoo")
-def get_commesse_from_odoo(db: Session = Depends(get_db)):
-        
-    # Connect to the common service and authenticate
-    models = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/object')
-    common = client.ServerProxy(f'{SERVER_URL_ODOO}/xmlrpc/2/common')
-    user_id = common.authenticate(DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO, {})
-    
-    try:
-        # Step 1: Search for sale order IDs
-        sale_order_ids = models.execute_kw(
-            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-            'sale.order', 'search',
-            [[['state', '!=', 'cancel']]],
-        )
-        print(sale_order_ids)
-
-        if not sale_order_ids:
-            return JSONResponse(content={"message": "No sales orders found."}, status_code=404)
-
-
-        # Step 2: Read sale order data
-        sale_orders = models.execute_kw(
-            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-            'sale.order', 'read',
-            [sale_order_ids],
-            {'fields': [
-                'name',            
-                'date_order',      
-                'partner_id',      
-                'user_id',         
-                'activity_ids',    
-                'total_cost_of_lines',
-                'total_recharge',
-                'amount_total',
-                'invoice_status',
-            ]}
-        )
-        
-        # Step 2.1: Read partners (client) data
-        partner_ids = list({order['partner_id'][0] for order in sale_orders if order.get('partner_id')})
-        partners = models.execute_kw(
-            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-            'res.partner', 'read',
-            [partner_ids],
-            {'fields': ['id', 'name', 'email', 'street', 'city', 'zip', 'country_id']}
-        )
-        partner_info = {p['id']: p for p in partners}
-
-        # Step 3: Fetch related sale order lines
-        sale_order_line_ids = models.execute_kw(
-            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-            'sale.order.line', 'search',
-            [[['order_id', 'in', sale_order_ids]]]
-        )
-
-        sale_order_lines = models.execute_kw(
-            DB_NAME_ODOO, user_id, PASSWORD_ODOO,
-            'sale.order.line', 'read',
-            [sale_order_line_ids],
-            {'fields': ['order_id', 'product_template_id']}
-        )
-
-        # Step 4: Group products by order
-        order_to_products = defaultdict(list)
-        for line in sale_order_lines:
-            order_id = line['order_id'][0]
-            product_name = line['product_template_id'][1] if line['product_template_id'] else "No Product"
-            order_to_products[order_id].append(product_name)
-
-        # Step 5: Display everything
-        inserted = 0
-        for order in sale_orders:
-            
-            #check if ordine exists in the db
-            ordine_name = order.get('name')
-            if not ordine_name:
-                continue
-            
-            statement = select(iCommesse).where(iCommesse.ordine == ordine_name)
-            exists = db.exec(statement).first()
-            if exists:
-                continue 
-            
-            try:
-                
-                # Partner info
-                partner_id = order.get('partner_id')[0] if order.get('partner_id') else None
-                partner = partner_info.get(partner_id, {})
-                address_parts = [
-                    partner.get('street', ''),
-                    partner.get('city', ''),
-                    partner.get('zip', ''),
-                    partner.get('country_id', ['', ''])[1] if partner.get('country_id') else ''
-                ]
-                full_address = ', '.join(part for part in address_parts if part).strip(', ')
-
-                #create new commessa
-                new_commessa = iCommesse(
-                    ordine=order['name'],  # Extract numbers only
-                    data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
-                    nome_cliente = partner.get('name', 'N/A'),
-                    email_cliente=partner.get('email', 'N/A'),
-                    address_cliente=full_address,
-                    responsabile=order['user_id'][1] if order['user_id'] else "N/A",
-                    status=1 if order['invoice_status'] == 'to invoice' else 0
-                )
-                
-                db.add(new_commessa)
-                db.flush() 
-                
-                # Add products to the new commessa
-                products = order_to_products.get(order['id'], [])
-                # print("  Products:")
-                
-                for prod in products:
-                    match = re.match(r'\[(.*?)\]\s*(.*)', prod)
-                    if match:
-                        code, desc = match.groups()
-                        # print(f"    - {code} | {desc}")
-                    else:
-                        code, desc = prod, ""
-                        # print(f"    - {prod}")
-                        
-                    for col in colonne:
-                        print('hrer')
-                        work_item = WorkInProgress(
-                            commesse_id=new_commessa.id,
-                            zona=code,
-                            modello=desc,
-                            colonna=col,
-                            completato=False,
-                            completato_da_user="",
-                            data_completamento=None
-                        )
-                        db.add(work_item)
-                
-                db.commit()
-                inserted += 1
-
-            except Exception as inner_e:
-                db.rollback()
-                print(f"Skipping order {order.get('name')} due to error: {inner_e}")
-                
-                    
-        return JSONResponse(content={"message": "Sync complete", "inserted": inserted}, status_code=200)
-
-    except Exception as e:
-        print(f"Error fetching sales orders: {e}")
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
 
 @router.get("/odoo/v2")
 def get_commesse_from_odoo(db: Session = Depends(get_db)):
@@ -309,40 +157,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
 
     try:
         
-        # # Step 1: Search for sale order IDs
-        # sale_order_ids = rpc_call(
-        #     "sale.order", "search",
-        #     [[
-        #         ["state", "!=", "cancel"],
-        #         ["x_studio_imax_api", "=", "imax_home"],
-        #         ["x_studio_costo_ok", "=", True],
-        #     ]]
-        # )
-        # if not sale_order_ids:
-        #     return JSONResponse(content={"message": "No sales orders found."}, status_code=404)
-        # #print(sale_order_ids)
-        
-        # # Step 2: Read sale order data (RPC)
-        # sale_orders = rpc_call(
-        #     'sale.order', 'read',
-        #     [sale_order_ids],
-        #     {'fields': [
-        #         'name',
-        #         'date_order',
-        #         'partner_id',
-        #         'user_id',
-        #         'activity_ids',
-        #         'amount_total',
-        #         'invoice_status',
-        #         'x_studio_imax_api',
-        #         'x_studio_costo_ok',
-        #         'x_studio_pagato_ok',
-        #         'total_cost_of_lines',
-        #         'total_recharge'
-        #     ]}
-        # )
-        # pprint.pprint(sale_orders)
-
+        # Get all projects
         sale_orders = rpc_call(
             "sale.order", "search_read",
             [[
@@ -375,38 +190,29 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 sale_order_ids.append(o["id"])
             if o.get("name"):
                 odoo_ordini.add(o["name"])
+        print("Sale orders:")
         pprint.pprint(sale_orders)
+        print("Extracted sale order IDs:")
         pprint.pprint(sale_order_ids)
+        print("Odoo ordini:")
         pprint.pprint(odoo_ordini)
 
-        # # get users emails 
-        # user_ids = list({
-        #     order['user_id'][0]
-        #     for order in sale_orders
-        #     if order.get('user_id')
-        # })
 
-        # users = rpc_call(
-        #     'res.users',
-        #     'read',
-        #     [user_ids],
-        #     {'fields': ['id', 'name', 'login', 'email']}
-        # )
-        # user_info = {u['id']: u for u in users}
 
-        # 2) Batch fetch users (1 RPC total)
+
+        # Get fetch users 
         user_ids = list({o["user_id"][0] for o in sale_orders if o.get("user_id")})
-
         users = rpc_call(
             "res.users", "read",
             [user_ids],
             {"fields": ["id", "name", "login", "email"]}
         )
         user_info = {u["id"]: u for u in users}
+        print("Users info:")
         pprint.pprint(user_info)
 
         
-        # Step 2.1: Read partners (client) data (RPC)
+        # Get clients
         partner_ids = list({order['partner_id'][0] for order in sale_orders if order.get('partner_id')})
         partners = rpc_call(
             'res.partner', 'read',
@@ -422,20 +228,11 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             ]}
         )
         partner_info = {p['id']: p for p in partners} # convert to dict, faster
-        print(partners)
-        print(partner_info)    
-        
-        # # Step 3: Fetch related sale order lines (RPC)
-        # sale_order_line_ids = rpc_call(
-        #     'sale.order.line', 'search',
-        #     [[['order_id', 'in', sale_order_ids]]]
-        # )
-        # sale_order_lines = rpc_call(
-        #     'sale.order.line', 'read',
-        #     [sale_order_line_ids],
-        #     {'fields': ['order_id', 'product_template_id']}
-        # )
-        # #print(sale_order_lines)
+        print('Partners:')
+        pprint.pprint(partners)
+        print('Partner info:')
+        pprint.pprint(partner_info)    
+
 
         sale_order_products = rpc_call(
             "sale.order.line", "search_read",
@@ -446,68 +243,57 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             ]],
             {"fields": ["order_id", "product_template_id"]}
         )
-        order_to_products_mapping = defaultdict(list)
+        order_to_products_mapping = defaultdict(dict)
         for line in sale_order_products:
             order_id = line["order_id"][0]
             tmpl_id, tmpl_name = line["product_template_id"]
-
-            order_to_products_mapping[order_id].append({
-                "tmpl_id": tmpl_id,
-                "name": tmpl_name,
-            })
+            order_to_products_mapping[order_id][tmpl_id] = tmpl_name
+        print("Sale order products:")
         pprint.pprint(sale_order_products)
+        print("Order to products mapping:")
         pprint.pprint(order_to_products_mapping)
 
-        # # ✅ Step 3.1: Read product.template x_studio_imax
-        # template_ids = list({
-        #     line['product_template_id'][0]
-        #     for line in sale_order_lines
-        #     if line.get('product_template_id')
-        # })
+        CODE_RE = re.compile(r"\[(.*?)\]\s*(.*)")
+        COLS_NORM = [(col, normalize(col)) for col in colonne]
+        print("Columns to match:", CODE_RE)
+        print("Normalized columns:", COLS_NORM)
 
-        # # step 3.2: Get template details in batch
-        # product_templates = rpc_call(
-        #     'product.template', 'read',
-        #     [template_ids],
-        #     {"fields": ["id", "x_studio_imax", "categ_id", "product_properties"]}
-        # )
-        # template_info = {pt['id']: pt for pt in product_templates}
-
-        # # Step 4: Gest product list as: 
-        # # i.e. 30: [LAVTENTAPINT] LAVORAZIONE TAPPEZZERIA INTERNA, [TENPACMOT] TENDA A PACCHETTO MOTORIZZATA
-        # order_to_products = defaultdict(list)
-        # for line in sale_order_lines:
-        #     order_id = line['order_id'][0]
-
-        #     # check for imax toggle yes/no
-        #     if not line.get('product_template_id'):
-        #         order_to_products[order_id].append({
-        #             "name": "No Product",
-        #             "x_studio_imax": None,
-        #         })
-        #         continue
-
-        #     tmpl_id = line['product_template_id'][0]
-        #     tmpl_name = line['product_template_id'][1]
-        #     imax_value = template_info.get(tmpl_id, {}).get('x_studio_imax')
-
-        #     order_to_products[order_id].append({
-        #         "name": tmpl_name,
-        #         "x_studio_imax": imax_value,
-        #     })
-        # #print(order_to_products)
+        template_ids = list({
+            tmpl_id
+            for products_by_tmpl in order_to_products_mapping.values()
+            for tmpl_id in products_by_tmpl.keys()
+        })
+        templates = rpc_call(
+            "product.template", "read",
+            [template_ids],
+            {"fields": ["id", "product_properties"]}
+        )
+        template_props_map: dict[int, dict[str, float]] = {}
+        for t in templates:
+            prop_map: dict[str, float] = {}
+            for p in t.get("product_properties", []):
+                k = normalize(p.get("string"))
+                if not k:
+                    continue
+                v = p.get("value")
+                if v is False or v is None:
+                    v = 0.0
+                prop_map[k] = float(v)
+            template_props_map[t["id"]] = prop_map
+        print("Template properties map:")
+        pprint.pprint(template_props_map)
 
         # Fetch existing ordini in ONE query
         existing = db.exec(
             select(iCommesse.ordine).where(iCommesse.ordine.in_(odoo_ordini))
         ).all()
         existing_set = set(existing)
+        # print('existing ordini in DB:', existing_set)
 
         # Insert or skip commesse & products in DB
         inserted = 0
         for order in sale_orders:
             ordine_name = order.get("name")
-            
             if ordine_name in existing_set:
                 continue
 
@@ -541,8 +327,66 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     costo=order.get('total_cost_of_lines', 0.0),
                     ricarico=order.get('total_recharge', 0.0),
                 )
+                # with open(log_file, "a", encoding="utf-8") as f:
+                #     f.write(
+                #         "[NEW COMMESSA INPUT]\n"
+                #         f"  ordine: {order['name']}\n"
+                #         f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
+                #         f"  nome_cliente: {partner.get('name', 'N/A')}\n"
+                #         f"  email_cliente: {partner.get('email', 'N/A')}\n"
+                #         f"  address_cliente: {address_cliente}\n"
+                #         f"  responsabile: {responsabile_value}\n"
+                #         f"  status: {0}\n"
+                # )
                 db.add(new_commessa)
                 db.flush() 
+
+                # add products to the new commessa
+                products = order_to_products_mapping.get(order["id"], []) # get product related to the order
+                work_items_to_add = []
+
+                for prod in products:
+                    tmpl_id = prod["tmpl_id"] # get product id
+                    tmpl_name = prod["name"]  # get product name
+
+                    # extract code: [LAVTENTAPINT], desc: LAVORAZIONE TAPPEZZERIA INTERNA
+                    m = CODE_RE.match(tmpl_name)
+                    if m:
+                        code, desc = m.groups() 
+                    else:
+                        code, desc = tmpl_name, ""
+
+                    props = template_props_map.get(tmpl_id, {}) # get activities values for that product template
+                    for col, norm_col in COLS_NORM:
+                        value = match_value(norm_col, props) # match activities from odoo with colonne.to_lower()
+
+                        work_items_to_add.append(
+                            WorkInProgress(
+                                commesse_id=new_commessa.id,
+                                zona=code,
+                                modello=desc,
+                                colonna=col,
+                                completato=False,
+                                completato_da_user="",
+                                data_completamento=None,
+                                valore=value,
+                            )
+                        )
+                        # with open(log_file, "a", encoding="utf-8") as f:
+                        #     f.write(
+                        #         "[NEW PRODUCT]\n"
+                        #         f"  commesse_id: {new_commessa.id}\n"
+                        #         f"  zona: {code}\n"
+                        #         f"  modello: {desc}\n"
+                        #         f"  colonna: {col}\n"
+                        #         f"  x_studio_imax_api: {prod.get('x_studio_imax')}\n"
+                        #         f"  completato: {False}\n"
+                        #         f"  completato_da_user: {''}\n"
+                        #         f"  data_completamento: {None}\n"
+                        #         f"  valore: {value}\n"
+                        # )
+
+                db.add_all(work_items_to_add)
 
                 inserted += 1
                 existing_set.add(ordine_name)
@@ -553,162 +397,11 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
 
         db.commit()
 
-        return inserted
-        
-        # # Step 5: Insert or skip commesse & products in DB
-        # inserted = 0
-        # for order in sale_orders:
-
-        #     # ✅ only import iMax HOME
-        #     if not (
-        #         order.get("x_studio_imax_api") == "imax_home"
-        #         and order.get("x_studio_costo_ok") is True
-        #     ):
-        #         continue
-            
-        #     #check if commessa exists in the db
-        #     ordine_name = order.get('name')
-        #     if not ordine_name:
-        #         continue
-        #     statement = select(iCommesse).where(iCommesse.ordine == ordine_name)
-        #     exists = db.exec(statement).first()
-        #     if exists:
-        #         continue 
-            
-        #     # insert new commessa & products
-        #     try:
-                
-        #         # client info
-        #         partner_id = order.get('partner_id')[0] if order.get('partner_id') else None
-        #         partner = partner_info.get(partner_id, {})
-        #         address_parts = [
-        #             partner.get('street', ''),
-        #             partner.get('city', ''),
-        #             partner.get('zip', ''),
-        #             partner.get('country_id', ['', ''])[1] if partner.get('country_id') else ''
-        #         ]
-        #         full_address = ', '.join(part for part in address_parts if part).strip(', ')
-
-        #         # responsabile info in format: name, email
-        #         user_id = order.get('user_id')[0] if order.get('user_id') else None
-        #         user = user_info.get(user_id, {})
-        #         user_name = user.get('name', 'N/A')
-        #         user_email = user.get('login') or user.get('email') or 'N/A'
-        #         responsabile_value = f"{user_name},{user_email}"
-                
-        #         #create new commessa
-        #         new_commessa = iCommesse(
-        #             ordine=order['name'],  # Extract numbers only
-        #             data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
-        #             nome_cliente = partner.get('name', 'N/A'),
-        #             email_cliente=partner.get('email', 'N/A'),
-        #             address_cliente=full_address,
-        #             responsabile=responsabile_value,
-        #             status=1 if order['invoice_status'] == 'to invoice' else 0,
-        #             costo=order.get('total_cost_of_lines', 0.0),
-        #             ricarico=order.get('total_recharge', 0.0),
-        #         )
-        #         db.add(new_commessa)
-        #         db.flush() 
-        #         # with open(log_file, "a", encoding="utf-8") as f:
-        #         #     f.write(
-        #         #         "[NEW COMMESSA INPUT]\n"
-        #         #         f"  ordine: {order['name']}\n"
-        #         #         f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
-        #         #         f"  nome_cliente: {partner.get('name', 'N/A')}\n"
-        #         #         f"  email_cliente: {partner.get('email', 'N/A')}\n"
-        #         #         f"  address_cliente: {full_address}\n"
-        #         #         f"  responsabile: {order['user_id'][1] if order.get('user_id') else 'N/A'}\n"
-        #         #         f"  status: {1 if order.get('invoice_status') == 'to invoice' else 0}\n"
-        #         # )
-        #         # print(
-        #         #     "[NEW COMMESSA INPUT]\n"
-        #         #     f"  ordine: {order['name']}\n"
-        #         #     f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
-        #         #     f"  nome_cliente: {partner.get('name', 'N/A')}\n"
-        #         #     f"  email_cliente: {partner.get('email', 'N/A')}\n"
-        #         #     f"  address_cliente: {full_address}\n"
-        #         #     f"  responsabile: {order['user_id'][1] if order.get('user_id') else 'N/A'}\n"
-        #         #     f"  status: {1 if order.get('invoice_status') == 'to invoice' else 0}\n"
-        #         # )
-                
-        #         # Add products to the new commessa
-        #         products = order_to_products.get(order['id'], [])  
-        #         code_cache = {}              
-        #         for prod in products:
-        #             prod_name = prod["name"]
-        #             prod_imax = prod["x_studio_imax"]
-
-        #             # ✅ SKIP if False / None
-        #             if not prod_imax:
-        #                 continue
-
-        #             match = re.match(r'\[(.*?)\]\s*(.*)', prod_name)  
-        #             if match:
-        #                 code, desc = match.groups()
-        #             else:
-        #                 code, desc = prod_name, ""
-
-        #             # ✅ find value rilievo misure etc for each product
-        #             if code not in code_cache:
-        #                 code_cache[code] = get_props_for_code_category(code, product_templates)   
-
-        #             for col in colonne:
-        #                 norm_col = normalize(col)
-        #                 value = match_value(norm_col, code_cache[code])
-
-        #                 work_item = WorkInProgress(
-        #                     commesse_id=new_commessa.id,
-        #                     zona=code,
-        #                     modello=desc,
-        #                     colonna=col,
-        #                     completato=False,
-        #                     completato_da_user="",
-        #                     data_completamento=None,
-        #                     valore=value
-        #                 )
-        #                 db.add(work_item)
-
-        #                 # with open(log_file, "a", encoding="utf-8") as f:
-        #                 #     f.write(
-        #                 #         "[NEW WORK ITEM]\n"
-        #                 #         f"  commesse_id: {new_commessa.id}\n"
-        #                 #         f"  zona: {code}\n"
-        #                 #         f"  modello: {desc}\n"
-        #                 #         f"  colonna: {col}\n"
-        #                 #         f"  x_studio_imax_api: {prod_imax}\n"
-        #                 #         f"  completato: {False}\n"
-        #                 #         f"  completato_da_user: {''}\n"
-        #                 #         f"  data_completamento: {None}\n"
-        #                 #         f"  valore: {value}\n"
-        #                 #     )
-        #                 # print(
-        #                 #     "[NEW WORK ITEM]\n"
-        #                 #     f"  commesse_id: {new_commessa.id}\n"
-        #                 #     f"  zona: {code}\n"
-        #                 #     f"  modello: {desc}\n"
-        #                 #     f"  colonna: {col}\n"
-        #                 #     f"  x_studio_imax_api: {prod_imax}\n"
-        #                 #     f"  completato: {False}\n"
-        #                 #     f"  completato_da_user: {''}\n"
-        #                 #     f"  data_completamento: {None}\n"
-        #                 # )
-                
-        #         db.commit()
-        #         inserted += 1
-
-        #     except Exception as inner_e:
-        #         db.rollback()
-        #         print(f"Skipping order {order.get('name')} due to error: {inner_e}")
-        
-
-
     except Exception as e:
         print(f"Error fetching sales orders: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
     
-    #return inserted
-    return 1
+    return inserted
 
 
 # Get one commessa by ID
