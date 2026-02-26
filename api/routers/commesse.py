@@ -342,12 +342,10 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 db.flush() 
 
                 # add products to the new commessa
-                products = order_to_products_mapping.get(order["id"], []) # get product related to the order
+                products = order_to_products_mapping.get(order["id"], {}) # get product related to the order
                 work_items_to_add = []
 
-                for prod in products:
-                    tmpl_id = prod["tmpl_id"] # get product id
-                    tmpl_name = prod["name"]  # get product name
+                for tmpl_id, tmpl_name in products.items():
 
                     # extract code: [LAVTENTAPINT], desc: LAVORAZIONE TAPPEZZERIA INTERNA
                     m = CODE_RE.match(tmpl_name)
