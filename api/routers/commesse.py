@@ -197,9 +197,6 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         print("Odoo ordini:")
         pprint.pprint(odoo_ordini)
 
-
-
-
         # Get fetch users 
         user_ids = list({o["user_id"][0] for o in sale_orders if o.get("user_id")})
         users = rpc_call(
@@ -211,7 +208,6 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
         print("Users info:")
         pprint.pprint(user_info)
 
-        
         # Get clients
         partner_ids = list({order['partner_id'][0] for order in sale_orders if order.get('partner_id')})
         partners = rpc_call(
