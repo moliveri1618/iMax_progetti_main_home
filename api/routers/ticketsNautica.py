@@ -168,13 +168,13 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
             tid = t["team_id"][0] if t.get("team_id") else None
             if tid == 5: 
                 nautica.append(t)
-            elif tid == 6:
-                home.append(t)
+            # elif tid == 6:
+            #     home.append(t)
 
         print("NAUTICA:", len(nautica))
         pprint.pprint(nautica)
-        print("\nHOME:", len(home))
-        pprint.pprint(home)
+        # print("\nHOME:", len(home))
+        # pprint.pprint(home)
 
         # find existing refs 
         incoming_refs = [str(t.get("number") or "") for t in home]
@@ -194,22 +194,21 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
             if ticket_ref in existing_refs:
                 continue
 
-            rows.append(HelpdeskTicketNautica(
-                ticket_ref=ticket_ref,
-                name=(t.get("name") or ""),
-                priority=str(t.get("priority") or ""),
-                customer=(t.get("customer") or ""),
-                assigned_to=(t.get("assigned_to") or ""),
-                stage=(t["stage_id"][1] if t.get("stage_id") else ""),
-                team="N/A",
-                created=(t.get("create_date") or ""),
-                type='home',
-                completato=False,
-            ))
+            rows.append({
+                "ticket_ref": ticket_ref,
+                "name": (t.get("name") or ""),
+                "priority": str(t.get("priority") or ""),
+                "customer": (t.get("customer") or ""),
+                "assigned_to": (t.get("assigned_to") or ""),
+                "stage": (t["stage_id"][1] if t.get("stage_id") else ""),
+                "team": "N/A",
+                "created": (t.get("create_date") or ""),
+                "type": "home",
+                "completato": False,
+            })
 
         if rows:
-            db.bulk_save_objects(rows)
-            db.commit()
+            db.bulk_insert_mappings(HelpdeskTicketNautica, rows)
             db.commit()
         return {"inserted": len(rows)} 
            
