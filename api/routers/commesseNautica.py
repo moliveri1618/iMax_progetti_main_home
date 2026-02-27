@@ -187,12 +187,12 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                 sale_order_ids.append(o["id"])
             if o.get("name"):
                 odoo_ordini.add(o["name"])
-        print("Sale orders:")
-        pprint.pprint(sale_orders)
-        print("Extracted sale order IDs:")
-        pprint.pprint(sale_order_ids)
-        print("Odoo ordini:")
-        pprint.pprint(odoo_ordini)
+        # print("Sale orders:")
+        # pprint.pprint(sale_orders)
+        # print("Extracted sale order IDs:")
+        # pprint.pprint(sale_order_ids)
+        # print("Odoo ordini:")
+        # pprint.pprint(odoo_ordini)
 
         # Get fetch users 
         user_ids = list({o["user_id"][0] for o in sale_orders if o.get("user_id")})
@@ -202,8 +202,8 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             {"fields": ["id", "name", "login", "email"]}
         )
         user_info = {u["id"]: u for u in users}
-        print("Users info:")
-        pprint.pprint(user_info)
+        # print("Users info:")
+        # pprint.pprint(user_info)
 
         # Get clients
         partner_ids = list({order['partner_id'][0] for order in sale_orders if order.get('partner_id')})
@@ -221,10 +221,10 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             ]}
         )
         partner_info = {p['id']: p for p in partners} # convert to dict, faster
-        print('Partners:')
-        pprint.pprint(partners)
-        print('Partner info:')
-        pprint.pprint(partner_info)  
+        # print('Partners:')
+        # pprint.pprint(partners)
+        # print('Partner info:')
+        # pprint.pprint(partner_info)  
 
         sale_order_products = rpc_call(
             "sale.order.line", "search_read",
@@ -240,15 +240,15 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             order_id = line["order_id"][0]
             tmpl_id, tmpl_name = line["product_template_id"]
             order_to_products_mapping[order_id][tmpl_id] = tmpl_name
-        print("Sale order products:")
-        pprint.pprint(sale_order_products)
-        print("Order to products mapping:")
-        pprint.pprint(order_to_products_mapping)
+        # print("Sale order products:")
+        # pprint.pprint(sale_order_products)
+        # print("Order to products mapping:")
+        # pprint.pprint(order_to_products_mapping)
 
         CODE_RE = re.compile(r"\[(.*?)\]\s*(.*)")
         COLS_NORM = [(col, normalize(col)) for col in colonne]
-        print("Columns to match:", CODE_RE)
-        print("Normalized columns:", COLS_NORM)
+        # print("Columns to match:", CODE_RE)
+        # print("Normalized columns:", COLS_NORM)
 
 
         template_ids = list({
@@ -273,126 +273,122 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
                     v = 0.0
                 prop_map[k] = float(v)
             template_props_map[t["id"]] = prop_map
-        print("Template properties map:")
-        pprint.pprint(template_props_map)
+        # print("Template properties map:")
+        # pprint.pprint(template_props_map)
 
         # Fetch existing ordini in ONE query
         existing = db.exec(
             select(iCommesseNautica.ordine).where(iCommesseNautica.ordine.in_(odoo_ordini))
         ).all()
         existing_set = set(existing)
-        print('existing ordini in DB:', existing_set)
+        new_orders = [o for o in sale_orders if o.get("name") not in existing_set]
+        # print('existing ordini in DB:', existing_set)
+        # print('new_orders', new_orders)
 
         # Insert or skip commesse & products in DB
-        inserted = 0
-        for order in sale_orders:
-            ordine_name = order.get("name")
-            if ordine_name in existing_set:
-                continue
+        commesse_by_order_id = {}
+        commesse_to_add = []
+        for order in new_orders:
 
-            # insert new commessa & products
-            try:
+            # user info
+            user_id = order["user_id"][0]
+            user = user_info.get(user_id, {})
+            user_name = order["user_id"][1] 
+            user_email = user.get("login") or ""
+            responsabile_value = f"{user_name},{user_email}"
 
-                # user info
-                user_id = order["user_id"][0]
-                user = user_info.get(user_id)
-                user_name = order["user_id"][1] 
-                user_email = user.get("login")
-                responsabile_value = f"{user_name},{user_email}"
+            # partner info
+            partner_id = order["partner_id"][0] 
+            partner = partner_info.get(partner_id, {})
+            city = partner.get("city")
+            zip_code = partner.get("zip") 
+            country_id = partner.get("country_id") or [None, None]
+            country = country_id[1] if len(country_id) > 1 else None
+            address_cliente = ", ".join([p for p in [city, zip_code, country] if p])
 
-                # partner info
-                partner_id = order["partner_id"][0] 
-                partner = partner_info.get(partner_id)
-                city = partner.get("city")
-                zip_code = partner.get("zip") 
-                country = partner.get("country_id")[1] 
-                address_cliente = ", ".join([p for p in [city, zip_code, country] if p])
+            #create new commessa
+            new_commessa = iCommesseNautica(
+                ordine=order['name'],  # Extract numbers only
+                data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
+                nome_cliente = partner.get('name', 'N/A'),
+                email_cliente=partner.get('email', 'N/A'),
+                address_cliente=address_cliente,
+                responsabile=responsabile_value,
+                status=0,
+                costo=order.get('total_cost_of_lines', 0.0),
+                ricarico=order.get('total_recharge', 0.0),
+            )
+            # with open(log_file, "a", encoding="utf-8") as f:
+            #     f.write(
+            #         "[NEW COMMESSA INPUT]\n"
+            #         f"  ordine: {order['name']}\n"
+            #         f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
+            #         f"  nome_cliente: {partner.get('name', 'N/A')}\n"
+            #         f"  email_cliente: {partner.get('email', 'N/A')}\n"
+            #         f"  address_cliente: {address_cliente}\n"
+            #         f"  responsabile: {responsabile_value}\n"
+            #         f"  status: {0}\n"
+            # )
+            commesse_to_add.append(new_commessa)
+            commesse_by_order_id[order["id"]] = new_commessa
 
-                #create new commessa
-                new_commessa = iCommesseNautica(
-                    ordine=order['name'],  # Extract numbers only
-                    data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
-                    nome_cliente = partner.get('name', 'N/A'),
-                    email_cliente=partner.get('email', 'N/A'),
-                    address_cliente=address_cliente,
-                    responsabile=responsabile_value,
-                    status=0,
-                    costo=order.get('total_cost_of_lines', 0.0),
-                    ricarico=order.get('total_recharge', 0.0),
-                )
-                # with open(log_file, "a", encoding="utf-8") as f:
-                #     f.write(
-                #         "[NEW COMMESSA INPUT]\n"
-                #         f"  ordine: {order['name']}\n"
-                #         f"  data: {datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date()}\n"
-                #         f"  nome_cliente: {partner.get('name', 'N/A')}\n"
-                #         f"  email_cliente: {partner.get('email', 'N/A')}\n"
-                #         f"  address_cliente: {address_cliente}\n"
-                #         f"  responsabile: {responsabile_value}\n"
-                #         f"  status: {0}\n"
-                # )
-                db.add(new_commessa)
-                db.flush() 
+        db.add_all(commesse_to_add)
+        db.flush()  # ✅ one flush for all commesse (ids assigned)
 
-                # add products to the new commessa
-                products = order_to_products_mapping.get(order["id"], {}) # get product related to the order
-                work_items_to_add = []
+        # add products to the new commessa
+        work_items = []
+        for order in new_orders:
+            commessa = commesse_by_order_id[order["id"]]
+            products = order_to_products_mapping.get(order["id"], {})
 
-                for tmpl_id, tmpl_name in products.items():
+            for tmpl_id, tmpl_name in products.items():
 
-                    # extract code: [LAVTENTAPINT], desc: LAVORAZIONE TAPPEZZERIA INTERNA
-                    m = CODE_RE.match(tmpl_name)
-                    if m:
-                        code, desc = m.groups() 
-                    else:
-                        code, desc = tmpl_name, ""
+                # extract code: [LAVTENTAPINT], desc: LAVORAZIONE TAPPEZZERIA INTERNA
+                m = CODE_RE.match(tmpl_name)
+                if m:
+                    code, desc = m.groups() 
+                else:
+                    code, desc = tmpl_name, ""
 
-                    props = template_props_map.get(tmpl_id, {}) # get activities values for that product template
-                    for col, norm_col in COLS_NORM:
-                        value = match_value(norm_col, props) # match activities from odoo with colonne.to_lower()
+                props = template_props_map.get(tmpl_id, {}) # get activities values for that product template
+                for col, norm_col in COLS_NORM:
+                    value = match_value(norm_col, props) # match activities from odoo with colonne.to_lower()
 
-                        work_items_to_add.append(
-                            WorkInProgressNautica(
-                                commesse_id=new_commessa.id,
-                                zona=code,
-                                modello=desc,
-                                colonna=col,
-                                completato=False,
-                                completato_da_user="",
-                                data_completamento=None,
-                                valore=value,
-                            )
-                        )
-                        # with open(log_file, "a", encoding="utf-8") as f:
-                        #     f.write(
-                        #         "[NEW PRODUCT]\n"
-                        #         f"  commesse_id: {new_commessa.id}\n"
-                        #         f"  zona: {code}\n"
-                        #         f"  modello: {desc}\n"
-                        #         f"  colonna: {col}\n"
-                        #         f"  x_studio_imax_api: {prod.get('x_studio_imax')}\n"
-                        #         f"  completato: {False}\n"
-                        #         f"  completato_da_user: {''}\n"
-                        #         f"  data_completamento: {None}\n"
-                        #         f"  valore: {value}\n"
-                        # )
+                    work_items.append({
+                        "commesse_id": commessa.id,
+                        "zona": code,
+                        "modello": desc,
+                        "colonna": col,
+                        "completato": False,
+                        "completato_da_user": "",
+                        "data_completamento": None,
+                        "valore": value,
+                    })
+                    # with open(log_file, "a", encoding="utf-8") as f:
+                    #     f.write(
+                    #         "[NEW PRODUCT]\n"
+                    #         f"  commesse_id: {new_commessa.id}\n"
+                    #         f"  zona: {code}\n"
+                    #         f"  modello: {desc}\n"
+                    #         f"  colonna: {col}\n"
+                    #         f"  x_studio_imax_api: {prod.get('x_studio_imax')}\n"
+                    #         f"  completato: {False}\n"
+                    #         f"  completato_da_user: {''}\n"
+                    #         f"  data_completamento: {None}\n"
+                    #         f"  valore: {value}\n"
+                    # )
 
-                db.add_all(work_items_to_add)
-
-                inserted += 1
-                existing_set.add(ordine_name)
-
-            except Exception as inner_e:
-                db.rollback()
-                print(f"Skipping order {order.get('name')} due to error: {inner_e}")
+        # If this list can be huge, insert in chunks
+        CHUNK = 5000
+        for i in range(0, len(work_items), CHUNK):
+            db.bulk_insert_mappings(WorkInProgressNautica, work_items[i:i+CHUNK])
 
         db.commit()
+        return len(commesse_to_add)
 
     except Exception as e:
         print(f"Error fetching sales orders: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
-    
-    return inserted
 
 # Get one commessa by ID
 @router.get("/{commessa_id}", response_model=ICommesseNauticaRead)
