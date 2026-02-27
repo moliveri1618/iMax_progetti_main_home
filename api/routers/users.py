@@ -408,6 +408,20 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
                 existing.tab_lavori = it["tab_lavori"]
                 changed = True
 
+            if "role" in it and it["role"]:
+                incoming_role = it["role"]
+                if isinstance(incoming_role, str):
+                    incoming_role = incoming_role.lower()
+                    if incoming_role == "admin":
+                        incoming_role = UserRole.ADMIN
+                    elif incoming_role == "user":
+                        incoming_role = UserRole.USER
+                    else:
+                        raise ValueError(f"Invalid role: {it['role']}")
+                if incoming_role != existing.role:
+                    existing.role = incoming_role
+                    changed = True
+
             if changed:
                 updated += 1
         else:
@@ -433,5 +447,4 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
 
     db.commit()
     return {"inserted": inserted, "updated": updated, "total": len(items)}
-    # return 1
 
