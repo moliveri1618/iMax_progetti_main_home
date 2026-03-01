@@ -5,6 +5,9 @@ from mangum import Mangum
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
+from typing import Any, Dict
+import logging
+from datetime import datetime, timezone
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__)) 
 from routers import commesse, vendite, tickets, workInProgress, savePDF, savePDFNautica, rilievoMisure, collaudoFinale, iParametriDaInserire, parametriTecnici, valoriWorkInProgressOdoo, users, commesseNautica, collaudoFinaleNautica, workInProgressNautica, ticketsNautica, rilievoMisureNautica, iParametriDaInserire_Nautica
@@ -19,6 +22,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 handler = Mangum(app=app)
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 app.add_middleware(
     CORSMiddleware,
@@ -141,3 +146,43 @@ app.include_router(
 @app.get("/")
 async def root(current_user: dict = Depends(verify_cognito_token)):
     return {"message": "Hello"}
+
+
+async def run_daily_job() -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    logger.info("✅ run_daily_job START at %s", now)
+
+    try:
+        # your logic here
+        # await asyncio.to_thread(do_odoo_sync)
+        logger.info("✅ run_daily_job doing work...")
+    except Exception:
+        logger.exception("❌ run_daily_job FAILED")
+        raise
+    finally:
+        logger.info("✅ run_daily_job END at %s", datetime.now(timezone.utc).isoformat())
+
+
+def lambda_handler(event: Dict[str, Any], context):
+    # EventBridge Scheduler / Rule invocation typically has "source": "aws.scheduler" or "aws.events"
+    # We'll detect by presence of "detail-type" and lack of API Gateway fields.
+    is_apigw = (
+        "requestContext" in event and
+        (event.get("version") == "2.0" or "httpMethod" in event)
+    )
+
+    if not is_apigw:
+        # ✅ internal scheduled invocation
+        # You can use detail to route multiple jobs
+        detail = event.get("detail", {}) or {}
+        job = detail.get("job") or event.get("job")  # support simple payload too
+
+        if job == "daily_integration":
+            asyncio.run(run_daily_job())
+            return {"ok": True, "ran": "daily_integration"}
+
+        # Unknown non-HTTP invocation
+        return {"ok": False, "error": "Unknown event", "event_keys": list(event.keys())}
+
+    # ✅ normal HTTP request via API Gateway -> FastAPI
+    return handler(event, context)

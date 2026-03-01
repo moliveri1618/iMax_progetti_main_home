@@ -336,7 +336,7 @@ def get_commesse_from_odoo(db: Session = Depends(get_db)):
             commesse_by_order_id[order["id"]] = new_commessa
 
         db.add_all(commesse_to_add)
-        db.flush()  # ✅ one flush for all commesse (ids assigned)
+        db.flush() 
 
         # add products to the new commessa
         work_items = []
