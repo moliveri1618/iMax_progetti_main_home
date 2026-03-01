@@ -13,6 +13,9 @@ if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from routers import commesse, vendite, tickets, workInProgress, savePDF, savePDFNautica, rilievoMisure, collaudoFinale, iParametriDaInserire, parametriTecnici, valoriWorkInProgressOdoo, users, commesseNautica, collaudoFinaleNautica, workInProgressNautica, ticketsNautica, rilievoMisureNautica, iParametriDaInserire_Nautica
 from dependecies import create_db_and_tables, verify_cognito_token, get_db
 from routers.commesse import sync_commesse_home_from_odoo
+from routers.commesseNautica import sync_commesse_nautica_odoo
+from routers.tickets import sync_tickets_home_from_odoo
+from routers.ticketsNautica import sync_tickets_nautica_from_odoo
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -148,8 +151,16 @@ async def root(current_user: dict = Depends(verify_cognito_token)):
     return {"message": "Hello"}
 
 
-async def run_daily_job() -> None:
-    logger.info("✅ run_daily_job START at %s", datetime.now(timezone.utc).isoformat())
+
+
+########################################
+######### DAILY API INTEGRATIONS #######
+########################################
+
+
+
+async def run_commesse_home() -> None:
+    logger.info("✅ run commesse home START at %s", datetime.now(timezone.utc).isoformat())
 
     db = None
     try:
@@ -158,7 +169,7 @@ async def run_daily_job() -> None:
         logger.info("✅ commesse_home DONE inserted=%s", inserted)
 
     except Exception:
-        logger.exception("❌ run_daily_job FAILED")
+        logger.exception("❌ run commesse home FAILED")
         raise
 
     finally:
@@ -168,7 +179,74 @@ async def run_daily_job() -> None:
             except Exception:
                 logger.exception("❌ db.close() failed")
 
-        logger.info("✅ run_daily_job END at %s", datetime.now(timezone.utc).isoformat())
+        logger.info("✅ run commesse home END at %s", datetime.now(timezone.utc).isoformat())
+
+async def run_commesse_nautica() -> None:
+    logger.info("✅ run commesse Nautica START at %s", datetime.now(timezone.utc).isoformat())
+
+    db = None
+    try:
+        db = next(get_db())  # get one Session from the dependency generator
+        inserted = sync_commesse_nautica_odoo(db)
+        logger.info("✅ commesse_home DONE inserted=%s", inserted)
+
+    except Exception:
+        logger.exception("❌ run commesse Nautica FAILED")
+        raise
+
+    finally:
+        if db is not None:
+            try:
+                db.close()
+            except Exception:
+                logger.exception("❌ db.close() failed")
+
+        logger.info("✅ run commesse Nautica END at %s", datetime.now(timezone.utc).isoformat())
+
+async def run_tickets_home() -> None:
+    logger.info("✅ run ticket Home START at %s", datetime.now(timezone.utc).isoformat())
+
+    db = None
+    try:
+        db = next(get_db())  # get one Session from the dependency generator
+        inserted = sync_tickets_home_from_odoo(db)
+        logger.info("✅ commesse_home DONE inserted=%s", inserted)
+
+    except Exception:
+        logger.exception("❌ run ticket Home FAILED")
+        raise
+
+    finally:
+        if db is not None:
+            try:
+                db.close()
+            except Exception:
+                logger.exception("❌ db.close() failed")
+
+        logger.info("✅ run ticket Home END at %s", datetime.now(timezone.utc).isoformat())
+
+async def run_tickets_nautica() -> None:
+    logger.info("✅ run ticket Nautica START at %s", datetime.now(timezone.utc).isoformat())
+
+    db = None
+    try:
+        db = next(get_db())  # get one Session from the dependency generator
+        inserted = sync_commesse_nautica_odoo(db)
+        logger.info("✅ commesse_home DONE inserted=%s", inserted)
+
+    except Exception:
+        logger.exception("❌ run ticket Nautica FAILED")
+        raise
+
+    finally:
+        if db is not None:
+            try:
+                db.close()
+            except Exception:
+                logger.exception("❌ db.close() failed")
+
+        logger.info("✅ run ticket Nautica END at %s", datetime.now(timezone.utc).isoformat())
+
 
 
 def lambda_handler(event: Dict[str, Any], context):
@@ -189,8 +267,17 @@ def lambda_handler(event: Dict[str, Any], context):
         job = detail.get("job") or event.get("job") 
 
         if job == "commesse_home":
-            asyncio.run(run_daily_job())
+            asyncio.run(run_commesse_home())
             return {"ok": True, "ran": "commesse_home"}
+        elif job == "commesse_nautica":
+            asyncio.run(run_commesse_home())
+            return {"ok": True, "ran": "commesse_nautica"}
+        elif job == "tickets_home":
+            asyncio.run(run_tickets_home())
+            return {"ok": True, "ran": "ticketd_home"}
+        elif job == "tickets_nautica":
+            asyncio.run(run_tickets_nautica())
+            return {"ok": True, "ran": "tickets_nautica"}
 
         # Unknown non-HTTP invocation
         return {"ok": False, "error": "Unknown event", "event_keys": list(event.keys())}
