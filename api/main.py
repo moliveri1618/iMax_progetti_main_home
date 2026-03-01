@@ -188,7 +188,7 @@ async def run_commesse_nautica() -> None:
     try:
         db = next(get_db())  # get one Session from the dependency generator
         inserted = sync_commesse_nautica_odoo(db)
-        logger.info("✅ commesse_home DONE inserted=%s", inserted)
+        logger.info("✅ commesse Nautica DONE inserted=%s", inserted)
 
     except Exception:
         logger.exception("❌ run commesse Nautica FAILED")
@@ -210,7 +210,7 @@ async def run_tickets_home() -> None:
     try:
         db = next(get_db())  # get one Session from the dependency generator
         inserted = sync_tickets_home_from_odoo(db)
-        logger.info("✅ commesse_home DONE inserted=%s", inserted)
+        logger.info("✅ ticket home DONE inserted=%s", inserted)
 
     except Exception:
         logger.exception("❌ run ticket Home FAILED")
@@ -231,8 +231,8 @@ async def run_tickets_nautica() -> None:
     db = None
     try:
         db = next(get_db())  # get one Session from the dependency generator
-        inserted = sync_commesse_nautica_odoo(db)
-        logger.info("✅ commesse_home DONE inserted=%s", inserted)
+        inserted = sync_tickets_nautica_from_odoo(db)
+        logger.info("✅ ticket Nautica DONE inserted=%s", inserted)
 
     except Exception:
         logger.exception("❌ run ticket Nautica FAILED")
@@ -270,11 +270,11 @@ def lambda_handler(event: Dict[str, Any], context):
             asyncio.run(run_commesse_home())
             return {"ok": True, "ran": "commesse_home"}
         elif job == "commesse_nautica":
-            asyncio.run(run_commesse_home())
+            asyncio.run(run_commesse_nautica())
             return {"ok": True, "ran": "commesse_nautica"}
         elif job == "tickets_home":
             asyncio.run(run_tickets_home())
-            return {"ok": True, "ran": "ticketd_home"}
+            return {"ok": True, "ran": "tickets_home"}
         elif job == "tickets_nautica":
             asyncio.run(run_tickets_nautica())
             return {"ok": True, "ran": "tickets_nautica"}
