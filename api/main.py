@@ -11,8 +11,8 @@ from datetime import datetime, timezone
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__)) 
 from routers import commesse, vendite, tickets, workInProgress, savePDF, savePDFNautica, rilievoMisure, collaudoFinale, iParametriDaInserire, parametriTecnici, valoriWorkInProgressOdoo, users, commesseNautica, collaudoFinaleNautica, workInProgressNautica, ticketsNautica, rilievoMisureNautica, iParametriDaInserire_Nautica
-from dependecies import create_db_and_tables, verify_cognito_token
-
+from dependecies import create_db_and_tables, verify_cognito_token, get_db
+from routers.commesse import sync_commesse_home_from_odoo
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -149,37 +149,48 @@ async def root(current_user: dict = Depends(verify_cognito_token)):
 
 
 async def run_daily_job() -> None:
-    now = datetime.now(timezone.utc).isoformat()
-    logger.info("✅ run_daily_job START at %s", now)
+    logger.info("✅ run_daily_job START at %s", datetime.now(timezone.utc).isoformat())
 
+    db = None
     try:
-        # your logic here
-        # await asyncio.to_thread(do_odoo_sync)
-        logger.info("✅ run_daily_job doing work...")
+        db = next(get_db())  # get one Session from the dependency generator
+        inserted = sync_commesse_home_from_odoo(db)
+        logger.info("✅ commesse_home DONE inserted=%s", inserted)
+
     except Exception:
         logger.exception("❌ run_daily_job FAILED")
         raise
+
     finally:
+        if db is not None:
+            try:
+                db.close()
+            except Exception:
+                logger.exception("❌ db.close() failed")
+
         logger.info("✅ run_daily_job END at %s", datetime.now(timezone.utc).isoformat())
 
 
 def lambda_handler(event: Dict[str, Any], context):
+
     # EventBridge Scheduler / Rule invocation typically has "source": "aws.scheduler" or "aws.events"
-    # We'll detect by presence of "detail-type" and lack of API Gateway fields.
+    # detect by presence of "detail-type" and lack of API Gateway fields.
+    logger.info("Invocation keys=%s source=%s", list(event.keys()), event.get("source"))
     is_apigw = (
         "requestContext" in event and
         (event.get("version") == "2.0" or "httpMethod" in event)
     )
 
     if not is_apigw:
+
         # ✅ internal scheduled invocation
         # You can use detail to route multiple jobs
         detail = event.get("detail", {}) or {}
-        job = detail.get("job") or event.get("job")  # support simple payload too
+        job = detail.get("job") or event.get("job") 
 
-        if job == "daily_integration":
+        if job == "commesse_home":
             asyncio.run(run_daily_job())
-            return {"ok": True, "ran": "daily_integration"}
+            return {"ok": True, "ran": "commesse_home"}
 
         # Unknown non-HTTP invocation
         return {"ok": False, "error": "Unknown event", "event_keys": list(event.keys())}
