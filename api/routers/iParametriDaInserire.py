@@ -81,6 +81,10 @@ def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
 
 @router.put("/parametri/{user_id}",response_model=Dict[str, int],status_code=status.HTTP_200_OK,)
 def replace_or_seed_parametri_for_user(user_id: str,rows: Optional[List[ParametriRowIn]] = Body(default=None),session: Session = Depends(get_db)):
+
+    # if no rows, means new user, initiate default calculations
+    if rows is None:
+        rows = [ParametriRowIn(**r) for r in TEMPLATE_ROWS]
     
     # Convert payload to dict if not None
     rows = json_to_dict(rows) 

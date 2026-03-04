@@ -153,10 +153,9 @@ async def root(current_user: dict = Depends(verify_cognito_token)):
 
 
 
-########################################
-######### DAILY API INTEGRATIONS #######
-########################################
-
+#####################################################
+######### Event Bridge Night API INTEGRATIONS #######
+#####################################################
 
 
 async def run_commesse_home() -> None:
@@ -246,8 +245,6 @@ async def run_tickets_nautica() -> None:
                 logger.exception("❌ db.close() failed")
 
         logger.info("✅ run ticket Nautica END at %s", datetime.now(timezone.utc).isoformat())
-
-
 
 def lambda_handler(event: Dict[str, Any], context):
 

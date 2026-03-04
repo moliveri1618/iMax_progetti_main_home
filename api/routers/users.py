@@ -12,6 +12,8 @@ if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.users import *
 from schemas.users import *
 from dependecies import get_db
+from .iParametriDaInserire import replace_or_seed_parametri_for_user as replace_or_seed_parametri_home
+from .iParametriDaInserire_Nautica import replace_or_seed_parametri_for_user as replace_or_seed_parametri_nautica
 
 router = APIRouter()
 
@@ -215,6 +217,9 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
             },
         )
         db.add(entity)
+        db.flush()
+        replace_or_seed_parametri_home(session=db, user_id=str(entity.email), rows=None)
+        replace_or_seed_parametri_nautica(session=db, user_id=str(entity.email), rows=None)
         
     # Add two extra users manually for testing
     extra_users = [
