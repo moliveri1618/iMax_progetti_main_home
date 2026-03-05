@@ -8,6 +8,7 @@ class UserRole(str, Enum):
     ADMIN = "admin"
     USER = "user"
 
+
 class iUsers(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     odoo_id: Optional[int] = None
@@ -25,23 +26,23 @@ class iUsers(SQLModel, table=True):
     bonus_capo: Optional[int] = None
     detr_sub: Optional[int] = None
     nautica: Dict[str, bool] = Field(
-            default_factory=lambda: {
-                "Rilievo misure":True,
-                "ORDINE e Sviluppo Progetto":True,
-                "Taglio Binario":True,
-                "Binario Assemblato":True,
-                "TAGLIO TESS Sartoria":True,
-                "Confezione Sartoria":True,
-                "Lavorazioni EXTRA Sartoria":True,
-                "Taglio tessuto TECNICO + lavorazioni":True,
-                "Bin + Tess. Ass. + imballo":True,
-                "Montaggio Attacchi":True,
-                "Scarico Trasporto al piano":True,
-                "Montaggio Tenda":True,
-                "GUIDE e Floggiatura":True
-            },
-            sa_column=Column(JSON),
-        )    
+        default_factory=lambda: {
+            "Rilievo misure": True,
+            "ORDINE e Sviluppo Progetto": True,
+            "Taglio Binario": True,
+            "Binario Assemblato": True,
+            "TAGLIO TESS Sartoria": True,
+            "Confezione Sartoria": True,
+            "Lavorazioni EXTRA Sartoria": True,
+            "Taglio tessuto TECNICO + lavorazioni": True,
+            "Bin + Tess. Ass. + imballo": True,
+            "Montaggio Attacchi": True,
+            "Scarico Trasporto al piano": True,
+            "Montaggio Tenda": True,
+            "GUIDE e Floggiatura": True,
+        },
+        sa_column=Column(JSON),
+    )
     home: Dict[str, bool] = Field(
         default_factory=lambda: {
             "Rilievo Misure": False,

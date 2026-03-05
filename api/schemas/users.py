@@ -70,8 +70,8 @@ class UserUpdate(BaseModel):
     bonus_gen: Optional[int] = None
     bonus_capo: Optional[int] = None
     detr_sub: Optional[int] = None
-    
-    
+
+
 class TeamRead(BaseModel):
     name: str
     managers: List[UserRead] = []
