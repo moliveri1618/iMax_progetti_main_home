@@ -149,13 +149,13 @@ def delete_workinprogress(work_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
-# Get all by username
-@router.get("/user/{username}", response_model=List[IWorkInProgressRead])
-def read_workinprogress_by_user(username: str, db: Session = Depends(get_db)):
-    statement = select(WorkInProgress).where(WorkInProgress.completato_da_user == username)
+# Get all by userEmail
+@router.get("/user/{userEmail}", response_model=List[IWorkInProgressRead])
+def read_workinprogress_by_user(userEmail: str, db: Session = Depends(get_db)):
+    statement = select(WorkInProgress).where(WorkInProgress.completato_da_user == userEmail)
     results = db.exec(statement).all()
     if not results:
-        raise HTTPException(status_code=404, detail=f"No records found for user '{username}'")
+        raise HTTPException(status_code=404, detail=f"No records found for user '{userEmail}'")
     return results
 
 
