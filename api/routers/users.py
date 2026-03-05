@@ -8,12 +8,17 @@ import json
 import httpx
 
 
-if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
+if os.getenv("GITHUB_ACTIONS"):
+    sys.path.append(os.path.dirname(__file__))
 from models.users import *
 from schemas.users import *
 from dependecies import get_db
-from .iParametriDaInserire import replace_or_seed_parametri_for_user as replace_or_seed_parametri_home
-from .iParametriDaInserire_Nautica import replace_or_seed_parametri_for_user as replace_or_seed_parametri_nautica
+from .iParametriDaInserire import (
+    replace_or_seed_parametri_for_user as replace_or_seed_parametri_home,
+)
+from .iParametriDaInserire_Nautica import (
+    replace_or_seed_parametri_for_user as replace_or_seed_parametri_nautica,
+)
 
 router = APIRouter()
 
@@ -23,19 +28,21 @@ router = APIRouter()
 # DB_NAME="odoodb_cleaned"
 # ODOO_BEARER_TOKEN="6c7beeefb78b508ac15f2ff430c4aa8e181b79bc"
 # WTH_FIREWALL_TOKEN="xt4GSYYeTKzMYfwGk4u5VYU"
-# UID = 2 
+# UID = 2
 
 TIMEOUT = 30.0
-ODOO_URL="https://odoo.mulattieri.it"
-ODOO_URL_LOGIN="https://odoo.mulattieri.it/web/login"
-ODOO_URL_API="https://odoo.mulattieri.it/jsonrpc"
-DB_NAME="mulsp-odoo-production"     
-UID=85 # iMax_api_user
-ODOO_BEARER_TOKEN="ocCAF0fVHguW3O*CbTRd*3v9"
-WTH_FIREWALL_TOKEN="SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
+ODOO_URL = "https://odoo.mulattieri.it"
+ODOO_URL_LOGIN = "https://odoo.mulattieri.it/web/login"
+ODOO_URL_API = "https://odoo.mulattieri.it/jsonrpc"
+DB_NAME = "mulsp-odoo-production"
+UID = 85  # iMax_api_user
+ODOO_BEARER_TOKEN = "ocCAF0fVHguW3O*CbTRd*3v9"
+WTH_FIREWALL_TOKEN = "SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
 
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 def rpc_call(model, method, args=None, kwargs=None):
     payload = {
@@ -51,29 +58,30 @@ def rpc_call(model, method, args=None, kwargs=None):
                 model,
                 method,
                 args or [],
-                kwargs or {}
-            ]
+                kwargs or {},
+            ],
         },
-        "id": 1
+        "id": 1,
     }
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {ODOO_BEARER_TOKEN}",
-        "x-wth-token": WTH_FIREWALL_TOKEN
+        "x-wth-token": WTH_FIREWALL_TOKEN,
     }
     logger.info(
         "rpc_call -> %s bearer_set=%s wth_set=%s",
-        ODOO_URL_API, bool(ODOO_BEARER_TOKEN), bool(WTH_FIREWALL_TOKEN)
+        ODOO_URL_API,
+        bool(ODOO_BEARER_TOKEN),
+        bool(WTH_FIREWALL_TOKEN),
     )
     with httpx.Client(timeout=TIMEOUT) as client:
         resp = client.post(ODOO_URL_API, headers=headers, json=payload)
-        
+
         if resp.status_code >= 400:
             logger.error("ODOO STATUS: %s", resp.status_code)
             logger.error("ODOO BODY: %s", resp.text[:2000])
             logger.error("ODOO HEADERS: %s", dict(resp.headers))
-        
-        
+
         resp.raise_for_status()
         data = resp.json()
         if "error" in data:
@@ -90,7 +98,7 @@ def to_labels(src: Dict[str, bool] | None, mapping: Dict[str, str]) -> Dict[str,
     src_keys = set(src.keys())
 
     has_internal = len(src_keys & internal_keys) > 0
-    has_labels   = len(src_keys & label_keys) > 0
+    has_labels = len(src_keys & label_keys) > 0
 
     if has_internal and not has_labels:
         # Payload sent with internal keys → map to labels (only keys provided)
@@ -102,7 +110,6 @@ def to_labels(src: Dict[str, bool] | None, mapping: Dict[str, str]) -> Dict[str,
 
     # Unknown keys → just pass through as-is
     return {k: bool(v) for k, v in src.items()}
-
 
 
 def build_teams_from_users(users: List[iUsers]) -> List[TeamRead]:
@@ -144,6 +151,7 @@ def build_teams_from_users(users: List[iUsers]) -> List[TeamRead]:
 # CRUD Endpoints
 # ---------------------------
 
+
 @router.get("/all", response_model=List[UserRead])
 def list_users(db: Session = Depends(get_db)):
 
@@ -153,16 +161,28 @@ def list_users(db: Session = Depends(get_db)):
 
 @router.get("/sync_odoo")
 def sync_user_from_odoo(db: Session = Depends(get_db)):
-    
+
     users = rpc_call(
         "res.users",
         "search_read",
         [[("active", "=", True)]],
-        {"fields": ["id", "name", "login", "email", "company_id", "partner_id", "tz", "lang"], "limit": 20}
+        {
+            "fields": [
+                "id",
+                "name",
+                "login",
+                "email",
+                "company_id",
+                "partner_id",
+                "tz",
+                "lang",
+            ],
+            "limit": 20,
+        },
     )
-    
-    #return users
-    skipped = 0 
+
+    # return users
+    skipped = 0
     for u in users:
         odoo_user_id = u.get("id")
         if not odoo_user_id:
@@ -173,7 +193,7 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
         if exists:
             skipped += 1
             continue
-        
+
         comp = u.get("company_id") or [None, None]
         email = (u.get("email") or "").strip()
         role = UserRole.ADMIN if email == "massimo@mulattieri.it" else UserRole.USER
@@ -185,23 +205,23 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
             company_id=comp[0],
             company_name=comp[1],
             role=role,
-            manager= "Empty",
-            capo= "Empty",
-            sub= "Empty",
+            manager="Empty",
+            capo="Empty",
+            sub="Empty",
             nautica={
-                "Rilievo misure":True,
-                "ORDINE e Sviluppo Progetto":True,
-                "Taglio Binario":True,
-                "Binario Assemblato":True,
-                "TAGLIO TESS Sartoria":True,
-                "Confezione Sartoria":True,
-                "Lavorazioni EXTRA Sartoria":True,
-                "Taglio tessuto TECNICO + lavorazioni":True,
-                "Bin + Tess. Ass. + imballo":True,
-                "Montaggio Attacchi":True,
-                "Scarico Trasporto al piano":True,
-                "Montaggio Tenda":True,
-                "GUIDE e Floggiatura":True
+                "Rilievo misure": True,
+                "ORDINE e Sviluppo Progetto": True,
+                "Taglio Binario": True,
+                "Binario Assemblato": True,
+                "TAGLIO TESS Sartoria": True,
+                "Confezione Sartoria": True,
+                "Lavorazioni EXTRA Sartoria": True,
+                "Taglio tessuto TECNICO + lavorazioni": True,
+                "Bin + Tess. Ass. + imballo": True,
+                "Montaggio Attacchi": True,
+                "Scarico Trasporto al piano": True,
+                "Montaggio Tenda": True,
+                "GUIDE e Floggiatura": True,
             },
             home={
                 "Rilievo Misure": True,
@@ -219,8 +239,10 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
         db.add(entity)
         db.flush()
         replace_or_seed_parametri_home(session=db, user_id=str(entity.email), rows=None)
-        replace_or_seed_parametri_nautica(session=db, user_id=str(entity.email), rows=None)
-        
+        replace_or_seed_parametri_nautica(
+            session=db, user_id=str(entity.email), rows=None
+        )
+
     # Add two extra users manually for testing
     extra_users = [
         iUsers(
@@ -230,23 +252,23 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
             company_id=None,
             company_name=None,
             role=UserRole.ADMIN,
-            manager= "Empty",
+            manager="Empty",
             capo="Empty",
             sub="Empty",
             nautica={
-                "Rilievo misure":True,
-                "ORDINE e Sviluppo Progetto":True,
-                "Taglio Binario":True,
-                "Binario Assemblato":True,
-                "TAGLIO TESS Sartoria":True,
-                "Confezione Sartoria":True,
-                "Lavorazioni EXTRA Sartoria":True,
-                "Taglio tessuto TECNICO + lavorazioni":True,
-                "Bin + Tess. Ass. + imballo":True,
-                "Montaggio Attacchi":True,
-                "Scarico Trasporto al piano":True,
-                "Montaggio Tenda":True,
-                "GUIDE e Floggiatura":True
+                "Rilievo misure": True,
+                "ORDINE e Sviluppo Progetto": True,
+                "Taglio Binario": True,
+                "Binario Assemblato": True,
+                "TAGLIO TESS Sartoria": True,
+                "Confezione Sartoria": True,
+                "Lavorazioni EXTRA Sartoria": True,
+                "Taglio tessuto TECNICO + lavorazioni": True,
+                "Bin + Tess. Ass. + imballo": True,
+                "Montaggio Attacchi": True,
+                "Scarico Trasporto al piano": True,
+                "Montaggio Tenda": True,
+                "GUIDE e Floggiatura": True,
             },
             home={
                 "Rilievo Misure": True,
@@ -268,23 +290,23 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
             company_id=None,
             company_name=None,
             role=UserRole.USER,
-            manager= "Empty",
+            manager="Empty",
             capo="Empty",
             sub="Empty",
             nautica={
-                "Rilievo misure":True,
-                "ORDINE e Sviluppo Progetto":True,
-                "Taglio Binario":True,
-                "Binario Assemblato":True,
-                "TAGLIO TESS Sartoria":True,
-                "Confezione Sartoria":True,
-                "Lavorazioni EXTRA Sartoria":True,
-                "Taglio tessuto TECNICO + lavorazioni":True,
-                "Bin + Tess. Ass. + imballo":True,
-                "Montaggio Attacchi":True,
-                "Scarico Trasporto al piano":True,
-                "Montaggio Tenda":True,
-                "GUIDE e Floggiatura":True
+                "Rilievo misure": True,
+                "ORDINE e Sviluppo Progetto": True,
+                "Taglio Binario": True,
+                "Binario Assemblato": True,
+                "TAGLIO TESS Sartoria": True,
+                "Confezione Sartoria": True,
+                "Lavorazioni EXTRA Sartoria": True,
+                "Taglio tessuto TECNICO + lavorazioni": True,
+                "Bin + Tess. Ass. + imballo": True,
+                "Montaggio Attacchi": True,
+                "Scarico Trasporto al piano": True,
+                "Montaggio Tenda": True,
+                "GUIDE e Floggiatura": True,
             },
             home={
                 "Rilievo Misure": True,
@@ -298,25 +320,25 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
                 "RIVESTIMENTO INTERNO": True,
                 "Collaudo Finale": True,
             },
-        )
+        ),
     ]
     for e in extra_users:
         exists = db.exec(select(iUsers).where(iUsers.odoo_id == e.odoo_id)).first()
         if exists:
-            skipped += 1  
+            skipped += 1
             continue
         db.add(e)
 
     db.commit()
-    return {"users": len(users), "skipped": skipped, "users_odoo": users}  
+    return {"users": len(users), "skipped": skipped, "users_odoo": users}
 
 
 @router.get("/teams", response_model=List[TeamRead])
 def list_user_teams(db: Session = Depends(get_db)):
     users = db.exec(select(iUsers)).all()
-    return build_teams_from_users(users)    
-    
-    
+    return build_teams_from_users(users)
+
+
 @router.get("/{user_id}", response_model=UserRead)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     user = db.get(iUsers, user_id)
@@ -335,6 +357,7 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)):
 
 @router.post("/bulk_upsert")
 def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)):
+
     HOME_MAP = {
         "rilievo_misure": "Rilievo Misure",
         "elaborazione_sviluppo": "Elaborazione dati e SVILUPPO disegni",
@@ -347,19 +370,19 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
         "rivestimento_interno": "RIVESTIMENTO INTERNO",
     }
     NAUTICA_MAP = {
-        'rilievo_misure': "Rilievo misure", 
-        'ord_svl_prog': "ORDINE e Sviluppo Progetto",
-        'taglio_binario': "Taglio Binario",
-        'binario_assemblato': "Binario Assemblato",
-        'taglio_tess_sartoria': "TAGLIO TESS Sartoria",
-        'conf_sartoria': "Confezione Sartoria",
-        'lav_extra_sartoria': "Lavorazioni EXTRA Sartoria",
-        'taglio_tess_tecnico': "Taglio tessuto TECNICO + lavorazioni",
-        'bin_tess_ass_imballo': "Bin + Tess. Ass. + imballo",
-        'montaggio_attacchi': "Montaggio Attacchi",
-        'scarico_trasporto_al_piano': "Scarico Trasporto al piano",
-        'montaggio_tenda': "Montaggio Tenda",
-        'guide_floggiatura': "GUIDE e Floggiatura",
+        "rilievo_misure": "Rilievo misure",
+        "ord_svl_prog": "ORDINE e Sviluppo Progetto",
+        "taglio_binario": "Taglio Binario",
+        "binario_assemblato": "Binario Assemblato",
+        "taglio_tess_sartoria": "TAGLIO TESS Sartoria",
+        "conf_sartoria": "Confezione Sartoria",
+        "lav_extra_sartoria": "Lavorazioni EXTRA Sartoria",
+        "taglio_tess_tecnico": "Taglio tessuto TECNICO + lavorazioni",
+        "bin_tess_ass_imballo": "Bin + Tess. Ass. + imballo",
+        "montaggio_attacchi": "Montaggio Attacchi",
+        "scarico_trasporto_al_piano": "Scarico Trasporto al piano",
+        "montaggio_tenda": "Montaggio Tenda",
+        "guide_floggiatura": "GUIDE e Floggiatura",
     }
 
     inserted, updated = 0, 0
@@ -373,7 +396,9 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
 
         # Prepare mapped fields only if present
         home_labels = to_labels(it.get("home"), HOME_MAP) if "home" in it else None
-        nautica_labels = to_labels(it.get("nautica"), NAUTICA_MAP) if "nautica" in it else None
+        nautica_labels = (
+            to_labels(it.get("nautica"), NAUTICA_MAP) if "nautica" in it else None
+        )
         # print("USER:", odoo_id, it.get("name"), home_labels, nautica_labels)
 
         if existing:
@@ -386,11 +411,11 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
             if "sub" in it and it["sub"] != existing.sub:
                 existing.sub = it["sub"]
                 changed = True
-                
+
             if "manager" in it and it["manager"] != existing.manager:
                 existing.manager = it["manager"]
                 changed = True
-                
+
             # ✅ auto-admin rule on update (only promote, no demotion)
             if "manager" in it and it["manager"] != "Empty":
                 if existing.role != UserRole.ADMIN:
@@ -427,29 +452,49 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
                     existing.role = incoming_role
                     changed = True
 
+            if "bonus_gen" in it and it["bonus_gen"] != existing.bonus_gen:
+                existing.bonus_gen = it["bonus_gen"]
+                changed = True
+
+            if "bonus_capo" in it and it["bonus_capo"] != existing.bonus_capo:
+                existing.bonus_capo = it["bonus_capo"]
+                changed = True
+
+            if "detr_sub" in it and it["detr_sub"] != existing.detr_sub:
+                existing.detr_sub = it["detr_sub"]
+                changed = True
+
             if changed:
                 updated += 1
         else:
-            
+
             manager_val = it.get("manager") or "Empty"
-            role_val = UserRole.ADMIN if (manager_val and manager_val != "Empty") else UserRole.USER
-            db.add(iUsers(
-                odoo_id=odoo_id,
-                name=it.get("name"),
-                email=it.get("email"),        
-                company_id=it.get("company_id"),
-                company_name=it.get("company_name"),
-                role=role_val,
-                manager=manager_val,
-                capo=it.get("capo") or "Empty",
-                sub=it.get("sub") or "Empty",
-                vendite=it.get("vendite"),      
-                tab_lavori=it.get("tab_lavori"),
-                home=home_labels or {},
-                nautica=nautica_labels or {},
-            ))
+            role_val = (
+                UserRole.ADMIN
+                if (manager_val and manager_val != "Empty")
+                else UserRole.USER
+            )
+            db.add(
+                iUsers(
+                    odoo_id=odoo_id,
+                    name=it.get("name"),
+                    email=it.get("email"),
+                    company_id=it.get("company_id"),
+                    company_name=it.get("company_name"),
+                    role=role_val,
+                    manager=manager_val,
+                    capo=it.get("capo") or "Empty",
+                    sub=it.get("sub") or "Empty",
+                    vendite=it.get("vendite"),
+                    tab_lavori=it.get("tab_lavori"),
+                    home=home_labels or {},
+                    nautica=nautica_labels or {},
+                    bonus_gen=it.get("bonus_gen"),
+                    bonus_capo=it.get("bonus_capo"),
+                    detr_sub=it.get("detr_sub"),
+                )
+            )
             inserted += 1
 
     db.commit()
     return {"inserted": inserted, "updated": updated, "total": len(items)}
-

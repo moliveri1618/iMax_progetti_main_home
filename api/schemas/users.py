@@ -18,6 +18,9 @@ class UserBase(BaseModel):
     home: Optional[Dict[str, bool]] = None
     vendite: Optional[bool] = None
     tab_lavori: Optional[bool] = None
+    bonus_gen: Optional[int] = None
+    bonus_capo: Optional[int] = None
+    detr_sub: Optional[int] = None
 
 
 # --- Create schema ---
@@ -41,6 +44,9 @@ class UserRead(SQLModel):
     home: Optional[Dict[str, bool]] = None
     vendite: Optional[bool] = None
     tab_lavori: Optional[bool] = None
+    bonus_gen: Optional[int] = None
+    bonus_capo: Optional[int] = None
+    detr_sub: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -61,6 +67,9 @@ class UserUpdate(BaseModel):
     home: Dict[str, bool]
     vendite: Optional[bool] = None
     tab_lavori: Optional[bool] = None
+    bonus_gen: Optional[int] = None
+    bonus_capo: Optional[int] = None
+    detr_sub: Optional[int] = None
     
     
 class TeamRead(BaseModel):
