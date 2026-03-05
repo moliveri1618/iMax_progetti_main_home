@@ -1220,7 +1220,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
         mapped.append({
             "user_id": row.get("venditore"),
             "ordine_numero": row.get("ordine"),
-            "cliente": row.get("cliente"),
+            "cliente": row.get("nome_cliente"),
             "prodotto": row.get("prodotto"),
             "mese": mese,
             "venduto_a": venduto_a,
