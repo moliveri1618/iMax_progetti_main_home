@@ -24,7 +24,7 @@ router = APIRouter()
 
 
 colonne = [
-    "Rilievo misure",
+    "Rilievo Misure",
     "ORDINE e Sviluppo Progetto",
     "Taglio Binario",
     "Binario Assemblato",
