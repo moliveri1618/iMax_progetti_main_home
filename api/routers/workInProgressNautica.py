@@ -227,7 +227,7 @@ def read_workinprogress_tab_lavori_by_user(
         output.append(
             WorkInProgressNauticaTabLavori(
                 **work_dict,
-                ordine=ordine,
+                ordine_n=ordine,
                 data=data,
                 nome_cliente=nome_cliente,
                 prodotto=f"[{work.zona}] - {work.modello}",
