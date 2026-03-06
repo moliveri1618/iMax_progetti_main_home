@@ -10,7 +10,7 @@ import os
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
-    
+
 from models.iParametriDaInserire_Nautica import ParametriDaInserireNautica  
 from schemas.iParametriDaInserire_Nautica import (
     ParametriNauticaRowIn,
@@ -23,7 +23,10 @@ from schemas.iParametriDaInserire_Nautica import (
 from models.iBudgetVendutoCalcoli_Nautica import BudgetVendutoCalcoliNautica
 from schemas.iBudgetVendutoCalcoli_Nautica import BudgetVendutoCalcoliNauticaRead
 from models.iConteggiCommessa_Nautica import OrdiniPremiNautica
-from schemas.iConteggiCommessa_Nautica import OrdiniPremiNauticaRead
+from schemas.iConteggiCommessa_Nautica import (
+    OrdiniPremiNauticaRead,
+    OrdiniPremiTabLavori,
+)
 from models.users import *
 from schemas.users import *
 
@@ -33,11 +36,43 @@ from dependecies import get_db
 router = APIRouter()
 
 
-
 MONTHS_IT = [
-    "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
-    "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
+    "gennaio",
+    "febbraio",
+    "marzo",
+    "aprile",
+    "maggio",
+    "giugno",
+    "luglio",
+    "agosto",
+    "settembre",
+    "ottobre",
+    "novembre",
+    "dicembre",
 ]
+
+
+def month_key(m: Optional[str]) -> int:
+    if not m:
+        return 999
+    try:
+        return MONTHS_IT.index(m.strip().lower())
+    except ValueError:
+        return 999
+
+
+def month_to_date_string(mese: Optional[str], year: int = 2026) -> Optional[str]:
+    if not mese:
+        return None
+
+    mese_clean = mese.strip().lower()
+
+    if mese_clean not in MONTHS_IT:
+        return None
+
+    month_number = MONTHS_IT.index(mese_clean) + 1
+    return f"{year}-{month_number:02d}-01"
+
 
 @router.get("/create-parametri-by-user", response_model=List[str])
 def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
@@ -76,7 +111,6 @@ def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
         print(f"[SEED] Inserted template rows for: {inserted_users}")
 
     return emails
-
 
 
 @router.put("/parametri/{user_id}",response_model=Dict[str, int],status_code=status.HTTP_200_OK,)
@@ -168,7 +202,6 @@ def get_ordini_premi_by_user(
     return rows
 
 
-
 # READ ALL or filter by user id if provided
 @router.get("", response_model=List[ParametriDaInserireNauticaRead])
 def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)):
@@ -177,7 +210,6 @@ def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)
         stmt = stmt.where(ParametriDaInserireNautica.user_id == user_id)
     items = session.exec(stmt).all()  
     return items
-
 
 
 # recompute vendite calculation for each user in parametri da inserire
@@ -197,7 +229,6 @@ def recalc_all_using_replace_or_seed(session: Session = Depends(get_db)) -> Dict
     errors: Dict[str, str] = {}
 
     BATCH = 200 # optional: batch users (avoid huge IN clauses if you later optimize further)
-
 
     for i in range(0, len(user_ids), BATCH):
         batch_user_ids = user_ids[i : i + BATCH]
@@ -244,3 +275,23 @@ def recalc_all_using_replace_or_seed(session: Session = Depends(get_db)) -> Dict
         "results": results,
         "errors": errors,
     }
+
+
+@router.get(
+    "/ordinipremiTabLavori/{user_id}",
+    response_model=List[OrdiniPremiTabLavori],
+    status_code=status.HTTP_200_OK,
+)
+def get_ordini_premi_tab_lavori(
+    user_id: str,
+    session: Session = Depends(get_db),
+):
+    """
+    Return OrdiniPremiNautica formatted for TabLavori frontend table.
+    """
+
+    stmt = select(OrdiniPremiNautica).where(OrdiniPremiNautica.user_id == user_id)
+    rows = session.exec(stmt).all()
+    rows.sort(key=lambda r: month_key(r.mese))
+
+    return OrdiniPremiTabLavori.from_db_list(rows)
