@@ -53,8 +53,7 @@ class WorkInProgressNauticaGrouped(SQLModel):
     modello: str
     steps: List[IWorkInProgressNauticaRead]
 
-    
-    
+
 class ICollaudoFinaleNauticaRead(SQLModel):
     id: int
     workInProgress_id: Optional[int] = None
@@ -77,3 +76,10 @@ class WorkInProgressNauticaGroupedV2(BaseModel):
     zona: str
     modello: str
     steps: List[IWorkInProgressWithCollaudo]
+
+
+class WorkInProgressNauticaTabLavori(IWorkInProgressNauticaRead):
+    ordine: str | None = None
+    data: date | None = None
+    nome_cliente: str | None = None
+    prodotto: str

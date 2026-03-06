@@ -83,3 +83,4 @@ class WorkInProgressTabLavori(IWorkInProgressRead):
     ordine: str | None = None
     data: date | None = None
     nome_cliente: str | None = None
+    prodotto: str

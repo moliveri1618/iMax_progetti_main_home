@@ -12,12 +12,19 @@ if os.getenv("GITHUB_ACTIONS"):
 
 from models.workInProgressNautica import WorkInProgressNautica
 from models.collaudoFinaleNautica import CollaudoFinaleNautica
-from schemas.workInProgressNautica import IWorkInProgressNauticaCreate, IWorkInProgressNauticaRead, IWorkInProgressNauticaUpdate, WorkInProgressNauticaGrouped
+from schemas.workInProgressNautica import (
+    IWorkInProgressNauticaCreate,
+    IWorkInProgressNauticaRead,
+    IWorkInProgressNauticaUpdate,
+    WorkInProgressNauticaGrouped,
+    WorkInProgressNauticaTabLavori,
+)
 from schemas.collaudoFinaleNautica import (
     ICollaudoFinaleNauticaCreate,
     ICollaudoFinaleNauticaRead,
     ICollaudoFinaleNauticaUpdate,
 )
+from models.commesseNautica import iCommesseNautica
 from dependecies import get_db
 
 router = APIRouter()
@@ -111,18 +118,6 @@ def read_all_workinprogress(db: Session = Depends(get_db)):
     return db.exec(select(WorkInProgressNautica)).all()
 
 
-# Get one
-@router.get("/{commessa_id}", response_model=List[WorkInProgressNauticaGrouped])
-def read_workinprogress(commessa_id: int, db: Session = Depends(get_db)):
-    statement = select(WorkInProgressNautica).where(WorkInProgressNautica.commesse_id == commessa_id)
-    results = db.exec(statement).all()
-    if not results:
-        raise HTTPException(status_code=404, detail="Work in progress not found")
-    
-    grouped = group_for_frontend(results)
-    deduped = remove_zona_duplicates(grouped)
-    return deduped
-
 # Update
 @router.put("/{work_id}", response_model=IWorkInProgressNauticaRead)
 def update_workinprogress(work_id: int, update_data: IWorkInProgressNauticaUpdate, db: Session = Depends(get_db)):
@@ -162,13 +157,13 @@ def read_workinprogress_by_user(userEmail: str, db: Session = Depends(get_db)):
 # @router.get("/v2/{commessa_id}", response_model=List[WorkInProgressNauticaGroupedV2])
 @router.get("/v2/{commessa_id}")
 def read_workinprogress_v2(commessa_id: int, db: Session = Depends(get_db)):
-    
+
     # 1) Get all WorkInProgress rows for this commessa
     statement = select(WorkInProgressNautica).where(WorkInProgressNautica.commesse_id == commessa_id)
     results = db.exec(statement).all()
     if not results:
         raise HTTPException(status_code=404, detail="Work in progress not found")
-    
+
     # 2) Reuse existing grouping logic
     grouped = group_for_frontend(results)
     deduped = remove_zona_duplicates(grouped)
@@ -191,5 +186,67 @@ def read_workinprogress_v2(commessa_id: int, db: Session = Depends(get_db)):
                     )
                 else:
                     step.percentuale_completamento_collaudo_finale = 0.0
-                
+
+    return deduped
+
+
+# get work in progress for tabella lavori
+@router.get(
+    "/tab-lavori-nautica/{userEmail}", response_model=list[WorkInProgressNauticaTabLavori]
+)
+def read_workinprogress_tab_lavori_by_user(
+    userEmail: str, db: Session = Depends(get_db)
+):
+    statement = (
+        select(
+            WorkInProgressNautica,
+            iCommesseNautica.ordine,
+            iCommesseNautica.data,
+            iCommesseNautica.nome_cliente,
+        )
+        .join(
+            iCommesseNautica, WorkInProgressNautica.commesse_id == iCommesseNautica.id
+        )
+        .where(WorkInProgressNautica.completato_da_user == userEmail)
+    )
+    results = db.exec(statement).all()
+
+    if not results:
+        raise HTTPException(
+            status_code=404, detail=f"No records found for user '{userEmail}'"
+        )
+
+    output = []
+    for work, ordine, data, nome_cliente in results:
+        work_dict = (
+            IWorkInProgressNauticaRead.model_validate(work).model_dump()
+            if hasattr(IWorkInProgressNauticaRead, "model_validate")
+            else IWorkInProgressNauticaRead.from_orm(work).dict()
+        )
+
+        output.append(
+            WorkInProgressNauticaTabLavori(
+                **work_dict,
+                ordine=ordine,
+                data=data,
+                nome_cliente=nome_cliente,
+                prodotto=f"[{work.zona}] - {work.modello}",
+            )
+        )
+
+    return output
+
+
+# Get one
+@router.get("/{commessa_id}", response_model=List[WorkInProgressNauticaGrouped])
+def read_workinprogress(commessa_id: int, db: Session = Depends(get_db)):
+    statement = select(WorkInProgressNautica).where(
+        WorkInProgressNautica.commesse_id == commessa_id
+    )
+    results = db.exec(statement).all()
+    if not results:
+        raise HTTPException(status_code=404, detail="Work in progress not found")
+
+    grouped = group_for_frontend(results)
+    deduped = remove_zona_duplicates(grouped)
     return deduped

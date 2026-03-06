@@ -206,7 +206,9 @@ def read_workinprogress_v2(commessa_id: int, db: Session = Depends(get_db)):
 @router.get(
     "/tab-lavori-home/{userEmail}", response_model=list[WorkInProgressTabLavori]
 )
-def read_workinprogress_by_user(userEmail: str, db: Session = Depends(get_db)):
+def read_workinprogress_tab_lavori_by_user(
+    userEmail: str, db: Session = Depends(get_db)
+):
     statement = (
         select(
             WorkInProgress,
@@ -238,6 +240,7 @@ def read_workinprogress_by_user(userEmail: str, db: Session = Depends(get_db)):
                 ordine=ordine,
                 data=data,
                 nome_cliente=nome_cliente,
+                prodotto=f"[{work.zona}] - {work.modello}",
             )
         )
 
