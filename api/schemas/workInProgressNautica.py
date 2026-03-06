@@ -79,7 +79,7 @@ class WorkInProgressNauticaGroupedV2(BaseModel):
 
 
 class WorkInProgressNauticaTabLavori(IWorkInProgressNauticaRead):
-    ordine: str | None = None
+    ordine_n: str | None = None
     data: date | None = None
     nome_cliente: str | None = None
     prodotto: str
