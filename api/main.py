@@ -38,6 +38,7 @@ from routers.tickets import sync_tickets_home_from_odoo
 from routers.ticketsNautica import sync_tickets_nautica_from_odoo
 from routers.iParametriDaInserire import recalc_premi_home
 from routers.iParametriDaInserire_Nautica import recalc_premi_nautica
+from routers.users import sync_user_from_odoo_service
 
 
 @asynccontextmanager
@@ -322,6 +323,7 @@ job_map = {
         "tickets_nautica": run_tickets_nautica,
         "recalc_home": run_recalc_home,
         "recalc_nautica": run_recalc_nautica,
+        "users": sync_user_from_odoo_service
     }
 
 def lambda_handler(event: Dict[str, Any], context):

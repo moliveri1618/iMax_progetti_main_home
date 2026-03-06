@@ -147,20 +147,7 @@ def build_teams_from_users(users: List[iUsers]) -> List[TeamRead]:
     return [TeamRead(**t) for t in teams.values()]
 
 
-# ---------------------------
-# CRUD Endpoints
-# ---------------------------
-
-
-@router.get("/all", response_model=List[UserRead])
-def list_users(db: Session = Depends(get_db)):
-
-    users = db.exec(select(iUsers).order_by(iUsers.odoo_id)).all()
-    return [UserRead.model_validate(u, from_attributes=True) for u in users]
-
-
-@router.get("/sync_odoo")
-def sync_user_from_odoo(db: Session = Depends(get_db)):
+def sync_user_from_odoo_service(db: Session):
 
     users = rpc_call(
         "res.users",
@@ -331,6 +318,196 @@ def sync_user_from_odoo(db: Session = Depends(get_db)):
 
     db.commit()
     return {"users": len(users), "skipped": skipped, "users_odoo": users}
+
+
+# ---------------------------
+# CRUD Endpoints
+# ---------------------------
+
+
+@router.get("/all", response_model=List[UserRead])
+def list_users(db: Session = Depends(get_db)):
+
+    users = db.exec(select(iUsers).order_by(iUsers.odoo_id)).all()
+    return [UserRead.model_validate(u, from_attributes=True) for u in users]
+
+
+@router.get("/sync_odoo")
+def sync_user_from_odoo(db: Session = Depends(get_db)):
+    return sync_user_from_odoo_service(db)
+
+
+# def sync_user_from_odoo(db: Session = Depends(get_db)):
+
+#     users = rpc_call(
+#         "res.users",
+#         "search_read",
+#         [[("active", "=", True)]],
+#         {
+#             "fields": [
+#                 "id",
+#                 "name",
+#                 "login",
+#                 "email",
+#                 "company_id",
+#                 "partner_id",
+#                 "tz",
+#                 "lang",
+#             ],
+#             "limit": 20,
+#         },
+#     )
+
+#     # return users
+#     skipped = 0
+#     for u in users:
+#         odoo_user_id = u.get("id")
+#         if not odoo_user_id:
+#             continue
+
+#         # skip if already in db
+#         exists = db.exec(select(iUsers).where(iUsers.odoo_id == odoo_user_id)).first()
+#         if exists:
+#             skipped += 1
+#             continue
+
+#         comp = u.get("company_id") or [None, None]
+#         email = (u.get("email") or "").strip()
+#         role = UserRole.ADMIN if email == "massimo@mulattieri.it" else UserRole.USER
+
+#         entity = iUsers(
+#             odoo_id=odoo_user_id,
+#             name=u.get("name"),
+#             email=u.get("email"),
+#             company_id=comp[0],
+#             company_name=comp[1],
+#             role=role,
+#             manager="Empty",
+#             capo="Empty",
+#             sub="Empty",
+#             nautica={
+#                 "Rilievo misure": True,
+#                 "ORDINE e Sviluppo Progetto": True,
+#                 "Taglio Binario": True,
+#                 "Binario Assemblato": True,
+#                 "TAGLIO TESS Sartoria": True,
+#                 "Confezione Sartoria": True,
+#                 "Lavorazioni EXTRA Sartoria": True,
+#                 "Taglio tessuto TECNICO + lavorazioni": True,
+#                 "Bin + Tess. Ass. + imballo": True,
+#                 "Montaggio Attacchi": True,
+#                 "Scarico Trasporto al piano": True,
+#                 "Montaggio Tenda": True,
+#                 "GUIDE e Floggiatura": True,
+#             },
+#             home={
+#                 "Rilievo Misure": True,
+#                 "Elaborazione dati e SVILUPPO disegni": True,
+#                 "ORDINE e FORNITORE e controllo conferma": True,
+#                 "TRASPORTO AL CLIENTE": True,
+#                 "TRASPORTO AL PIANO": True,
+#                 "SMONTAGGIO VECCHIO": True,
+#                 "TAGLIO TELAI": True,
+#                 "POSA SERRAMENTO": True,
+#                 "RIVESTIMENTO INTERNO": True,
+#                 "Collaudo Finale": True,
+#             },
+#         )
+#         db.add(entity)
+#         db.flush()
+#         replace_or_seed_parametri_home(session=db, user_id=str(entity.email), rows=None)
+#         replace_or_seed_parametri_nautica(
+#             session=db, user_id=str(entity.email), rows=None
+#         )
+
+#     # Add two extra users manually for testing
+#     extra_users = [
+#         iUsers(
+#             odoo_id=0,
+#             name="Mauro",
+#             email="mauro.oliveri16@gmail.com",
+#             company_id=None,
+#             company_name=None,
+#             role=UserRole.ADMIN,
+#             manager="Empty",
+#             capo="Empty",
+#             sub="Empty",
+#             nautica={
+#                 "Rilievo misure": True,
+#                 "ORDINE e Sviluppo Progetto": True,
+#                 "Taglio Binario": True,
+#                 "Binario Assemblato": True,
+#                 "TAGLIO TESS Sartoria": True,
+#                 "Confezione Sartoria": True,
+#                 "Lavorazioni EXTRA Sartoria": True,
+#                 "Taglio tessuto TECNICO + lavorazioni": True,
+#                 "Bin + Tess. Ass. + imballo": True,
+#                 "Montaggio Attacchi": True,
+#                 "Scarico Trasporto al piano": True,
+#                 "Montaggio Tenda": True,
+#                 "GUIDE e Floggiatura": True,
+#             },
+#             home={
+#                 "Rilievo Misure": True,
+#                 "Elaborazione dati e SVILUPPO disegni": True,
+#                 "ORDINE e FORNITORE e controllo conferma": True,
+#                 "TRASPORTO AL CLIENTE": True,
+#                 "TRASPORTO AL PIANO": True,
+#                 "SMONTAGGIO VECCHIO": True,
+#                 "TAGLIO TELAI": True,
+#                 "POSA SERRAMENTO": True,
+#                 "RIVESTIMENTO INTERNO": True,
+#                 "Collaudo Finale": True,
+#             },
+#         ),
+#         iUsers(
+#             odoo_id=1,
+#             name="MauroDue",
+#             email="Ollimauri775@gmail.com",
+#             company_id=None,
+#             company_name=None,
+#             role=UserRole.USER,
+#             manager="Empty",
+#             capo="Empty",
+#             sub="Empty",
+#             nautica={
+#                 "Rilievo misure": True,
+#                 "ORDINE e Sviluppo Progetto": True,
+#                 "Taglio Binario": True,
+#                 "Binario Assemblato": True,
+#                 "TAGLIO TESS Sartoria": True,
+#                 "Confezione Sartoria": True,
+#                 "Lavorazioni EXTRA Sartoria": True,
+#                 "Taglio tessuto TECNICO + lavorazioni": True,
+#                 "Bin + Tess. Ass. + imballo": True,
+#                 "Montaggio Attacchi": True,
+#                 "Scarico Trasporto al piano": True,
+#                 "Montaggio Tenda": True,
+#                 "GUIDE e Floggiatura": True,
+#             },
+#             home={
+#                 "Rilievo Misure": True,
+#                 "Elaborazione dati e SVILUPPO disegni": True,
+#                 "ORDINE e FORNITORE e controllo conferma": True,
+#                 "TRASPORTO AL CLIENTE": True,
+#                 "TRASPORTO AL PIANO": True,
+#                 "SMONTAGGIO VECCHIO": True,
+#                 "TAGLIO TELAI": True,
+#                 "POSA SERRAMENTO": True,
+#                 "RIVESTIMENTO INTERNO": True,
+#                 "Collaudo Finale": True,
+#             },
+#         ),
+#     ]
+#     for e in extra_users:
+#         exists = db.exec(select(iUsers).where(iUsers.odoo_id == e.odoo_id)).first()
+#         if exists:
+#             skipped += 1
+#             continue
+#         db.add(e)
+
+#     db.commit()
+#     return {"users": len(users), "skipped": skipped, "users_odoo": users}
 
 
 @router.get("/teams", response_model=List[TeamRead])
