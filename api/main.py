@@ -36,6 +36,8 @@ from routers.commesse import sync_commesse_home_from_odoo
 from routers.commesseNautica import sync_commesse_nautica_odoo
 from routers.tickets import sync_tickets_home_from_odoo
 from routers.ticketsNautica import sync_tickets_nautica_from_odoo
+from routers.iParametriDaInserire import recalc_premi_home
+from routers.iParametriDaInserire_Nautica import recalc_premi_nautica
 
 
 @asynccontextmanager
@@ -131,11 +133,11 @@ app.include_router(
     parametriTecnici.router, prefix="/parametriTecnici", tags=["parametriTecnici"]
 )
 
-app.include_router(
-    valoriWorkInProgressOdoo.router,
-    prefix="/valoriWorkInProgressOdoo",
-    tags=["valoriWorkInProgressOdoo"],
-)
+# app.include_router(
+#     valoriWorkInProgressOdoo.router,
+#     prefix="/valoriWorkInProgressOdoo",
+#     tags=["valoriWorkInProgressOdoo"],
+# )
 
 app.include_router(users.router, prefix="/users", tags=["users"])
 
@@ -258,6 +260,70 @@ async def run_tickets_nautica() -> None:
         )
 
 
+async def run_recalc_home() -> None:
+    logger.info(
+        "✅ run recalc premi Home START at %s", datetime.now(timezone.utc).isoformat()
+    )
+
+    db = None
+    try:
+        db = next(get_db())
+        result = recalc_premi_home(db)
+        logger.info("✅ recalc premi Home DONE result=%s", result)
+
+    except Exception:
+        logger.exception("❌ run recalc premi Home FAILED")
+        raise
+
+    finally:
+        if db is not None:
+            try:
+                db.close()
+            except Exception:
+                logger.exception("❌ db.close() failed")
+
+        logger.info(
+            "✅ run recalc premi Home END at %s", datetime.now(timezone.utc).isoformat()
+        )
+
+
+async def run_recalc_nautica() -> None:
+    logger.info(
+        "✅ run recalc premi Nautica START at %s",
+        datetime.now(timezone.utc).isoformat(),
+    )
+
+    db = None
+    try:
+        db = next(get_db())
+        result = recalc_premi_nautica(db)
+        logger.info("✅ recalc premi Nautica DONE result=%s", result)
+
+    except Exception:
+        logger.exception("❌ run recalc premi Nautica FAILED")
+        raise
+
+    finally:
+        if db is not None:
+            try:
+                db.close()
+            except Exception:
+                logger.exception("❌ db.close() failed")
+
+        logger.info(
+            "✅ run recalc premi Nautica END at %s",
+            datetime.now(timezone.utc).isoformat(),
+        )
+
+job_map = {
+        "commesse_home": run_commesse_home,
+        "commesse_nautica": run_commesse_nautica,
+        "tickets_home": run_tickets_home,
+        "tickets_nautica": run_tickets_nautica,
+        "recalc_home": run_recalc_home,
+        "recalc_nautica": run_recalc_nautica,
+    }
+
 def lambda_handler(event: Dict[str, Any], context):
 
     # EventBridge Scheduler / Rule invocation typically has "source": "aws.scheduler" or "aws.events"
@@ -270,22 +336,13 @@ def lambda_handler(event: Dict[str, Any], context):
     if not is_apigw:
 
         # ✅ internal scheduled invocation
-        # You can use detail to route multiple jobs
         detail = event.get("detail", {}) or {}
         job = detail.get("job") or event.get("job")
+        job_fn = job_map.get(job)
 
-        if job == "commesse_home":
-            asyncio.run(run_commesse_home())
-            return {"ok": True, "ran": "commesse_home"}
-        elif job == "commesse_nautica":
-            asyncio.run(run_commesse_nautica())
-            return {"ok": True, "ran": "commesse_nautica"}
-        elif job == "tickets_home":
-            asyncio.run(run_tickets_home())
-            return {"ok": True, "ran": "tickets_home"}
-        elif job == "tickets_nautica":
-            asyncio.run(run_tickets_nautica())
-            return {"ok": True, "ran": "tickets_nautica"}
+        if job_fn:
+            asyncio.run(job_fn())
+            return {"ok": True, "ran": job}
 
         # Unknown non-HTTP invocation
         return {"ok": False, "error": "Unknown event", "event_keys": list(event.keys())}

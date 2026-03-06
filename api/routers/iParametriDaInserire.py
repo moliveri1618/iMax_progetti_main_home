@@ -59,6 +59,68 @@ def month_to_date_string(mese: Optional[str], year: int = 2026) -> Optional[str]
     month_number = MONTHS_IT.index(mese_clean) + 1
     return f"{year}-{month_number:02d}-01"
 
+def recalc_premi_home(
+    session: Session = Depends(get_db),
+) -> Dict[str, Any]:
+
+    # 1) get distinct user_ids only (tiny result set)
+    user_ids: List[str] = session.exec(
+        select(ParametriDaInserire.user_id).distinct()
+    ).all()
+
+    results: Dict[str, Any] = {}
+    errors: Dict[str, str] = {}
+
+    BATCH = 200  # optional: batch users (avoid huge IN clauses if you later optimize further)
+
+    for i in range(0, len(user_ids), BATCH):
+        batch_user_ids = user_ids[i : i + BATCH]
+
+        for user_id in batch_user_ids:
+            try:
+                # 2) load only this user's rows
+                user_rows = session.exec(
+                    select(ParametriDaInserire).where(
+                        ParametriDaInserire.user_id == user_id
+                    )
+                ).all()
+
+                # if user has no rows, skip
+                if not user_rows:
+                    continue
+
+                # 3) build payload for your existing function
+                payload_rows = [
+                    ParametriRowIn(
+                        mese=r.mese,
+                        obiettivo_mensile=r.obiettivo_mensile,
+                        perc_premio_trimestrale=r.perc_premio_trimestrale,
+                        perc_premio_annuale=r.perc_premio_annuale,
+                        valore_limite=r.valore_limite,
+                        perc_100_budget=r.perc_100_budget,
+                    )
+                    for r in user_rows
+                ]
+
+                # ✅ reuse existing function
+                results[user_id] = replace_or_seed_parametri_for_user(
+                    user_id=user_id,
+                    rows=payload_rows,
+                    session=session,
+                )
+
+            except Exception as e:
+                session.rollback()
+                errors[user_id] = f"{type(e).__name__}: {str(e)}"
+
+    return {
+        "users_processed": len(user_ids),
+        "users_ok": len(results),
+        "users_failed": len(errors),
+        "results": results,
+        "errors": errors,
+    }
+
 
 @router.get("/create-parametri-by-user", response_model=List[str])
 def list_user_emails(db: Session = Depends(get_db)) -> List[str]:
@@ -201,65 +263,69 @@ def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)
 @router.post(
     "/parametri/recalc-all-using-existing",
     response_model=Dict[str, Any],
-    status_code=status.HTTP_200_OK,
 )
-def recalc_all_using_replace_or_seed(session: Session = Depends(get_db)) -> Dict[str, Any]:
+def recalc_all_using_replace_or_seed(
+    session: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    return recalc_premi_home(session)
+    # def recalc_all_using_replace_or_seed(session: Session = Depends(get_db)) -> Dict[str, Any]:
 
-    # 1) get distinct user_ids only (tiny result set)
-    user_ids: List[str] = session.exec(
-        select(ParametriDaInserire.user_id).distinct()
-    ).all()
+    #     # 1) get distinct user_ids only (tiny result set)
+    #     user_ids: List[str] = session.exec(
+    #         select(ParametriDaInserire.user_id).distinct()
+    #     ).all()
 
-    results: Dict[str, Any] = {}
-    errors: Dict[str, str] = {}
+    #     results: Dict[str, Any] = {}
+    #     errors: Dict[str, str] = {}
 
-    BATCH = 200 # optional: batch users (avoid huge IN clauses if you later optimize further)
+    #     BATCH = 200 # optional: batch users (avoid huge IN clauses if you later optimize further)
 
-    for i in range(0, len(user_ids), BATCH):
-        batch_user_ids = user_ids[i : i + BATCH]
+    #     for i in range(0, len(user_ids), BATCH):
+    #         batch_user_ids = user_ids[i : i + BATCH]
 
-        for user_id in batch_user_ids:
-            try:
-                # 2) load only this user's rows
-                user_rows = session.exec(
-                    select(ParametriDaInserire).where(ParametriDaInserire.user_id == user_id)
-                ).all()
+    #         for user_id in batch_user_ids:
+    #             try:
+    #                 # 2) load only this user's rows
+    #                 user_rows = session.exec(
+    #                     select(ParametriDaInserire).where(ParametriDaInserire.user_id == user_id)
+    #                 ).all()
 
-                # if user has no rows, skip
-                if not user_rows:
-                    continue
+    #                 # if user has no rows, skip
+    #                 if not user_rows:
+    #                     continue
 
-                # 3) build payload for your existing function
-                payload_rows = [
-                    ParametriRowIn(
-                        mese=r.mese,
-                        obiettivo_mensile=r.obiettivo_mensile,
-                        perc_premio_trimestrale=r.perc_premio_trimestrale,
-                        perc_premio_annuale=r.perc_premio_annuale,
-                        valore_limite=r.valore_limite,
-                        perc_100_budget=r.perc_100_budget,
-                    )
-                    for r in user_rows
-                ]
+    #                 # 3) build payload for your existing function
+    #                 payload_rows = [
+    #                     ParametriRowIn(
+    #                         mese=r.mese,
+    #                         obiettivo_mensile=r.obiettivo_mensile,
+    #                         perc_premio_trimestrale=r.perc_premio_trimestrale,
+    #                         perc_premio_annuale=r.perc_premio_annuale,
+    #                         valore_limite=r.valore_limite,
+    #                         perc_100_budget=r.perc_100_budget,
+    #                     )
+    #                     for r in user_rows
+    #                 ]
 
-                # ✅ reuse existing function
-                results[user_id] = replace_or_seed_parametri_for_user(
-                    user_id=user_id,
-                    rows=payload_rows,
-                    session=session,
-                )
+    #                 # ✅ reuse existing function
+    #                 results[user_id] = replace_or_seed_parametri_for_user(
+    #                     user_id=user_id,
+    #                     rows=payload_rows,
+    #                     session=session,
+    #                 )
 
-            except Exception as e:
-                session.rollback()
-                errors[user_id] = f"{type(e).__name__}: {str(e)}"
+    #             except Exception as e:
+    #                 session.rollback()
+    #                 errors[user_id] = f"{type(e).__name__}: {str(e)}"
 
-    return {
-        "users_processed": len(user_ids),
-        "users_ok": len(results),
-        "users_failed": len(errors),
-        "results": results,
-        "errors": errors,
-    }
+    #     return {
+    #         "users_processed": len(user_ids),
+    #         "users_ok": len(results),
+    #         "users_failed": len(errors),
+    #         "results": results,
+    #         "errors": errors,
+    #     }
+    # return recalc_all_using_replace_or_seed_service(session)
 
 
 @router.get(
