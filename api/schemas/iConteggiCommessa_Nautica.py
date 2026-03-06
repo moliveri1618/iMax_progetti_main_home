@@ -4,45 +4,6 @@ from pydantic import BaseModel
 from typing import Optional, List
 from models.iConteggiCommessa import OrdiniPremi
 
-MONTHS_IT = [
-    "gennaio",
-    "febbraio",
-    "marzo",
-    "aprile",
-    "maggio",
-    "giugno",
-    "luglio",
-    "agosto",
-    "settembre",
-    "ottobre",
-    "novembre",
-    "dicembre",
-]
-
-
-def month_key(m: Optional[str]) -> int:
-    if not m:
-        return 999
-    try:
-        return MONTHS_IT.index(m.strip().lower())
-    except ValueError:
-        return 999
-
-
-def month_to_date_string(mese: Optional[str], year: int = 2026) -> Optional[str]:
-    if not mese:
-        return None
-
-    mese_clean = mese.strip().lower()
-
-    if mese_clean not in MONTHS_IT:
-        return None
-
-    month_number = MONTHS_IT.index(mese_clean) + 1
-    return f"{year}-{month_number:02d}-01"
-
-
-
 class OrdiniPremiNauticaBase(BaseModel):
     user_id: Optional[str] = None
     ordine_numero: Optional[str] = None
@@ -133,7 +94,7 @@ class OrdiniPremiTabLavori(BaseModel):
             completato_da_user=None,
             data_completamento=None,
             nome_cliente=r.cliente,
-            data=month_to_date_string(r.mese),
+            data=f"{r.mese}-01" if r.mese else None,
             premio=r.valore_premio_lordo,
         )
 
