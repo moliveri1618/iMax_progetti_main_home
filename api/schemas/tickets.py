@@ -67,7 +67,7 @@ class TicketTabLavori(BaseModel):
     premio: Optional[float] = None
 
     @classmethod
-    def from_db(cls, t: HelpdeskTicket) -> "TicketTabLavori":
+    def from_db(cls, t: HelpdeskTicket, premio: float = 0) -> "TicketTabLavori":
         return cls(
             ordine_n=t.ticket_ref or "",
             prodotto="-",
