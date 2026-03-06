@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlmodel import SQLModel
 from pydantic import BaseModel
-
+from models.tickets import HelpdeskTicket
 
 # Base schema — shared fields (used for Create & Update)
 class TicketBase(BaseModel):
@@ -15,6 +15,7 @@ class TicketBase(BaseModel):
     created: Optional[str] = None   # you might switch this to datetime if needed
     type: Optional[str] = None
     completato: Optional[bool] = None
+    importo_imponibile: Optional[float] = None
 
 
 # Create schema — used for insertions
@@ -35,6 +36,7 @@ class TicketRead(SQLModel):
     created: str
     type: str
     completato: Optional[bool] = None
+    importo_imponibile: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -52,3 +54,30 @@ class TicketUpdate(BaseModel):
     created: Optional[str] = None
     type: Optional[str] = None
     completato: Optional[bool] = None
+    importo_imponibile: Optional[float] = None
+
+
+class TicketTabLavori(BaseModel):
+    ordine_n: str
+    prodotto: str
+    colonna: str
+    data_completamento: Optional[str] = None
+    cliente: Optional[str] = None
+    data: Optional[str] = None
+    premio: Optional[float] = None
+
+    @classmethod
+    def from_db(cls, t: HelpdeskTicket) -> "TicketTabLavori":
+        return cls(
+            ordine_n=t.ticket_ref or "",
+            prodotto="-",
+            colonna="Ticket Home",
+            data_completamento=None,
+            cliente=t.customer or "",
+            data=t.created.split(" ")[0] if t.created else None,
+            premio=0,
+        )
+
+    @classmethod
+    def from_db_list(cls, rows) -> list["TicketTabLavori"]:
+        return [cls.from_db(r) for r in rows]

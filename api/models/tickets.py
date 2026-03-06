@@ -14,4 +14,5 @@ class HelpdeskTicket(SQLModel, table=True):
     team: str
     created: str
     type: str  
+    importo_imponibile: float
     completato: Optional[bool]= Field(default=False) 

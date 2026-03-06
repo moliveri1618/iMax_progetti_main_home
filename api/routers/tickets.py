@@ -6,23 +6,29 @@ from xmlrpc import client
 from fastapi.responses import JSONResponse
 from fastapi import Query
 import httpx
-import pprint
+from sqlalchemy import func
 
-if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
+if os.getenv("GITHUB_ACTIONS"):
+    sys.path.append(os.path.dirname(__file__))
+
 from models.tickets import HelpdeskTicket
-from schemas.tickets import TicketCreate, TicketRead, TicketUpdate
+from schemas.tickets import (
+    TicketRead, 
+    TicketUpdate, 
+    TicketTabLavori
+)
 from dependecies import get_db
 
 router = APIRouter()
 
 TIMEOUT = 30.0
-ODOO_URL="https://odoo.mulattieri.it"
-ODOO_URL_LOGIN="https://odoo.mulattieri.it/web/login"
-ODOO_URL_API="https://odoo.mulattieri.it/jsonrpc"
-DB_NAME="mulsp-odoo-production"     
-UID=85 # iMax_api_user
-ODOO_BEARER_TOKEN="ocCAF0fVHguW3O*CbTRd*3v9"
-WTH_FIREWALL_TOKEN="SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
+ODOO_URL = "https://odoo.mulattieri.it"
+ODOO_URL_LOGIN = "https://odoo.mulattieri.it/web/login"
+ODOO_URL_API = "https://odoo.mulattieri.it/jsonrpc"
+DB_NAME = "mulsp-odoo-production"
+UID = 85  # iMax_api_user
+ODOO_BEARER_TOKEN = "ocCAF0fVHguW3O*CbTRd*3v9"
+WTH_FIREWALL_TOKEN = "SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
 
 
 def rpc_call(model, method, args=None, kwargs=None):
@@ -39,15 +45,15 @@ def rpc_call(model, method, args=None, kwargs=None):
                 model,
                 method,
                 args or [],
-                kwargs or {}
-            ]
+                kwargs or {},
+            ],
         },
-        "id": 1
+        "id": 1,
     }
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {ODOO_BEARER_TOKEN}",
-        "x-wth-token": WTH_FIREWALL_TOKEN
+        "x-wth-token": WTH_FIREWALL_TOKEN,
     }
     with httpx.Client(timeout=TIMEOUT) as client:
         resp = client.post(ODOO_URL_API, headers=headers, json=payload)
@@ -58,7 +64,6 @@ def rpc_call(model, method, args=None, kwargs=None):
         return data["result"]
 
 
-
 def sync_tickets_home_from_odoo(db: Session) -> int:
 
     try:
@@ -66,24 +71,29 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
         tickets = rpc_call(
             "helpdesk.ticket",
             "search_read",
-            [[
-                ("active", "=", True),
-                ("team_id", "in", [5, 6]),
-                ("stage_id.fold", "=", False),
-            ]],
-            {"fields": [
-                "id", 
-                "number", 
-                "name", 
-                "priority", 
-                "stage_id", 
-                "tag_ids", 
-                "create_date", 
-                "team_id",
-                "partner_id",
-                "partner_email",
-                "user_id"
-            ]}
+            [
+                [
+                    ("active", "=", True),
+                    ("team_id", "in", [5, 6]),
+                    ("stage_id.fold", "=", False),
+                ]
+            ],
+            {
+                "fields": [
+                    "id",
+                    "number",
+                    "name",
+                    "priority",
+                    "stage_id",
+                    "tag_ids",
+                    "create_date",
+                    "team_id",
+                    "partner_id",
+                    "partner_email",
+                    "user_id",
+                    "importo_imponibile",
+                ]
+            },
         )
 
         # 1) find user email
@@ -93,7 +103,7 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
                 "res.users",
                 "read",
                 [user_ids],
-                {"fields": ["id", "name", "login", "partner_id"]}
+                {"fields": ["id", "name", "login", "partner_id"]},
             )
             user_by_id = {u["id"]: u for u in users}
         # print(user_ids)
@@ -116,7 +126,7 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
 
             # split nautica & home
             tid = t["team_id"][0] if t.get("team_id") else None
-            # if tid == 5: 
+            # if tid == 5:
             #     nautica.append(t)
             if tid == 6:
                 home.append(t)
@@ -126,11 +136,13 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
         # print("\nHOME:", len(home))
         # pprint.pprint(home)
 
-        # find existing refs 
+        # find existing refs
         incoming_refs = [str(t.get("number") or "") for t in home]
         existing_refs = set()
         if incoming_refs:
-            stmt = select(HelpdeskTicket.ticket_ref).where(HelpdeskTicket.ticket_ref.in_(incoming_refs))
+            stmt = select(HelpdeskTicket.ticket_ref).where(
+                HelpdeskTicket.ticket_ref.in_(incoming_refs)
+            )
             existing_refs = set(db.exec(stmt).all())
         # print('incoming_refs', incoming_refs)
         # print('existing refs', existing_refs)
@@ -144,36 +156,39 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
             if ticket_ref in existing_refs:
                 continue
 
-            rows.append({
-                "ticket_ref": ticket_ref,
-                "name": (t.get("name") or ""),
-                "priority": str(t.get("priority") or ""),
-                "customer": (t.get("customer") or ""),
-                "assigned_to": (t.get("assigned_to") or ""),
-                "stage": (t["stage_id"][1] if t.get("stage_id") else ""),
-                "team": "N/A",
-                "created": (t.get("create_date") or ""),
-                "type": "home",
-                "completato": False,
-            })
+            rows.append(
+                {
+                    "ticket_ref": ticket_ref,
+                    "name": (t.get("name") or ""),
+                    "priority": str(t.get("priority") or ""),
+                    "customer": (t.get("customer") or ""),
+                    "assigned_to": (t.get("assigned_to") or ""),
+                    "stage": (t["stage_id"][1] if t.get("stage_id") else ""),
+                    "team": "N/A",
+                    "created": (t.get("create_date") or ""),
+                    "type": "home",
+                    "completato": False,
+                    "importo_imponibile": t.get("importo_imponibile"),
+                }
+            )
 
         if rows:
             db.bulk_insert_mappings(HelpdeskTicket, rows)
             db.commit()
 
-        return {"inserted": len(rows)} 
-           
+        return {"inserted": len(rows)}
+
     except Exception as e:
         raise
-        
-
 
 
 # ---------- GET ALL
 @router.get("/all", response_model=List[HelpdeskTicket])
 def get_all_tickets(
     db: Session = Depends(get_db),
-    type: str = Query("nautica", description="Ticket type: 'nautica', 'home', or 'all'")
+    type: str = Query(
+        "nautica", description="Ticket type: 'nautica', 'home', or 'all'"
+    ),
 ):
     try:
         query = select(HelpdeskTicket)
@@ -187,7 +202,9 @@ def get_all_tickets(
 
     except Exception as e:
         print(f"Error retrieving tickets: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving tickets from database.")
+        raise HTTPException(
+            status_code=500, detail="Error retrieving tickets from database."
+        )
 
 
 # ---------- EDIT BY ID
@@ -225,112 +242,31 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
         return sync_tickets_home_from_odoo(db)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
-    
-    # try:
 
-    #     tickets = rpc_call(
-    #         "helpdesk.ticket",
-    #         "search_read",
-    #         [[
-    #             ("active", "=", True),
-    #             ("team_id", "in", [5, 6]),
-    #             ("stage_id.fold", "=", False),
-    #         ]],
-    #         {"fields": [
-    #             "id", 
-    #             "number", 
-    #             "name", 
-    #             "priority", 
-    #             "stage_id", 
-    #             "tag_ids", 
-    #             "create_date", 
-    #             "team_id",
-    #             "partner_id",
-    #             "partner_email",
-    #             "user_id"
-    #         ]}
-    #     )
 
-    #     # 1) find user email
-    #     user_ids = sorted({t["user_id"][0] for t in tickets if t.get("user_id")})
-    #     if user_ids:
-    #         users = rpc_call(
-    #             "res.users",
-    #             "read",
-    #             [user_ids],
-    #             {"fields": ["id", "name", "login", "partner_id"]}
-    #         )
-    #         user_by_id = {u["id"]: u for u in users}
-    #     # print(user_ids)
-    #     # print(user_by_id)
 
-    #     # create tickets
-    #     nautica, home = [], []
-    #     for t in tickets:
 
-    #         # customer
-    #         name = t["partner_id"][1] if t.get("partner_id") else "Unknown"
-    #         email = t.get("partner_email") or "N/A"
-    #         t["customer"] = f"{name}, {email}"
+@router.get("/tab-lavori/{userEmail}", response_model=list[TicketTabLavori])
+def get_tickets_home_tab_lavori(userEmail: str, db: Session = Depends(get_db)):
 
-    #         # assigned to
-    #         user_id = t.get("user_id")
-    #         if user_id:
-    #             u = user_by_id.get(user_id[0], {})
-    #             t["assigned_to"] = u.get("name") + ", " + u.get("login")
+    try:
+        statement = (
+            select(HelpdeskTicket)
+            .where(
+                func.lower(
+                    func.trim(func.split_part(HelpdeskTicket.assigned_to, ",", 2))
+                )
+                == userEmail.lower()
+            )
+            .order_by(HelpdeskTicket.created.desc())
+        )
+        tickets = db.exec(statement).all()
 
-    #         # split nautica & home
-    #         tid = t["team_id"][0] if t.get("team_id") else None
-    #         # if tid == 5: 
-    #         #     nautica.append(t)
-    #         if tid == 6:
-    #             home.append(t)
+        return TicketTabLavori.from_db_list(tickets)
 
-    #     # print("NAUTICA:", len(nautica))
-    #     # pprint.pprint(nautica)
-    #     # print("\nHOME:", len(home))
-    #     # pprint.pprint(home)
 
-    #     # find existing refs 
-    #     incoming_refs = [str(t.get("number") or "") for t in home]
-    #     existing_refs = set()
-    #     if incoming_refs:
-    #         stmt = select(HelpdeskTicket.ticket_ref).where(HelpdeskTicket.ticket_ref.in_(incoming_refs))
-    #         existing_refs = set(db.exec(stmt).all())
-    #     # print('incoming_refs', incoming_refs)
-    #     # print('existing refs', existing_refs)
-
-    #     rows = []
-    #     for t in home:
-    #         ticket_ref = str(t.get("number") or "")
-    #         if not ticket_ref:
-    #             continue
-
-    #         if ticket_ref in existing_refs:
-    #             continue
-
-    #         rows.append({
-    #             "ticket_ref": ticket_ref,
-    #             "name": (t.get("name") or ""),
-    #             "priority": str(t.get("priority") or ""),
-    #             "customer": (t.get("customer") or ""),
-    #             "assigned_to": (t.get("assigned_to") or ""),
-    #             "stage": (t["stage_id"][1] if t.get("stage_id") else ""),
-    #             "team": "N/A",
-    #             "created": (t.get("create_date") or ""),
-    #             "type": "home",
-    #             "completato": False,
-    #         })
-
-    #     if rows:
-    #         db.bulk_insert_mappings(HelpdeskTicket, rows)
-    #         db.commit()
-
-    #     return {"inserted": len(rows)} 
-           
-    # except Exception as e:
-    #     return JSONResponse(
-    #         content={"error": str(e)},
-    #         status_code=500
-    #     )
-        
+    except Exception as e:
+        print(f"Error retrieving home tickets for tab lavori: {e}")
+        raise HTTPException(
+            status_code=500, detail="Error retrieving home tickets for tab lavori."
+        )
