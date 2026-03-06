@@ -25,6 +25,7 @@ from schemas.collaudoFinaleNautica import (
     ICollaudoFinaleNauticaUpdate,
 )
 from models.commesseNautica import iCommesseNautica
+from models.users import iUsers
 from dependecies import get_db
 
 router = APIRouter()
@@ -203,10 +204,14 @@ def read_workinprogress_tab_lavori_by_user(
             iCommesseNautica.ordine,
             iCommesseNautica.data,
             iCommesseNautica.nome_cliente,
+            iUsers.bonus_gen,
+            iUsers.bonus_capo,
+            iUsers.detr_sub,
+            iUsers.capo,
+            iUsers.sub,
         )
-        .join(
-            iCommesseNautica, WorkInProgressNautica.commesse_id == iCommesseNautica.id
-        )
+        .join(iCommesseNautica, WorkInProgressNautica.commesse_id == iCommesseNautica.id)
+        .join(iUsers, iUsers.email == WorkInProgressNautica.completato_da_user)
         .where(WorkInProgressNautica.completato_da_user == userEmail)
     )
     results = db.exec(statement).all()
@@ -217,12 +222,24 @@ def read_workinprogress_tab_lavori_by_user(
         )
 
     output = []
-    for work, ordine, data, nome_cliente in results:
+    for work, ordine, data, nome_cliente, bonus_gen, bonus_capo, detr_sub, capo, sub in results:
+        
+        # convert to dict
         work_dict = (
             IWorkInProgressNauticaRead.model_validate(work).model_dump()
             if hasattr(IWorkInProgressNauticaRead, "model_validate")
             else IWorkInProgressNauticaRead.from_orm(work).dict()
         )
+        
+        # calculate bonus gen
+        valore = work.valore or 0
+        premio = valore * ((bonus_gen or 0) / 100) 
+        
+        # calc additional bonus
+        if capo and capo != "Empty":
+            premio += valore * ((bonus_capo or 0) / 100)
+        if sub and sub != "Empty":
+            premio -= valore * ((detr_sub or 0) / 100)
 
         output.append(
             WorkInProgressNauticaTabLavori(
@@ -231,6 +248,7 @@ def read_workinprogress_tab_lavori_by_user(
                 data=data,
                 nome_cliente=nome_cliente,
                 prodotto=f"[{work.zona}] - {work.modello}",
+                premio=premio,
             )
         )
 

@@ -25,6 +25,7 @@ from schemas.collaudoFinale import (
     ICollaudoFinaleUpdate,
 )
 from models.commesse import iCommesse
+from models.users import iUsers
 from dependecies import get_db
 
 router = APIRouter()
@@ -215,8 +216,14 @@ def read_workinprogress_tab_lavori_by_user(
             iCommesse.ordine,
             iCommesse.data,
             iCommesse.nome_cliente,
+            iUsers.bonus_gen,
+            iUsers.bonus_capo,
+            iUsers.detr_sub,
+            iUsers.capo,
+            iUsers.sub,
         )
         .join(iCommesse, WorkInProgress.commesse_id == iCommesse.id)
+        .join(iUsers, iUsers.email == WorkInProgress.completato_da_user)
         .where(WorkInProgress.completato_da_user == userEmail)
     )
     results = db.exec(statement).all()
@@ -227,12 +234,24 @@ def read_workinprogress_tab_lavori_by_user(
         )
 
     output = []
-    for work, ordine, data, nome_cliente in results:
+    for work, ordine, data, nome_cliente, bonus_gen, bonus_capo, detr_sub, capo, sub in results:
+
+        # convert to dict
         work_dict = (
             IWorkInProgressRead.model_validate(work).model_dump()
             if hasattr(IWorkInProgressRead, "model_validate")
             else IWorkInProgressRead.from_orm(work).dict()
         )
+
+        # calculate bonus gen
+        valore = work.valore or 0
+        premio = valore * ((bonus_gen or 0) / 100) 
+
+        # calc additional bonus
+        if capo and capo != "Empty":
+            premio += valore * ((bonus_capo or 0) / 100)
+        if sub and sub != "Empty":
+            premio -= valore * ((detr_sub or 0) / 100)
 
         output.append(
             WorkInProgressTabLavori(
@@ -241,6 +260,7 @@ def read_workinprogress_tab_lavori_by_user(
                 data=data,
                 nome_cliente=nome_cliente,
                 prodotto=f"[{work.zona}] - {work.modello}",
+                premio=premio,
             )
         )
 

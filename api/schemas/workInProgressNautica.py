@@ -83,3 +83,4 @@ class WorkInProgressNauticaTabLavori(IWorkInProgressNauticaRead):
     data: date | None = None
     nome_cliente: str | None = None
     prodotto: str
+    premio: float
