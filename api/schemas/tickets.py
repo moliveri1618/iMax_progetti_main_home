@@ -75,7 +75,7 @@ class TicketTabLavori(BaseModel):
             data_completamento=None,
             cliente=t.customer or "",
             data=t.created.split(" ")[0] if t.created else None,
-            premio=0,
+            premio=premio,
         )
 
     @classmethod

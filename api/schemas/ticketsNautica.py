@@ -68,7 +68,7 @@ class TicketNauticaTabLavori(BaseModel):
     premio: Optional[float] = None
 
     @classmethod
-    def from_db(cls, t: HelpdeskTicketNautica) -> "TicketNauticaTabLavori":
+    def from_db(cls, t: HelpdeskTicketNautica, premio: float = 0) -> "TicketNauticaTabLavori":
         return cls(
             ordine_n=t.ticket_ref or "",
             prodotto="-",
@@ -76,7 +76,7 @@ class TicketNauticaTabLavori(BaseModel):
             data_completamento=None,
             cliente=t.customer or "",
             data=t.created.split(" ")[0] if t.created else None,
-            premio=0,
+            premio=premio,
         )
 
     @classmethod

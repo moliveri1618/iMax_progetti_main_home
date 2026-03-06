@@ -15,6 +15,7 @@ from schemas.ticketsNautica import (
     TicketNauticaUpdate,
     TicketNauticaTabLavori
 )
+from models.users import iUsers
 from dependecies import get_db
 
 router = APIRouter()
@@ -231,22 +232,38 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
 
 
 @router.get("/tab-lavori/{userEmail}", response_model=list[TicketNauticaTabLavori])
-def get_tickets_home_tab_lavori(userEmail: str, db: Session = Depends(get_db)):
+def get_tickets_nautica_tab_lavori(userEmail: str, db: Session = Depends(get_db)):
 
     try:
         statement = (
-            select(HelpdeskTicketNautica)
-            .where(
-                func.lower(
+            select(HelpdeskTicketNautica, iUsers.riparazioni)
+            .join(
+                iUsers,
+                func.lower(iUsers.email)
+                == func.lower(
                     func.trim(func.split_part(HelpdeskTicketNautica.assigned_to, ",", 2))
-                )
-                == userEmail.lower()
+                ),
             )
+            .where(func.lower(iUsers.email) == userEmail.lower())
             .order_by(HelpdeskTicketNautica.created.desc())
         )
-        tickets = db.exec(statement).all()
+        results = db.exec(statement).all()
 
-        return TicketNauticaTabLavori.from_db_list(tickets)
+        # sum of all ticket values
+        total_importo = sum((t.importo_imponibile or 0) for t, _ in results)
+
+        # get percentage for user
+        rip = results[0][1] if results else 0
+
+        # calc premio just if tot importo tickets > 500
+        premio = 0
+        if total_importo > 500:
+            premio = (rip or 0) / 100 * total_importo
+
+        return [
+            TicketNauticaTabLavori.from_db(ticket, premio=premio)
+            for ticket, _ in results
+        ]
 
     except Exception as e:
         print(f"Error retrieving home tickets for tab lavori: {e}")
