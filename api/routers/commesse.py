@@ -2,23 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
 import sys, os
-from xmlrpc import client
 from collections import defaultdict
 import re
 from fastapi.responses import JSONResponse
 from datetime import datetime
 import httpx
-import pprint
-from pathlib import Path
+from sqlalchemy import text
+import re
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.commesse import iCommesse
 from models.users import iUsers
-from schemas.commesse import ICommesseCreate, ICommesseRead, ICommesseUpdate
+from schemas.commesse import ICommesseRead
 from models.workInProgress import WorkInProgress
-from dependecies import get_db, SERVER_URL_ODOO, DB_NAME_ODOO, USERNAME_ODOO, PASSWORD_ODOO
-from pathlib import Path
-import re
+from dependecies import get_db
+
 # log_file = Path(__file__).parent / "debug_output.txt"
 
 router = APIRouter()
@@ -99,7 +97,7 @@ def match_value(norm_col, prop_map):
 # DB_NAME="odoodb_cleaned"
 # ODOO_BEARER_TOKEN="6c7beeefb78b508ac15f2ff430c4aa8e181b79bc"
 # WTH_FIREWALL_TOKEN="xt4GSYYeTKzMYfwGk4u5VYU"
-# UID = 2 
+# UID = 2
 # TIMEOUT = 30.0
 TIMEOUT = 30.0
 ODOO_URL="https://odoo.mulattieri.it"
@@ -109,6 +107,28 @@ DB_NAME="mulsp-odoo-production"
 UID=85 # iMax_api_user
 ODOO_BEARER_TOKEN="ocCAF0fVHguW3O*CbTRd*3v9"
 WTH_FIREWALL_TOKEN="SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
+
+
+COMMESSE_HOME_LOCK_ID = 1001
+
+
+def try_acquire_lock(db: Session, lock_id: int) -> bool:
+    result = (
+        db.connection()
+        .execute(
+            text("SELECT pg_try_advisory_lock(:lock_id)"),
+            {"lock_id": lock_id},
+        )
+        .scalar()
+    )
+    return bool(result)
+
+
+def release_lock(db: Session, lock_id: int) -> None:
+    db.connection().execute(
+        text("SELECT pg_advisory_unlock(:lock_id)"),
+        {"lock_id": lock_id},
+    )
 
 
 def rpc_call(model, method, args=None, kwargs=None):
@@ -384,22 +404,27 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
         raise
 
 
-
-
-
 # Get all
 @router.get("/all", response_model=List[ICommesseRead])
 def read_commesse(db: Session = Depends(get_db)):
     commesse = db.exec(select(iCommesse)).all()
     return commesse
 
-# from odoo 
-@router.get("/odoo/v2")
+# from odoo
+@router.post("/odoo/v2")
 def get_commesse_from_odoo(db: Session = Depends(get_db)):
+    
+    acquired = try_acquire_lock(db, COMMESSE_HOME_LOCK_ID)
+    if not acquired:
+        raise HTTPException(status_code=409, detail="Sync already running")
+    
     try:
         return sync_commesse_home_from_odoo(db)
     except Exception as e:
+        db.rollback()
         return JSONResponse(content={"error": str(e)}, status_code=500)
+    finally:
+        release_lock(db, COMMESSE_HOME_LOCK_ID)
 
 
 # Get one commessa by ID
@@ -465,4 +490,3 @@ def update_commessa_assigned_users(
         "message": "assignedUserIds updated successfully",
         "assignedUserIds": commessa.assignedUserIds,
     }
-
