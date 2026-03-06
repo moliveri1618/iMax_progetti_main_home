@@ -393,7 +393,7 @@ def read_commesse(db: Session = Depends(get_db)):
     commesse = db.exec(select(iCommesse)).all()
     return commesse
 
-
+# from odoo 
 @router.get("/odoo/v2")
 def get_commesse_from_odoo(db: Session = Depends(get_db)):
     try:
