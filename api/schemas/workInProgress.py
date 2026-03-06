@@ -77,3 +77,9 @@ class WorkInProgressGroupedV2(BaseModel):
     zona: str
     modello: str
     steps: List[IWorkInProgressWithCollaudo]
+    
+    
+class WorkInProgressTabLavori(IWorkInProgressRead):
+    ordine: str | None = None
+    data: date | None = None
+    nome_cliente: str | None = None

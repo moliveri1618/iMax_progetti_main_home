@@ -75,6 +75,7 @@ class OrdiniPremiTabLavori(BaseModel):
 
 class OrdiniPremiTabLavori(BaseModel):
     id: int
+    ordine_n: str
     zona: str
     modello: str
     colonna: str
@@ -88,7 +89,8 @@ class OrdiniPremiTabLavori(BaseModel):
     def from_db(cls, r: OrdiniPremi) -> "OrdiniPremiTabLavori":
         return cls(
             id=r.id,
-            zona=r.ordine_numero,
+            ordine_n=r.ordine_numero,
+            zona="-",
             modello=r.prodotto or "-",
             colonna="VENDITE NAUTICA",
             completato_da_user=None,

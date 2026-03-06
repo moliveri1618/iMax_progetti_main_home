@@ -12,7 +12,13 @@ if os.getenv("GITHUB_ACTIONS"):
 
 from models.workInProgress import WorkInProgress
 from models.collaudoFinale import CollaudoFinale
-from schemas.workInProgress import IWorkInProgressCreate, IWorkInProgressRead, IWorkInProgressUpdate, WorkInProgressGrouped, WorkInProgressGroupedV2
+from schemas.workInProgress import (
+    IWorkInProgressCreate,
+    IWorkInProgressRead,
+    IWorkInProgressUpdate,
+    WorkInProgressGrouped,
+    WorkInProgressTabLavori,
+)
 from schemas.collaudoFinale import (
     ICollaudoFinaleCreate,
     ICollaudoFinaleRead,
@@ -197,41 +203,42 @@ def read_workinprogress_v2(commessa_id: int, db: Session = Depends(get_db)):
 
 
 # get work in progress for tabella lavori
-@router.get("/user/{userEmail}")
+@router.get(
+    "/tab-lavori-home/{userEmail}", response_model=list[WorkInProgressTabLavori]
+)
 def read_workinprogress_by_user(userEmail: str, db: Session = Depends(get_db)):
+    statement = (
+        select(
+            WorkInProgress,
+            iCommesse.ordine,
+            iCommesse.data,
+            iCommesse.nome_cliente,
+        )
+        .join(iCommesse, WorkInProgress.commesse_id == iCommesse.id)
+        .where(WorkInProgress.completato_da_user == userEmail)
+    )
+    results = db.exec(statement).all()
 
-    # 1) WorkInProgress rows for user
-    work_rows = db.exec(
-        select(WorkInProgress).where(WorkInProgress.completato_da_user == userEmail)
-    ).all()
-
-    if not work_rows:
+    if not results:
         raise HTTPException(
             status_code=404, detail=f"No records found for user '{userEmail}'"
         )
 
-    # 2) Unique commesse_ids
-    commesse_ids = sorted(
-        {w.commesse_id for w in work_rows if w.commesse_id is not None}
-    )
+    output = []
+    for work, ordine, data, nome_cliente in results:
+        work_dict = (
+            IWorkInProgressRead.model_validate(work).model_dump()
+            if hasattr(IWorkInProgressRead, "model_validate")
+            else IWorkInProgressRead.from_orm(work).dict()
+        )
 
-    # 3) Fetch all related commesse in one shot
-    commesse = db.exec(select(iCommesse).where(iCommesse.id.in_(commesse_ids))).all()
+        output.append(
+            WorkInProgressTabLavori(
+                **work_dict,
+                ordine=ordine,
+                data=data,
+                nome_cliente=nome_cliente,
+            )
+        )
 
-    # 4) Map by id -> only the fields you need
-    commessa_map = {
-        c.id: {"ordine": c.ordine, "nome_cliente": c.nome_cliente} for c in commesse
-    }
-
-    # 5) Attach to each row
-    return [
-        {
-            **(
-                IWorkInProgressRead.model_validate(w).model_dump()
-                if hasattr(IWorkInProgressRead, "model_validate")
-                else IWorkInProgressRead.from_orm(w).dict()
-            ),
-            "commessa": commessa_map.get(w.commesse_id, None),
-        }
-        for w in work_rows
-    ]
+    return output

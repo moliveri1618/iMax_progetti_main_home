@@ -64,7 +64,8 @@ class OrdiniPremiBulkUpdate(BaseModel):
 
 class OrdiniPremiTabLavori(BaseModel):
     id: int
-    zona: str
+    ordine_n: str
+    zona:str
     modello: str
     colonna: str
     completato_da_user: Optional[str] = None
@@ -77,7 +78,8 @@ class OrdiniPremiTabLavori(BaseModel):
     def from_db(cls, r: OrdiniPremi) -> "OrdiniPremiTabLavori":
         return cls(
             id=r.id,
-            zona=r.ordine_numero,
+            ordine_n=r.ordine_numero,
+            zona="-",
             modello=r.prodotto or "-",
             colonna="VENDITE HOME",
             completato_da_user=None,
