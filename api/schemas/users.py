@@ -21,6 +21,7 @@ class UserBase(BaseModel):
     bonus_gen: Optional[int] = None
     bonus_capo: Optional[int] = None
     detr_sub: Optional[int] = None
+    riparazioni: Optional[float] = None
 
 
 # --- Create schema ---
@@ -47,6 +48,7 @@ class UserRead(SQLModel):
     bonus_gen: Optional[int] = None
     bonus_capo: Optional[int] = None
     detr_sub: Optional[int] = None
+    riparazioni: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -70,6 +72,7 @@ class UserUpdate(BaseModel):
     bonus_gen: Optional[int] = None
     bonus_capo: Optional[int] = None
     detr_sub: Optional[int] = None
+    riparazioni: Optional[float] = None
 
 
 class TeamRead(BaseModel):

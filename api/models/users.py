@@ -25,6 +25,7 @@ class iUsers(SQLModel, table=True):
     bonus_gen: Optional[int] = None
     bonus_capo: Optional[int] = None
     detr_sub: Optional[int] = None
+    riparazioni: Optional[float] = None
     nautica: Dict[str, bool] = Field(
         default_factory=lambda: {
             "Rilievo misure": True,

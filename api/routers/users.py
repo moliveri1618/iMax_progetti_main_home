@@ -463,6 +463,10 @@ def bulk_upsert_users(items: List[Dict[str, Any]], db: Session = Depends(get_db)
             if "detr_sub" in it and it["detr_sub"] != existing.detr_sub:
                 existing.detr_sub = it["detr_sub"]
                 changed = True
+                
+            if "riparazioni" in it and it["riparazioni"] != existing.riparazioni:
+                existing.riparazioni = it["riparazioni"]
+                changed = True
 
             if changed:
                 updated += 1
