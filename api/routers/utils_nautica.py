@@ -23,7 +23,7 @@ import os
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
-    
+
 from models.iParametriDaInserire_Nautica import ParametriDaInserireNautica  
 from schemas.iParametriDaInserire_Nautica import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
 # from models.vendite import VenditeImax
@@ -100,7 +100,7 @@ class Tecnico(BaseModel):
         "populate_by_name": True,   
         "extra": "ignore",          
     }
-        
+
 class Cliente(BaseModel):
     cliente_ticket_n: Optional[str] = None
     cliente_del: Optional[str] = None
@@ -123,7 +123,7 @@ class Cliente(BaseModel):
 class ReportData(BaseModel):
     tecnico: Optional[Tecnico] = None
     cliente: Optional[Cliente] = None  
-    
+
 
 # --- REPORT POST VENDITA ---
 class PosaCliente(BaseModel):
@@ -217,8 +217,6 @@ class PosaCommessa(BaseModel):
 class ReportPostVendita(BaseModel):
     posa_cliente: PosaCliente
     posa_commessa: PosaCommessa
-
-
 
 
 default_vendite = [
@@ -443,7 +441,7 @@ def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
         '4_trimestre': month_totals[10] + month_totals[11] + month_totals[12],  # Oct–Dec
     }
 
-        
+
 # SQLModel/Pydantic models support .dict() (v1) / .model_dump() (v2).
 # Use whichever exists to stay compatible.
 def to_dict(record):
@@ -714,7 +712,6 @@ def apply_formula(
             break
 
     return res
-
 
 
 def compute_calcolo_percentuale_venduto(perc_list):
@@ -1173,9 +1170,9 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     return result, res
 
 def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli, parametriDiVendita):
-    
+
     # Get vendite for the user
-    #vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")).all() 
+    # vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")).all()
 
     vendite = session.exec(
         select(iCommesseNautica).where(
@@ -1183,9 +1180,9 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
         )
     ).all()
     vendite = [v.model_dump() for v in vendite]
-    #pprint(calcoli)
+    # pprint(calcoli)
     pprint(vendite)
-    
+
     # 2 Perform calculations
     mapped: List[Dict[str, Any]] = []
     valori_1_trim = [c.get("perc_trim_1", 0.0) for c in calcoli]
@@ -1198,13 +1195,13 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
     # print("valori_2_trim", valori_2_trim)
     # print("valori_3_trim", valori_3_trim)
     # print("valori_4_trim", valori_4_trim)
-    
+
     for row in vendite:
         venduto_a = _num(row.get("costo"))  
         acquistato_a = _num(row.get("ricarico"))   
         margine = abs(venduto_a - acquistato_a)
         percentuale_ricarico = (margine / acquistato_a * 100) if acquistato_a != 0 else None
-        #mese = to_month_str(row.get("data"))
+        # mese = to_month_str(row.get("data"))
         mese = to_month_from_datetime(row.get("data"))
         print(mese)
         percentuale_premio = apply_formula( 
@@ -1216,24 +1213,30 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
                                         valori_4_trim,
                                         valori_limite
                             )
-        
-        mapped.append({
-            "user_id": row.get("venditore"),
-            "ordine_numero": row.get("ordine"),
-            "cliente": row.get("cliente"),
-            "prodotto": row.get("prodotto"),
-            "mese": mese,
-            "venduto_a": venduto_a,
-            "costo_totale_acquisto": acquistato_a,
-            "margine":margine,
-            "percentuale_ricarico": (margine / acquistato_a * 100) if acquistato_a != 0 else None,
-            "percentuale_premio": percentuale_premio,
-            "valore_premio_lordo": (margine*percentuale_premio)/100 if percentuale_premio else None,
-        })
-    
+
+        mapped.append(
+            {
+                "user_id": row.get("venditore"),
+                "ordine_numero": row.get("ordine"),
+                "cliente": row.get("nome_cliente"),
+                "prodotto": row.get("prodotto"),
+                "mese": mese,
+                "venduto_a": venduto_a,
+                "costo_totale_acquisto": acquistato_a,
+                "margine": margine,
+                "percentuale_ricarico": (
+                    (margine / acquistato_a * 100) if acquistato_a != 0 else None
+                ),
+                "percentuale_premio": percentuale_premio,
+                "valore_premio_lordo": (
+                    (margine * percentuale_premio) / 100 if percentuale_premio else None
+                ),
+            }
+        )
+
     # delete_replace_ordini_premi
     result = delete_replace_ordini_premi(session, user_id, mapped)
-   
+
     return result
 
 def send_email(receiver_email, filename, pdf_bytes=None):
@@ -1310,8 +1313,6 @@ def send_email_with_retry(
             time.sleep(backoff_seconds * (2 ** (attempt - 1)))
 
     logger.error("Email failed after %s attempts: %s", max_attempts, last_err)
-
-
 
 
 def build_pdf_report_tecnico(data):
@@ -2523,8 +2524,6 @@ def build_pdf_report_cliente(data):
 
     content = pdf.output(dest='S')
     return content.encode('latin-1') if isinstance(content, str) else content
-
-
 
 
 def build_pdf_report_posa_commessa(data):
