@@ -192,7 +192,7 @@ def read_workinprogress_v2(commessa_id: int, db: Session = Depends(get_db)):
 
 # get work in progress for tabella lavori
 @router.get(
-    "/tab-lavori-nautica/{userEmail}", response_model=list[WorkInProgressNauticaTabLavori]
+    "/tab-lavori/{userEmail}", response_model=list[WorkInProgressNauticaTabLavori]
 )
 def read_workinprogress_tab_lavori_by_user(
     userEmail: str, db: Session = Depends(get_db)
