@@ -95,8 +95,7 @@ def match_value(norm_col, prop_map):
 
     return None
 
-COMMESSE_HOME_LOCK_ID = 1001
-
+COMMESSE_HOME_LOCK_ID = 1002
 
 def try_acquire_lock(db: Session, lock_id: int) -> bool:
     result = (
