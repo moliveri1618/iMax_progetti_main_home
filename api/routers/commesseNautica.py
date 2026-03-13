@@ -8,6 +8,8 @@ from fastapi.responses import JSONResponse
 from datetime import datetime
 import httpx
 from sqlalchemy import text
+import pprint
+from pathlib import Path
 
 if os.getenv("GITHUB_ACTIONS"):sys.path.append(os.path.dirname(__file__))
 from models.commesseNautica import iCommesseNautica
@@ -124,8 +126,24 @@ ODOO_BEARER_TOKEN="ocCAF0fVHguW3O*CbTRd*3v9"
 WTH_FIREWALL_TOKEN="SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
 UID = 85
 TIMEOUT = 30.0
+ODOO_CONTEXT = {
+    "lang": "it_IT",
+    "tz": "Europe/Rome",
+}
 
 def rpc_call(model, method, args=None, kwargs=None):
+
+    if kwargs is None:
+        kwargs = {}
+
+
+    # merge default global context with per-call context
+    kwargs["context"] = {
+        **ODOO_CONTEXT,
+        **kwargs.get("context", {})
+    }
+
+
     payload = {
         "jsonrpc": "2.0",
         "method": "call",
@@ -159,14 +177,14 @@ def rpc_call(model, method, args=None, kwargs=None):
 
 def sync_commesse_nautica_odoo(db: Session) -> int:
     try:
-        
+
         # Get all projects
         sale_orders = rpc_call(
             "sale.order", "search_read",
             [[
                 ["state", "!=", "cancel"],
                 ["x_studio_imax_api", "=", "imax_nautica"],
-                ["x_studio_costo_ok", "=", True],
+                # ["x_studio_costo_ok", "=", True],
             ]],
             {
                 "fields": [
@@ -199,8 +217,26 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
         # pprint.pprint(sale_order_ids)
         # print("Odoo ordini:")
         # pprint.pprint(odoo_ordini)
+        # with open(log_file, "w", encoding="utf-8") as f:
+        #     f.write("SALE ORDERS\n")
+        #     f.write("=" * 80 + "\n\n")
 
-        # Get fetch users 
+        #     for order in sale_orders:
+        #         f.write(f"ID: {order.get('id')}\n")
+        #         f.write(f"Name: {order.get('name')}\n")
+        #         f.write(f"Date: {order.get('date_order')}\n")
+        #         f.write(f"Partner: {order.get('partner_id')}\n")
+        #         f.write(f"User: {order.get('user_id')}\n")
+        #         f.write(f"Amount total: {order.get('amount_total')}\n")
+        #         f.write(f"Invoice status: {order.get('invoice_status')}\n")
+        #         f.write(f"x_studio_imax_api: {order.get('x_studio_imax_api')}\n")
+        #         f.write(f"x_studio_costo_ok: {order.get('x_studio_costo_ok')}\n")
+        #         f.write(f"x_studio_pagato_ok: {order.get('x_studio_pagato_ok')}\n")
+        #         f.write(f"total_cost_of_lines: {order.get('total_cost_of_lines')}\n")
+        #         f.write(f"total_recharge: {order.get('total_recharge')}\n")
+        #         f.write("-" * 80 + "\n")
+
+        # Get fetch users
         user_ids = list({o["user_id"][0] for o in sale_orders if o.get("user_id")})
         users = rpc_call(
             "res.users", "read",
@@ -230,22 +266,37 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
         # print('Partners:')
         # pprint.pprint(partners)
         # print('Partner info:')
-        # pprint.pprint(partner_info)  
+        # pprint.pprint(partner_info)
 
         sale_order_products = rpc_call(
-            "sale.order.line", "search_read",
-            [[
-                ["order_id", "in", sale_order_ids],
-                ["product_template_id", "!=", False],  
-                ["product_template_id.x_studio_imax", "=", True]
-            ]],
-            {"fields": ["order_id", "product_template_id"]}
+            "sale.order.line",
+            "search_read",
+            [
+                [
+                    ["order_id", "in", sale_order_ids],
+                    ["product_template_id", "!=", False],
+                    ["product_template_id.x_studio_imax", "=", True],
+                ]
+            ],
+            {"fields": ["order_id", "product_template_id", "x_studio_pos"]},
         )
-        order_to_products_mapping = defaultdict(dict)
+        order_to_products_mapping = defaultdict(list)
+        template_ids_set = set()
         for line in sale_order_products:
-            order_id = line["order_id"][0]
-            tmpl_id, tmpl_name = line["product_template_id"]
-            order_to_products_mapping[order_id][tmpl_id] = tmpl_name
+            order_id_data = line.get("order_id")
+            tmpl_data = line.get("product_template_id")
+
+            if not order_id_data or not tmpl_data:
+                continue
+
+            order_id = order_id_data[0]
+            tmpl_id, tmpl_name = tmpl_data
+            template_ids_set.add(tmpl_id)
+
+            order_to_products_mapping[order_id].append(
+                (tmpl_id, tmpl_name, line.get("x_studio_pos") or "")
+            )
+        template_ids = list(template_ids_set)
         # print("Sale order products:")
         # pprint.pprint(sale_order_products)
         # print("Order to products mapping:")
@@ -256,12 +307,6 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
         # print("Columns to match:", CODE_RE)
         # print("Normalized columns:", COLS_NORM)
 
-
-        template_ids = list({
-            tmpl_id
-            for products_by_tmpl in order_to_products_mapping.values()
-            for tmpl_id in products_by_tmpl.keys()
-        })
         templates = rpc_call(
             "product.template", "read",
             [template_ids],
@@ -275,7 +320,7 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
                 if not k:
                     continue
                 v = p.get("value")
-                if v is False or v is None:
+                if v is None or v is False:
                     v = 0.0
                 prop_map[k] = float(v)
             template_props_map[t["id"]] = prop_map
@@ -312,17 +357,17 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
             country = country_id[1] if len(country_id) > 1 else None
             address_cliente = ", ".join([p for p in [city, zip_code, country] if p])
 
-            #create new commessa
+            # create new commessa
             new_commessa = iCommesseNautica(
-                ordine=order['name'],  # Extract numbers only
-                data=datetime.strptime(order['date_order'], '%Y-%m-%d %H:%M:%S').date(),
-                nome_cliente = partner.get('name', 'N/A'),
-                email_cliente=partner.get('email', 'N/A'),
+                ordine=order["name"],  # Extract numbers only
+                data=datetime.strptime(order["date_order"], "%Y-%m-%d %H:%M:%S").date(),
+                nome_cliente=partner.get("name") or None,
+                email_cliente=partner.get("email") or None,
                 address_cliente=address_cliente,
                 responsabile=responsabile_value,
                 status=0,
-                costo=order.get('total_cost_of_lines', 0.0),
-                ricarico=order.get('total_recharge', 0.0),
+                costo=order.get("total_cost_of_lines", 0.0),
+                ricarico=order.get("total_recharge", 0.0),
             )
             # with open(log_file, "a", encoding="utf-8") as f:
             #     f.write(
@@ -343,33 +388,33 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
 
         # add products to the new commessa
         work_items = []
+        append_work_item = work_items.append
+
         for order in new_orders:
             commessa = commesse_by_order_id[order["id"]]
-            products = order_to_products_mapping.get(order["id"], {})
+            products = order_to_products_mapping.get(order["id"], [])
 
-            for tmpl_id, tmpl_name in products.items():
-
-                # extract code: [LAVTENTAPINT], desc: LAVORAZIONE TAPPEZZERIA INTERNA
+            for tmpl_id, tmpl_name, posizione in products:
                 m = CODE_RE.match(tmpl_name)
                 if m:
-                    code, desc = m.groups() 
+                    code, desc = m.groups()
                 else:
                     code, desc = tmpl_name, ""
 
-                props = template_props_map.get(tmpl_id, {}) # get activities values for that product template
+                props = template_props_map.get(tmpl_id, {})
                 for col, norm_col in COLS_NORM:
-                    value = match_value(norm_col, props) # match activities from odoo with colonne.to_lower()
-
-                    work_items.append({
-                        "commesse_id": commessa.id,
-                        "zona": code,
-                        "modello": desc,
-                        "colonna": col,
-                        "completato": False,
-                        "completato_da_user": "",
-                        "data_completamento": None,
-                        "valore": value,
-                    })
+                    append_work_item(
+                        {
+                            "commesse_id": commessa.id,
+                            "zona": code,
+                            "modello": posizione,
+                            "colonna": col,
+                            "completato": False,
+                            "completato_da_user": "",
+                            "data_completamento": None,
+                            "valore": match_value(norm_col, props),
+                        }
+                    )
                     # with open(log_file, "a", encoding="utf-8") as f:
                     #     f.write(
                     #         "[NEW PRODUCT]\n"
