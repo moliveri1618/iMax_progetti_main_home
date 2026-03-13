@@ -436,7 +436,7 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
                     #         f"  valore: {value}\n"
                     # )
 
-        # If this list can be huge, insert in chunks
+        # insert in chunks
         CHUNK = 5000
         for i in range(0, len(work_items), CHUNK):
             db.bulk_insert_mappings(WorkInProgress, work_items[i:i+CHUNK])
