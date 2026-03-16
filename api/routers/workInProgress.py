@@ -181,6 +181,7 @@ def read_workinprogress_v2(commessa_id: int, db: Session = Depends(get_db)):
     grouped = group_for_frontend(results)
     # deduped = remove_zona_duplicates(grouped)
 
+
     # 3) Directly attach CollaudoFinale whenever colonna == "Collaudo Finale"
     for g in grouped:
         for step in g.steps:
