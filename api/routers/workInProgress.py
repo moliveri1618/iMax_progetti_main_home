@@ -179,10 +179,10 @@ def read_workinprogress_v2(commessa_id: int, db: Session = Depends(get_db)):
 
     # 2) Reuse existing grouping logic
     grouped = group_for_frontend(results)
-    deduped = remove_zona_duplicates(grouped)
+    # deduped = remove_zona_duplicates(grouped)
 
     # 3) Directly attach CollaudoFinale whenever colonna == "Collaudo Finale"
-    for g in deduped:
+    for g in grouped:
         for step in g.steps:
             if step.colonna == "Collaudo Finale":
                 collaudo_entry = db.exec(
@@ -200,7 +200,7 @@ def read_workinprogress_v2(commessa_id: int, db: Session = Depends(get_db)):
                 else:
                     step.percentuale_completamento_collaudo_finale = 0.0
 
-    return deduped
+    return grouped
 
 
 # get work in progress for tabella lavori
