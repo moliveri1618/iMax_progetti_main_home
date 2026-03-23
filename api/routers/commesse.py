@@ -189,7 +189,7 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
             [[
                 ["state", "!=", "cancel"],
                 ["x_studio_imax_api", "=", "imax_home"],
-                # ["x_studio_costo_ok", "=", True],
+                ["x_studio_costo_ok", "=", True],
             ]],
             {
                 "fields": [

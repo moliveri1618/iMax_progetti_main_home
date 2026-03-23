@@ -184,7 +184,7 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
             [[
                 ["state", "!=", "cancel"],
                 ["x_studio_imax_api", "=", "imax_nautica"],
-                # ["x_studio_costo_ok", "=", True],
+                ["x_studio_costo_ok", "=", True],
             ]],
             {
                 "fields": [
