@@ -185,15 +185,20 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
 
         # Get all projects
         sale_orders = rpc_call(
-            "sale.order", "search_read",
-            [[
-                ["state", "!=", "cancel"],
-                ["x_studio_imax_api", "=", "imax_home"],
-                ["x_studio_costo_ok", "=", True],
-            ]],
+            "sale.order",
+            "search_read",
+            [
+                [
+                    ["state", "!=", "cancel"],
+                    ["date_order", ">=", "2026-01-01"],
+                    ["date_order", "<", "2027-01-01"],
+                    ["x_studio_imax_api", "=", "imax_home"],
+                    ["x_studio_costo_ok", "=", True],
+                ]
+            ],
             {
                 "fields": [
-                    "id",  
+                    "id",
                     "name",
                     "date_order",
                     "partner_id",
@@ -207,7 +212,7 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
                     "total_cost_of_lines",
                     "total_recharge",
                 ]
-            }
+            },
         )
         sale_order_ids = []
         odoo_ordini = set()
@@ -216,8 +221,8 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
                 sale_order_ids.append(o["id"])
             if o.get("name"):
                 odoo_ordini.add(o["name"])
-        # print("Sale orders:")
-        # pprint.pprint(sale_orders)
+        print("Sale orders:")
+        pprint.pprint(sale_orders)
         # print("Extracted sale order IDs:")
         # pprint.pprint(sale_order_ids)
         # print("Odoo ordini:")

@@ -211,8 +211,8 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
                 sale_order_ids.append(o["id"])
             if o.get("name"):
                 odoo_ordini.add(o["name"])
-        # print("Sale orders:")
-        # pprint.pprint(sale_orders)
+        print("Sale orders:")
+        pprint.pprint(sale_orders)
         # print("Extracted sale order IDs:")
         # pprint.pprint(sale_order_ids)
         # print("Odoo ordini:")
