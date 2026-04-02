@@ -41,7 +41,6 @@ def get_db():
         yield session
 
 
-
 # Verify AWS Cognito JWT using Boto3
 cognito_client = boto3.client("cognito-idp", region_name=COGNITO_REGION)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
