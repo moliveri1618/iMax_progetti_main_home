@@ -110,14 +110,77 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
         # print(user_ids)
         # print(user_by_id)
 
+        # 2) find partner/customer info
+        partner_ids = sorted(
+            {t["partner_id"][0] for t in tickets if t.get("partner_id")}
+        )
+        partner_by_id = {}
+        if partner_ids:
+            partners = rpc_call(
+                "res.partner",
+                "read",
+                [partner_ids],
+                {
+                    "fields": [
+                        "id",
+                        "name",
+                        "email",
+                        "street",
+                        "street2",
+                        "zip",
+                        "city",
+                        "state_id",
+                        "country_id",
+                        "phone",
+                        "mobile",
+                        "vat",
+                        "website",
+                    ]
+                },
+            )
+        partner_by_id = {p["id"]: p for p in partners}
+
         # create tickets
         nautica, home = [], []
         for t in tickets:
 
             # customer
-            name = t["partner_id"][1] if t.get("partner_id") else "Unknown"
-            email = t.get("partner_email") or "N/A"
-            t["customer"] = f"{name}, {email}"
+            # name = t["partner_id"][1] if t.get("partner_id") else "Unknown"
+            # email = t.get("partner_email") or "N/A"
+            # t["customer"] = f"{name}, {email}"
+            # customer
+            partner = {}
+            if t.get("partner_id"):
+                partner = partner_by_id.get(t["partner_id"][0], {})
+
+            name = partner.get("name") or (
+                t["partner_id"][1] if t.get("partner_id") else "Unknown"
+            )
+            email = partner.get("email") or t.get("partner_email") or ""
+            street = partner.get("street") or ""
+            street2 = partner.get("street2") or ""
+            zip_code = partner.get("zip") or ""
+            city = partner.get("city") or ""
+            state = partner.get("state_id")[1] if partner.get("state_id") else ""
+            country = partner.get("country_id")[1] if partner.get("country_id") else ""
+            phone = partner.get("phone") or ""
+            mobile = partner.get("mobile") or ""
+            vat = partner.get("vat") or ""
+            website = partner.get("website") or ""
+
+            t["customer"] = f"{name}, {email}" if email else name
+            t["customer_name"] = name
+            t["customer_email"] = email
+            t["customer_street"] = street
+            t["customer_street2"] = street2
+            t["customer_zip"] = zip_code
+            t["customer_city"] = city
+            t["customer_state"] = state
+            t["customer_country"] = country
+            t["customer_phone"] = phone
+            t["customer_mobile"] = mobile
+            t["customer_vat"] = vat
+            t["customer_website"] = website
 
             # assigned to
             user_id = t.get("user_id")
@@ -157,6 +220,24 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
             if ticket_ref in existing_refs:
                 continue
 
+            print(
+                "CUSTOMER DEBUG ->",
+                {
+                    "customer_name": t.get("customer_name") or "",
+                    "customer_email": t.get("customer_email") or "",
+                    "customer_street": t.get("customer_street") or "",
+                    "customer_street2": t.get("customer_street2") or "",
+                    "customer_zip": t.get("customer_zip") or "",
+                    "customer_city": t.get("customer_city") or "",
+                    "customer_state": t.get("customer_state") or "",
+                    "customer_country": t.get("customer_country") or "",
+                    "customer_phone": t.get("customer_phone") or "",
+                    "customer_mobile": t.get("customer_mobile") or "",
+                    "customer_vat": t.get("customer_vat") or "",
+                    "customer_website": t.get("customer_website") or "",
+                },
+            )
+
             rows.append(
                 {
                     "ticket_ref": ticket_ref,
@@ -170,6 +251,19 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
                     "type": "home",
                     "completato": False,
                     "importo_imponibile": t.get("importo_imponibile"),
+                    
+                    "customer_name": (t.get("customer_name") or ""),
+                    "customer_email": (t.get("customer_email") or ""),
+                    "customer_street": (t.get("customer_street") or ""),
+                    "customer_street2": (t.get("customer_street2") or ""),
+                    "customer_zip": (t.get("customer_zip") or ""),
+                    "customer_city": (t.get("customer_city") or ""),
+                    "customer_state": (t.get("customer_state") or ""),
+                    "customer_country": (t.get("customer_country") or ""),
+                    "customer_phone": (t.get("customer_phone") or ""),
+                    "customer_mobile": (t.get("customer_mobile") or ""),
+                    "customer_vat": (t.get("customer_vat") or ""),
+                    "customer_website": (t.get("customer_website") or ""),
                 }
             )
 

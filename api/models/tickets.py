@@ -16,3 +16,15 @@ class HelpdeskTicket(SQLModel, table=True):
     type: str  
     importo_imponibile: float
     completato: Optional[bool]= Field(default=False) 
+    customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_street: Optional[str] = None
+    customer_street2: Optional[str] = None
+    customer_zip: Optional[str] = None
+    customer_city: Optional[str] = None
+    customer_state: Optional[str] = None
+    customer_country: Optional[str] = None
+    customer_phone: Optional[str] = None
+    customer_mobile: Optional[str] = None
+    customer_vat: Optional[str] = None
+    customer_website: Optional[str] = None

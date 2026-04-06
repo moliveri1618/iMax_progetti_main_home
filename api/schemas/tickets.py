@@ -17,6 +17,19 @@ class TicketBase(BaseModel):
     completato: Optional[bool] = None
     importo_imponibile: Optional[float] = None
 
+    customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_street: Optional[str] = None
+    customer_street2: Optional[str] = None
+    customer_zip: Optional[str] = None
+    customer_city: Optional[str] = None
+    customer_state: Optional[str] = None
+    customer_country: Optional[str] = None
+    customer_phone: Optional[str] = None
+    customer_mobile: Optional[str] = None
+    customer_vat: Optional[str] = None
+    customer_website: Optional[str] = None
+
 
 # Create schema — used for insertions
 class TicketCreate(TicketBase):
@@ -38,6 +51,19 @@ class TicketRead(SQLModel):
     completato: Optional[bool] = None
     importo_imponibile: Optional[float] = None
 
+    customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_street: Optional[str] = None
+    customer_street2: Optional[str] = None
+    customer_zip: Optional[str] = None
+    customer_city: Optional[str] = None
+    customer_state: Optional[str] = None
+    customer_country: Optional[str] = None
+    customer_phone: Optional[str] = None
+    customer_mobile: Optional[str] = None
+    customer_vat: Optional[str] = None
+    customer_website: Optional[str] = None
+
     class Config:
         from_attributes = True
 
@@ -55,6 +81,19 @@ class TicketUpdate(BaseModel):
     type: Optional[str] = None
     completato: Optional[bool] = None
     importo_imponibile: Optional[float] = None
+
+    customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_street: Optional[str] = None
+    customer_street2: Optional[str] = None
+    customer_zip: Optional[str] = None
+    customer_city: Optional[str] = None
+    customer_state: Optional[str] = None
+    customer_country: Optional[str] = None
+    customer_phone: Optional[str] = None
+    customer_mobile: Optional[str] = None
+    customer_vat: Optional[str] = None
+    customer_website: Optional[str] = None
 
 
 class TicketTabLavori(BaseModel):
