@@ -220,23 +220,23 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
             if ticket_ref in existing_refs:
                 continue
 
-            print(
-                "CUSTOMER DEBUG ->",
-                {
-                    "customer_name": t.get("customer_name") or "",
-                    "customer_email": t.get("customer_email") or "",
-                    "customer_street": t.get("customer_street") or "",
-                    "customer_street2": t.get("customer_street2") or "",
-                    "customer_zip": t.get("customer_zip") or "",
-                    "customer_city": t.get("customer_city") or "",
-                    "customer_state": t.get("customer_state") or "",
-                    "customer_country": t.get("customer_country") or "",
-                    "customer_phone": t.get("customer_phone") or "",
-                    "customer_mobile": t.get("customer_mobile") or "",
-                    "customer_vat": t.get("customer_vat") or "",
-                    "customer_website": t.get("customer_website") or "",
-                },
-            )
+            # print(
+            #     "CUSTOMER DEBUG ->",
+            #     {
+            #         "customer_name": t.get("customer_name") or "",
+            #         "customer_email": t.get("customer_email") or "",
+            #         "customer_street": t.get("customer_street") or "",
+            #         "customer_street2": t.get("customer_street2") or "",
+            #         "customer_zip": t.get("customer_zip") or "",
+            #         "customer_city": t.get("customer_city") or "",
+            #         "customer_state": t.get("customer_state") or "",
+            #         "customer_country": t.get("customer_country") or "",
+            #         "customer_phone": t.get("customer_phone") or "",
+            #         "customer_mobile": t.get("customer_mobile") or "",
+            #         "customer_vat": t.get("customer_vat") or "",
+            #         "customer_website": t.get("customer_website") or "",
+            #     },
+            # )
 
             rows.append(
                 {
@@ -251,7 +251,7 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
                     "type": "home",
                     "completato": False,
                     "importo_imponibile": t.get("importo_imponibile"),
-                    
+
                     "customer_name": (t.get("customer_name") or ""),
                     "customer_email": (t.get("customer_email") or ""),
                     "customer_street": (t.get("customer_street") or ""),
