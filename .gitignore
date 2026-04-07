@@ -3,3 +3,9 @@
 __pycache__
 .env
 token_response.json
+
+
+# -----------------------
+# macOS junk
+# -----------------------
+.DS_Store
