@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional, Sequence
 import json
 import sys
 import os
+from sqlalchemy import text
+from fastapi.responses import JSONResponse
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
@@ -120,6 +122,26 @@ def recalc_premi_home(
         "results": results,
         "errors": errors,
     }
+
+COMMESSE_HOME_LOCK_ID = 1006
+
+def try_acquire_lock(db: Session, lock_id: int) -> bool:
+    result = (
+        db.connection()
+        .execute(
+            text("SELECT pg_try_advisory_lock(:lock_id)"),
+            {"lock_id": lock_id},
+        )
+        .scalar()
+    )
+    return bool(result)
+
+
+def release_lock(db: Session, lock_id: int) -> None:
+    db.connection().execute(
+        text("SELECT pg_advisory_unlock(:lock_id)"),
+        {"lock_id": lock_id},
+    )
 
 
 @router.get("/create-parametri-by-user", response_model=List[str])
@@ -265,9 +287,22 @@ def get_parametri(user_id: str | None = None, session: Session = Depends(get_db)
     response_model=Dict[str, Any],
 )
 def recalc_all_using_replace_or_seed(
-    session: Session = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
-    return recalc_premi_home(session)
+
+    acquired = try_acquire_lock(db, COMMESSE_HOME_LOCK_ID)
+    if not acquired:
+        raise HTTPException(status_code=409, detail="Sync already running")
+
+    try:
+        return recalc_premi_home(db)
+    except Exception as e:
+        db.rollback()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+    finally:
+        release_lock(db, COMMESSE_HOME_LOCK_ID)
+
+    #return recalc_premi_home(session)
     # def recalc_all_using_replace_or_seed(session: Session = Depends(get_db)) -> Dict[str, Any]:
 
     #     # 1) get distinct user_ids only (tiny result set)

@@ -291,6 +291,13 @@ def try_acquire_lock(db: Session, lock_id: int) -> bool:
     return bool(result)
 
 
+def release_lock(db: Session, lock_id: int) -> None:
+    db.connection().execute(
+        text("SELECT pg_advisory_unlock(:lock_id)"),
+        {"lock_id": lock_id},
+    )
+
+
 # ---------- GET ALL
 @router.get("/all", response_model=List[HelpdeskTicket])
 def get_all_tickets(
@@ -357,6 +364,8 @@ def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
         return sync_tickets_home_from_odoo(db)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+    finally:
+        release_lock(db, COMMESSE_HOME_LOCK_ID)
 
 
 @router.get("/tab-lavori/{userEmail}", response_model=list[TicketTabLavori])
