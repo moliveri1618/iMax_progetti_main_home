@@ -6,6 +6,7 @@ import sys, os
 from fastapi.responses import JSONResponse
 import json
 import httpx
+from sqlalchemy import text
 
 
 if os.getenv("GITHUB_ACTIONS"):
@@ -38,6 +39,7 @@ DB_NAME = "mulsp-odoo-production"
 UID = 85  # iMax_api_user
 ODOO_BEARER_TOKEN = "ocCAF0fVHguW3O*CbTRd*3v9"
 WTH_FIREWALL_TOKEN = "SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
+COMMESSE_HOME_LOCK_ID = 1005
 
 import logging
 
@@ -320,6 +322,18 @@ def sync_user_from_odoo_service(db: Session):
     return {"users": len(users), "skipped": skipped, "users_odoo": users}
 
 
+def try_acquire_lock(db: Session, lock_id: int) -> bool:
+    result = (
+        db.connection()
+        .execute(
+            text("SELECT pg_try_advisory_lock(:lock_id)"),
+            {"lock_id": lock_id},
+        )
+        .scalar()
+    )
+    return bool(result)
+
+
 # ---------------------------
 # CRUD Endpoints
 # ---------------------------
@@ -334,7 +348,15 @@ def list_users(db: Session = Depends(get_db)):
 
 @router.get("/sync_odoo")
 def sync_user_from_odoo(db: Session = Depends(get_db)):
-    return sync_user_from_odoo_service(db)
+
+    acquired = try_acquire_lock(db, COMMESSE_HOME_LOCK_ID)
+    if not acquired:
+        raise HTTPException(status_code=409, detail="Sync already running")
+
+    try:
+        return sync_user_from_odoo_service(db)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 # def sync_user_from_odoo(db: Session = Depends(get_db)):
