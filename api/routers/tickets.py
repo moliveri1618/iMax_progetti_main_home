@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi import Query
 import httpx
 from sqlalchemy import func
+from sqlalchemy import text
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
@@ -30,6 +31,7 @@ DB_NAME = "mulsp-odoo-production"
 UID = 85  # iMax_api_user
 ODOO_BEARER_TOKEN = "ocCAF0fVHguW3O*CbTRd*3v9"
 WTH_FIREWALL_TOKEN = "SK9L6EV4WM934L8YV10HWRE0D5Q6JIG7CF0NGFPWICYCFEKZD58XEIWG2P77"
+COMMESSE_HOME_LOCK_ID = 1003
 
 
 def rpc_call(model, method, args=None, kwargs=None):
@@ -277,6 +279,18 @@ def sync_tickets_home_from_odoo(db: Session) -> int:
         raise
 
 
+def try_acquire_lock(db: Session, lock_id: int) -> bool:
+    result = (
+        db.connection()
+        .execute(
+            text("SELECT pg_try_advisory_lock(:lock_id)"),
+            {"lock_id": lock_id},
+        )
+        .scalar()
+    )
+    return bool(result)
+
+
 # ---------- GET ALL
 @router.get("/all", response_model=List[HelpdeskTicket])
 def get_all_tickets(
@@ -333,6 +347,12 @@ def update_ticket(ticket_id: int, payload: TicketUpdate, db: Session = Depends(g
 
 @router.get("/odoo/v2")
 def fetch_helpdesk_tickets_v2(db: Session = Depends(get_db)):
+
+    acquired = try_acquire_lock(db, COMMESSE_HOME_LOCK_ID)
+    if not acquired:
+        raise HTTPException(status_code=409, detail="Sync already running")
+
+
     try:
         return sync_tickets_home_from_odoo(db)
     except Exception as e:
