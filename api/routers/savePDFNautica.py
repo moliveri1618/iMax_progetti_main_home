@@ -13,18 +13,20 @@ if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
 
 # from routers.utils import (
-#     send_email_with_retry, 
-#     ReportData, 
-#     ReportPostVendita, 
-#     build_pdf_report_tecnico, 
-#     build_pdf_report_cliente, 
-#     build_pdf_report_posa_cliente, 
+#     send_email_with_retry,
+#     ReportData,
+#     ReportPostVendita,
+#     build_pdf_report_tecnico,
+#     build_pdf_report_cliente,
+#     build_pdf_report_posa_cliente,
 #     build_pdf_report_posa_commessa
 # )
 from routers.utils_nautica import (
+    send_email_with_retry,
     ReportData,
     ReportPostVendita,
     build_pdf_report_posa_cliente_nautica,
+    build_pdf_report_posa_commessa_nautica,
 )
 from models.parametriTecnici import iParametriTecnici 
 from dependecies import get_db
@@ -114,29 +116,29 @@ async def generate_reports(
         email = config.report_tecnico_tickets
 
         # Generate PDF TECNICO & CLIENTE
-        # pdf_posa_commessa = build_pdf_report_posa_commessa(data)
+        pdf_posa_commessa = build_pdf_report_posa_commessa_nautica(data)
         pdf_posa_cliente = build_pdf_report_posa_cliente_nautica(data)
 
         # return 1
 
         # SEND EMAIL
-        # background_tasks.add_task(send_email_with_retry, email, pdf_posa_commessa, "report_posa_commessa.pdf")
-        # background_tasks.add_task(send_email_with_retry, email, pdf_posa_cliente, "report_posa_cliente.pdf")
+        background_tasks.add_task(send_email_with_retry, email, pdf_posa_commessa, "report_posa_commessa.pdf")
+        background_tasks.add_task(send_email_with_retry, email, pdf_posa_cliente, "report_posa_cliente.pdf")
 
-        # return JSONResponse(
-        #     {
-        #         "ok": True,
-        #         "message": "Reports generated successfully.",
-        #     },
-        #     status_code=status.HTTP_200_OK,
-        # )
+        return JSONResponse(
+            {
+                "ok": True,
+                "message": "Reports generated successfully.",
+            },
+            status_code=status.HTTP_200_OK,
+        )
 
         # INSPECT PDF FILE
-        buffer = io.BytesIO(pdf_posa_cliente)
-        buffer = io.BytesIO(pdf_posa_cliente)
-        return StreamingResponse(buffer, media_type="application/pdf", headers={
-            "Content-Disposition": "attachment; filename=posa_layout.pdf"
-        })
+        # buffer = io.BytesIO(pdf_posa_commessa)
+        # buffer = io.BytesIO(pdf_posa_commessa)
+        # return StreamingResponse(buffer, media_type="application/pdf", headers={
+        #     "Content-Disposition": "attachment; filename=posa_layout.pdf"
+        # })
 
     except Exception as e:
         return JSONResponse(
