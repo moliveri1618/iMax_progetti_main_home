@@ -3065,7 +3065,7 @@ def build_pdf_report_posa_commessa(data):
     content = pdf.output(dest='S')
     return content.encode('latin-1') if isinstance(content, str) else content
 
-def build_pdf_report_posa_cliente(data):
+def build_pdf_report_posa_cliente_nautica(data):
     
     def add_pdf_header(pdf: FPDF, title: str, *, left_ratio=0.66, h=26, pad=6):
         #geometry
