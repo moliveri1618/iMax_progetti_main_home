@@ -23,7 +23,7 @@ import os
 
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
-    
+
 from models.iParametriDaInserire import ParametriDaInserire  
 from schemas.iParametriDaInserire import TEMPLATE_ROWS, MONTHS, MONTH_ORDER, MONTHS_LIST, TRIM_STARTS, TRIM_WEIGHTS
 # from models.vendite import VenditeImax
@@ -100,7 +100,7 @@ class Tecnico(BaseModel):
         "populate_by_name": True,   
         "extra": "ignore",          
     }
-        
+
 class Cliente(BaseModel):
     cliente_ticket_n: Optional[str] = None
     cliente_del: Optional[str] = None
@@ -123,7 +123,7 @@ class Cliente(BaseModel):
 class ReportData(BaseModel):
     tecnico: Optional[Tecnico] = None
     cliente: Optional[Cliente] = None  
-    
+
 
 # --- REPORT POST VENDITA ---
 class PosaCliente(BaseModel):
@@ -217,8 +217,6 @@ class PosaCommessa(BaseModel):
 class ReportPostVendita(BaseModel):
     posa_cliente: PosaCliente
     posa_commessa: PosaCommessa
-
-
 
 
 default_vendite = [
@@ -443,7 +441,7 @@ def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
         '4_trimestre': month_totals[10] + month_totals[11] + month_totals[12],  # Oct–Dec
     }
 
-        
+
 # SQLModel/Pydantic models support .dict() (v1) / .model_dump() (v2).
 # Use whichever exists to stay compatible.
 def to_dict(record):
@@ -714,7 +712,6 @@ def apply_formula(
             break
 
     return res
-
 
 
 def compute_calcolo_percentuale_venduto(perc_list):
@@ -1310,8 +1307,6 @@ def send_email_with_retry(
             time.sleep(backoff_seconds * (2 ** (attempt - 1)))
 
     logger.error("Email failed after %s attempts: %s", max_attempts, last_err)
-
-
 
 
 def build_pdf_report_tecnico(data):
@@ -2525,12 +2520,10 @@ def build_pdf_report_cliente(data):
     return content.encode('latin-1') if isinstance(content, str) else content
 
 
-
-
 def build_pdf_report_posa_commessa(data):
-    
+
     def add_pdf_header(pdf: FPDF, title: str, *, left_ratio=0.66, h=26, pad=6):
-        #geometry
+        # geometry
         x0, y0 = pdf.l_margin, pdf.get_y()
         full_w = pdf.w - pdf.l_margin - pdf.r_margin
         left_w  = full_w / 2.0               # <-- exact middle
@@ -2598,7 +2591,7 @@ def build_pdf_report_posa_commessa(data):
     add_pdf_header(pdf, title="Report Posa In Opera")
     pdf.set_font("Arial", size=12)
     print(t)
-    
+
     def gv(name, default=""):
         """get value from tecnico, defaulting to '' (or provided) if missing/None"""
         return getattr(t, name, None) if getattr(t, name, None) is not None else default
@@ -2612,7 +2605,7 @@ def build_pdf_report_posa_commessa(data):
         """get boolean value"""
         v = getattr(t, name, None)
         return bool(v) if v is not None else False
-    
+
     def gvbV2(path: str):
         """get boolean value from nested attrs using dot notation, e.g. 'errori.errore_progettazione'"""
         obj = t
@@ -2661,7 +2654,7 @@ def build_pdf_report_posa_commessa(data):
         pdf.ln(height)
         # restore your default fill color (yellow for cells, per your code)
         pdf.set_fill_color(255, 255, 0)
-    
+
     def draw_checkbox(pdf, x, y, size=5, checked=False):
         # outer yellow box
         pdf.set_draw_color(0, 0, 0)
@@ -2817,7 +2810,6 @@ def build_pdf_report_posa_commessa(data):
         # --- Move cursor to next row ---
         pdf.set_xy(x0, y0 + cell_h)
 
-
     checkbox_groups = [
         (
             "STATO LAVORO",
@@ -2832,90 +2824,176 @@ def build_pdf_report_posa_commessa(data):
         {
             "header": "REPORT FOTOGRAFICO",
             "rows": [
-                ("FOTOGRAFIE PER TUTELA DANNI PRIMA DI INIZIARE I LAVORI",
-                gvbV2("report_fotografico.foto_danni_inizio"), (230, 230, 230)),
-                ("SONO STATI ARRECATI DANNI VEDI RAPPORTO POSA CLIENTE",
-                gvbV2("report_fotografico.danni_posa_cliente"), (230, 230, 230)),
-                ("FOTOGRAFIE GIUNTI DI POSA PER OGNI INFISSO",
-                gvbV2("report_fotografico.foto_giunti_posa"), (230, 230, 230)),
-                ("FOTOGRAFIE DEL LAVORO ULTIMATO",
-                gvbV2("report_fotografico.foto_lavoro_ultimato"), (230, 230, 230)),
-                ("LAVORO NON COMPLETATO CAUSA NOSTRA",
-                gvbV2("report_fotografico.lavoro_non_completato_nostro"), (230, 230, 230)),
-                ("LAVORO NON COMPLETATO CAUSA CLIENTE",
-                gvbV2("report_fotografico.lavoro_non_completato_cliente"), (230, 230, 230)),
+                (
+                    "FOTOGRAFIE PER TUTELA DANNI PRIMA DI INIZIARE I LAVORI",
+                    gvbV2("report_fotografico.foto_danni_inizio"),
+                    (230, 230, 230),
+                ),
+                (
+                    "SONO STATI ARRECATI DANNI VEDI RAPPORTO POSA CLIENTE",
+                    gvbV2("report_fotografico.danni_posa_cliente"),
+                    (230, 230, 230),
+                ),
+                (
+                    "FOTOGRAFIE GIUNTI DI POSA PER OGNI INFISSO",
+                    gvbV2("report_fotografico.foto_giunti_posa"),
+                    (230, 230, 230),
+                ),
+                (
+                    "FOTOGRAFIE DEL LAVORO ULTIMATO",
+                    gvbV2("report_fotografico.foto_lavoro_ultimato"),
+                    (230, 230, 230),
+                ),
+                (
+                    "LAVORO NON COMPLETATO CAUSA NOSTRA",
+                    gvbV2("report_fotografico.lavoro_non_completato_nostro"),
+                    (230, 230, 230),
+                ),
+                (
+                    "LAVORO NON COMPLETATO CAUSA CLIENTE",
+                    gvbV2("report_fotografico.lavoro_non_completato_cliente"),
+                    (230, 230, 230),
+                ),
             ],
         },
         {
             "header": "ERRORI",
             "rows": [
-                ("ERRORE PROGETTAZIONE",
-                gvbV2("errori.errore_progettazione"), (230, 230, 230)),
-                ("ERRORE SCELTA PROFILI E ACCESSORI",
-                gvbV2("errori.errore_scelta_profili_accessori"), (230, 230, 230)),
-                ("GIRO CON IL CLIENTE SU CORRETTA CONFORMITA",
-                gvbV2("errori.errore_misure_nel_rilievo"), (230, 230, 230)),
-                ("ERRORE MISURE NEL RILIEVO",
-                gvbV2("errori.errore_misure_nel_rilievo"), (230, 230, 230)),
-                ("DIFFICOLTÀ TRASPORTO NON SEGNALATE",
-                gvbV2("errori.difficolta_trasporto_non_segnalate"), (230, 230, 230)),
-                ("ERRORE CALCOLO TEMPO A DISPOSIZIONE",
-                gvbV2("errori.errore_calcolo_tempo_disp"), (230, 230, 230)),
+                (
+                    "ERRORE PROGETTAZIONE",
+                    gvbV2("errori.errore_progettazione"),
+                    (230, 230, 230),
+                ),
+                (
+                    "ERRORE SCELTA PROFILI E ACCESSORI",
+                    gvbV2("errori.errore_scelta_profili_accessori"),
+                    (230, 230, 230),
+                ),
+                (
+                    "GIRO CON IL CLIENTE SU CORRETTA CONFORMITA",
+                    gvbV2("errori.errore_misure_nel_rilievo"),
+                    (230, 230, 230),
+                ),
+                (
+                    "ERRORE MISURE NEL RILIEVO",
+                    gvbV2("errori.errore_misure_nel_rilievo"),
+                    (230, 230, 230),
+                ),
+                (
+                    "DIFFICOLTÀ TRASPORTO NON SEGNALATE",
+                    gvbV2("errori.difficolta_trasporto_non_segnalate"),
+                    (230, 230, 230),
+                ),
+                (
+                    "ERRORE CALCOLO TEMPO A DISPOSIZIONE",
+                    gvbV2("errori.errore_calcolo_tempo_disp"),
+                    (230, 230, 230),
+                ),
             ],
         },
         {
             "header": "POSATORI",
             "rows": [
-                ("VETRO ROTTO DURANTE LA POSA",
-                gvbV2("posatori.vetro_rotto_durante_la_posa"), (230, 230, 230)),
-                ("MATERIALI-PROFILI DANNEGGIATI DURANTE LA POSA",
-                gvbV2("posatori.materiali_danneggiati_durante_posa"), (230, 230, 230)),
-                ("MANCANZA ATTREZZATURE NON CARICATE",
-                gvbV2("posatori.mancanza_attr_non_caricate"), (230, 230, 230)),
-                ("DANNEGGIAMENTO CASA DEL CLIENTE",
-                gvbV2("posatori.danneggiamento_casa_cliente"), (230, 230, 230)),
+                (
+                    "TENDA DANNEGGIATA DURANTE LA POSA",
+                    gvbV2("posatori.vetro_rotto_durante_la_posa"),
+                    (230, 230, 230),
+                ),
+                (
+                    "TENDA CADUTA PERCHE FISSATA MALE",
+                    gvbV2("posatori.materiali_danneggiati_durante_posa"),
+                    (230, 230, 230),
+                ),
+                (
+                    "MANCANZA ATTREZZATURE NON CARICATE",
+                    gvbV2("posatori.mancanza_attr_non_caricate"),
+                    (230, 230, 230),
+                ),
+                (
+                    "DANNEGGIAMENTO MOBILI O PARTI BORDO",
+                    gvbV2("posatori.danneggiamento_casa_cliente"),
+                    (230, 230, 230),
+                ),
             ],
         },
         {
             "header": "UFFICIO",
             "rows": [
-                ("ERRORE MISURE/MATERIALE/COLORE NELL' ORDINE",
-                gvbV2("ufficio.errore_misure_ordine"), (230, 230, 230)),
-                ("ERRORE CALCOLO TEMPO A DISPOSIZIONE",
-                gvbV2("ufficio.errore_calcolo_tempo"), (230, 230, 230)),
+                (
+                    "ERRORE MISURE/MATERIALE/COLORE NELL' ORDINE",
+                    gvbV2("ufficio.errore_misure_ordine"),
+                    (230, 230, 230),
+                ),
+                (
+                    "ERRORE CALCOLO TEMPO A DISPOSIZIONE",
+                    gvbV2("ufficio.errore_calcolo_tempo"),
+                    (230, 230, 230),
+                ),
             ],
         },
         {
             "header": "COMMERCIALE",
             "rows": [
-                ("PULIZIA DEI VETRI E/O FINESTRE",
-                gvbV2("coomerciale.errore_materiale_contratto"), (230, 230, 230)),
-                ("GIRO CON IL CLIENTE SU CORRETTA FUNZIONALITA",
-                gvbV2("coomerciale.errore_scelta_profili_accessori_comm"), (230, 230, 230)),
+                (
+                    "ERRORE MATERIALE/COLORE CONTRATTO",
+                    gvbV2("coomerciale.errore_materiale_contratto"),
+                    (230, 230, 230),
+                ),
+                (
+                    "ERRORE SCELTA PROFILI E ACCESSORI",
+                    gvbV2("coomerciale.errore_scelta_profili_accessori"),
+                    (230, 230, 230),
+                ),
+                (
+                    "LAVORO FALEGNAMERIA NON ULTIMATO",
+                    gvbV2("coomerciale.lavoro_falegnameria_non_ultimato"),
+                    (230, 230, 230),
+                ),
             ],
         },
         {
             "header": "MAGAZZINO",
             "rows": [
-                ("VETRO ROTTO/DIFETTOSO DA SOSTITUIRE",
-                gvbV2("magazzino.vetro_rotto_difettoso"), (230, 230, 230)),
-                ("MATERIALE MANCANTE NON CARICATO",
-                gvbV2("magazzino.materiale_mancante_non_caricato"), (230, 230, 230)),
-                ("MATERIALI DI POSA MANCANTI NON CARICATI",
-                gvbV2("magazzino.materiali_posa_mancanti_noncaricati"), (230, 230, 230)),
+                (
+                    "VETRO ROTTO/DIFETTOSO DA SOSTITUIRE",
+                    gvbV2("magazzino.vetro_rotto_difettoso"),
+                    (230, 230, 230),
+                ),
+                (
+                    "MATERIALE MANCANTE NON CARICATO",
+                    gvbV2("magazzino.materiale_mancante_non_caricato"),
+                    (230, 230, 230),
+                ),
+                (
+                    "MATERIALI DI POSA MANCANTI NON CARICATI",
+                    gvbV2("magazzino.materiali_posa_mancanti_noncaricati"),
+                    (230, 230, 230),
+                ),
             ],
         },
         {
             "header": "FORNITORE",
             "rows": [
-                ("MATERIALE DIFETTOSO CAUSA FORNITORE",
-                gvbV2("fornitore.materiale_difettoso_causa_fornitore"), (230, 230, 230)),
-                ("ERRORE TIPOLOGIA MATERIALE CAUSA FORNITORE",
-                gvbV2("fornitore.errore_tipologia_materiale_causa_fornitore"), (230, 230, 230)),
-                ("VETRO ROTTO/DIFETTOSO DA SOSTITUIRE CAUSA FORNITORE",
-                gvbV2("fornitore.vetro_rotto_diffettoso_causa_fornitore"), (230, 230, 230)),
-                ("MATERIALE MANCANTE CAUSA FORNITORE",
-                gvbV2("fornitore.materiale_mancante_causa_fornitore"), (230, 230, 230)),
+                (
+                    "MATERIALE DIFETTOSO CAUSA FORNITORE",
+                    gvbV2("fornitore.materiale_difettoso_causa_fornitore"),
+                    (230, 230, 230),
+                ),
+                (
+                    "ERRORE TIPOLOGIA MATERIALE CAUSA FORNITORE",
+                    gvbV2("fornitore.errore_tipologia_materiale_causa_fornitore"),
+                    (230, 230, 230),
+                ),
+                (
+                    "VETRO ROTTO/DIFETTOSO DA SOSTITUIRE CAUSA FORNITORE",
+                    gvbV2("fornitore.vetro_rotto_diffettoso_causa_fornitore"),
+                    (230, 230, 230),
+                ),
+                (
+                    "MATERIALE MANCANTE CAUSA FORNITORE",
+                    gvbV2("fornitore.materiale_mancante_causa_fornitore"),
+                    (230, 230, 230),
+                ),
             ],
         },
     ]
@@ -2928,7 +3006,7 @@ def build_pdf_report_posa_commessa(data):
     write_cell(30, 8, "Ordine", fill=True, bold=True)
     write_cell(65, 8, gv("cliente_ordine"))
     pdf.ln()
-    
+
     pdf.set_fill_color(230, 230, 230)
     ensure_space(pdf, 8)
     write_cell(40, 8, "Squadra Posatori", fill=True, bold=True)
@@ -2937,7 +3015,7 @@ def build_pdf_report_posa_commessa(data):
     write_cell(65, 8, gv("cliente_data"))
     pdf.ln()
     green_rule(height=2)  
-    
+
     # stato lavoro,
     for title, checkboxes in checkbox_groups:
         pdf.set_fill_color(110, 207, 246)
@@ -2952,7 +3030,7 @@ def build_pdf_report_posa_commessa(data):
                 checkbox_cell_split(pdf, width, 8, label, checked=checked, font_size=font_size)
         pdf.ln()
         green_rule(height=2)
-        
+
     # resta da fare
     ensure_space(pdf, 8)
     note_box(
@@ -2963,8 +3041,8 @@ def build_pdf_report_posa_commessa(data):
         end_gap=5       
     )
     green_rule(height=2)
-    
-    #  Materiale mancante 
+
+    #  Materiale mancante
     pdf.set_fill_color(230, 230, 230)
     ensure_space(pdf, 8)
     write_cell(100, 8, "Materiale mancante", bold=True, fill=True)
@@ -2972,7 +3050,7 @@ def build_pdf_report_posa_commessa(data):
     write_cell(30, 8, "Magaz.", bold=True, fill=True, align="C")
     write_cell(30, 8, "Verificare", bold=True, fill=True, align="C")
     pdf.ln()
-    
+
     for item in gvl("cliente_materiale_mancante"):
         d = item if isinstance(item, dict) else getattr(item, "model_dump", lambda: {})()
         if callable(d):
@@ -2985,9 +3063,8 @@ def build_pdf_report_posa_commessa(data):
             magazzino=bool(d.get("magazzino")),
             verificare=bool(d.get("verificare")),
         )
-    
-    
-    #  Materiale rientrato 
+
+    #  Materiale rientrato
     pdf.set_fill_color(230, 230, 230)
     ensure_space(pdf, 8)
     write_cell(100, 8, "Materiale rientrato", bold=True, fill=True)
@@ -2995,7 +3072,7 @@ def build_pdf_report_posa_commessa(data):
     write_cell(30, 8, "Magaz.", bold=True, fill=True, align="C")
     write_cell(30, 8, "Verificare", bold=True, fill=True, align="C")
     pdf.ln()
-    
+
     for item in gvl("cliente_materiale_rientrato"):
         d = item if isinstance(item, dict) else getattr(item, "model_dump", lambda: {})()
         if callable(d):
@@ -3009,7 +3086,7 @@ def build_pdf_report_posa_commessa(data):
             verificare=bool(d.get("verificare")),
         )
     green_rule(height=2)
-    
+
     # ---------- Ore previste ----------
     pdf.set_fill_color(230, 230, 230)
     ensure_space(pdf, 8)
@@ -3019,7 +3096,7 @@ def build_pdf_report_posa_commessa(data):
     write_cell(40, 8, gv("per_numero_posatori"))
     pdf.ln()
     green_rule(height=2)
-    
+
     # altri campi
     for section in sections:
         if section["header"]:
@@ -3039,7 +3116,7 @@ def build_pdf_report_posa_commessa(data):
                 empty_fill_rgb=None,
             )
         pdf.ln()
-        
+
     # Firma del posatore
     ensure_space(pdf, 42)
     signature_block(
