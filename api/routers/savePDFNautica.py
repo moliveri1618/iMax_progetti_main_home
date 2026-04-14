@@ -12,16 +12,18 @@ from sqlmodel import Session, select
 if os.getenv("GITHUB_ACTIONS"):
     sys.path.append(os.path.dirname(__file__))
 
-from routers.utils import (
-    send_email_with_retry, 
-    ReportData, 
-    ReportPostVendita, 
-    build_pdf_report_tecnico, 
-    build_pdf_report_cliente, 
-    build_pdf_report_posa_cliente, 
-    build_pdf_report_posa_commessa
-)
+# from routers.utils import (
+#     send_email_with_retry, 
+#     ReportData, 
+#     ReportPostVendita, 
+#     build_pdf_report_tecnico, 
+#     build_pdf_report_cliente, 
+#     build_pdf_report_posa_cliente, 
+#     build_pdf_report_posa_commessa
+# )
 from routers.utils_nautica import (
+    ReportData,
+    ReportPostVendita,
     build_pdf_report_posa_cliente_nautica,
 )
 from models.parametriTecnici import iParametriTecnici 
@@ -112,7 +114,7 @@ async def generate_reports(
         email = config.report_tecnico_tickets
 
         # Generate PDF TECNICO & CLIENTE
-        pdf_posa_commessa = build_pdf_report_posa_commessa(data)
+        # pdf_posa_commessa = build_pdf_report_posa_commessa(data)
         pdf_posa_cliente = build_pdf_report_posa_cliente_nautica(data)
 
         # return 1

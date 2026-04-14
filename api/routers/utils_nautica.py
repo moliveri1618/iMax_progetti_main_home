@@ -126,23 +126,25 @@ class ReportData(BaseModel):
 
 
 # --- REPORT POST VENDITA ---
+from pydantic import BaseModel
+
 class PosaCliente(BaseModel):
     cliente: str
     ordine: str
     squadra_posatori: str
     data: str
     stato_posa: str
-    resta_da_fare: str
-    pulizia_vetri: bool
+    controllo_collaudo_eseguiti: bool
     giro_cliente: bool
     consegna_documenti: bool
     giro_cliente_conformita: bool
     consegna_libretto: bool
     ddt_verbal_firmati: bool
-    difetti_vetri: bool
+    non_total_blackout: bool
     difetti_profili: bool
-    difetti_muratura: bool
+    difetti_falegnameria: bool
     danni_arrecati: bool
+    resta_da_fare: str
     signature: str
 
 class Materiale(BaseModel):
@@ -3330,16 +3332,16 @@ def build_pdf_report_posa_cliente_nautica(data):
         {
             "header": "ALTRI CAMPI",
             "rows": [
-                ("PULIZIA DEI VETRI E/O FINESTRE",                                            gvb("pulizia_vetri"),               (230, 230, 230)),
+                ("CONTROLLO E COLLAUDO ESEGUITI",                                            gvb("controllo_collaudo_eseguiti"),               (230, 230, 230)),
                 ("GIRO CON IL CLIENTE SU CORRETTA FUNZIONALITA",                              gvb("giro_cliente"),            (230, 230, 230)),
                 ("GIRO CON IL CLIENTE SU CORRETTA CONFORMITA",                                gvb("giro_cliente_conformita"),          (230, 230, 230)),
                 # ("CONSEGNA DEI DOCUMENTI ES. ENEA",                                           gvb("consegna_documenti"),      (230, 230, 230)),
-                ("CONSEGNA LIBRETTO USO E MANUTENZIONE",                                      gvb("consegna_libretto"),        (230, 230, 230)),
-                ("DDT E VERBALE DI COLLAUDO FIRMATI",                                         gvb("ddt_verbal_firmati"),          (230, 230, 230)),
-                ("DIFETTI PRESENTI SUI VETRI",                                                gvb("difetti_vetri"),             (230, 230, 230)),
-                ("DIFETTI PRESENTI SUI PROFILI",                                              gvb("difetti_profili"),        (230, 230, 230)),
-                ("DIFETTI SPIEGATI AL CLIENTE DOVUTI ALLA MURATURA NON DI NOSTRA COMPETENZA", gvb("difetti_muratura"),      (230, 230, 230)),
-                ("SONO STATI ARRECATI DANNI SCRIVERE LE SPECIFICHE NELLE NOTE",               gvb("danni_arrecati"),        (230, 230, 230)),
+                ("SONO STATI ARRECATI DANNI",                                                   gvb("danni_arrecati"),        (230, 230, 230)),
+                ("CONSEGNA LIBRETTO USO E MANUTENZIONE",                                         gvb("consegna_libretto"),          (230, 230, 230)),
+                ("DDT E VERBALE DI COLLAUDO FIRMATI",                                                gvb("ddt_verbal_firmati"),             (230, 230, 230)),
+                ("NON TOTAL BLACKOUT",                                                         gvb("non_total_blackout"),        (230, 230, 230)),
+                ("DIFETTI PRESENTI SUI PROFILI",                                               gvb("difetti_profili"),      (230, 230, 230)),
+                ("DIFETTI SPIEGATI AL CLIENTE DOVUTI FALEGNAM./ ALTRE FIGURE",               gvb("difetti_falegnameria"),        (230, 230, 230)),
             ],
         },
     ]
