@@ -190,8 +190,8 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
             [
                 [
                     ["state", "!=", "cancel"],
-                    ["date_order", ">=", "2026-01-01"],
-                    ["date_order", "<", "2027-01-01"],
+                    ["date_order", ">=", "2025-01-01"],
+                    # ["date_order", "<", "2027-01-01"],
                     ["x_studio_imax_api", "=", "imax_home"],
                     ["x_studio_costo_ok", "=", True],
                 ]
