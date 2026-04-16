@@ -19,7 +19,7 @@ from schemas.commesse import ICommesseRead
 from models.workInProgress import WorkInProgress
 from dependecies import get_db
 
-log_file = Path(__file__).parent / "debug_output.txt"
+# log_file = Path(__file__).parent / "debug_output.txt"
 
 router = APIRouter()
 

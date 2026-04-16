@@ -19,6 +19,7 @@ import re
 from sqlalchemy import select, func
 import sys
 import os
+from sqlalchemy import func
 
 
 if os.getenv("GITHUB_ACTIONS"):
@@ -1170,19 +1171,20 @@ def replace_or_insert_calcoli(parametriDaInserire, session: Session, user_id: st
     return result, res
 
 def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli, parametriDiVendita):
-    
+
     # Get vendite for the user
-    #vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")).all() 
+    # vendite = session.exec(select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")).all()
 
     vendite = session.exec(
         select(iCommesse).where(
-            func.split_part(iCommesse.responsabile, ',', 2) == user_id
+            func.split_part(iCommesse.responsabile, ',', 2) == user_id,
+            iCommesse.costo_ok.is_(True)
         )
     ).all()
     vendite = [v.model_dump() for v in vendite]
-    #pprint(calcoli)
+    # pprint(calcoli)
     pprint(vendite)
-    
+
     # 2 Perform calculations
     mapped: List[Dict[str, Any]] = []
     valori_1_trim = [c.get("perc_trim_1", 0.0) for c in calcoli]
@@ -1195,15 +1197,19 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
     # print("valori_2_trim", valori_2_trim)
     # print("valori_3_trim", valori_3_trim)
     # print("valori_4_trim", valori_4_trim)
-    
+
     for row in vendite:
         venduto_a = _num(row.get("costo"))  
         acquistato_a = _num(row.get("ricarico"))   
         margine = abs(venduto_a - acquistato_a)
         percentuale_ricarico = (margine / acquistato_a * 100) if acquistato_a != 0 else None
-        #mese = to_month_str(row.get("data"))
-        mese = to_month_from_datetime(row.get("data"))
-        print(mese)
+        # mese = to_month_str(row.get("data"))
+        mese = (
+            to_month_from_datetime(row.get("data_costo_ok"))
+            if row.get("data_costo_ok")
+            else None
+        )
+        #print(mese)
         percentuale_premio = apply_formula( 
                                         percentuale_ricarico, 
                                         mese, 
@@ -1213,7 +1219,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
                                         valori_4_trim,
                                         valori_limite
                             )
-        
+
         mapped.append({
             "user_id": row.get("venditore"),
             "ordine_numero": row.get("ordine"),
@@ -1227,10 +1233,10 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
             "percentuale_premio": percentuale_premio,
             "valore_premio_lordo": (margine*percentuale_premio)/100 if percentuale_premio else None,
         })
-    
+
     # delete_replace_ordini_premi
     result = delete_replace_ordini_premi(session, user_id, mapped)
-   
+
     return result
 
 def send_email(receiver_email, filename, pdf_bytes=None):
