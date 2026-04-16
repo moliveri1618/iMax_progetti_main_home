@@ -209,8 +209,8 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
                     "x_studio_imax_api",
                     "x_studio_costo_ok",
                     "x_studio_pagato_ok",
+                    "amount_untaxed",
                     "total_cost_of_lines",
-                    "total_recharge",
                 ]
             },
         )
@@ -380,8 +380,8 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
                 address_cliente=address_cliente,
                 responsabile=responsabile_value,
                 status=0,
-                costo=order.get("total_cost_of_lines", 0.0),
-                ricarico=order.get("total_recharge", 0.0),
+                costo=order.get("amount_untaxed", 0.0),
+                ricarico=order.get("total_cost_of_lines", 0.0),
             )
             # with open(log_file, "a", encoding="utf-8") as f:
             #     f.write(
