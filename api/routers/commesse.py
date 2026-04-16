@@ -19,7 +19,7 @@ from schemas.commesse import ICommesseRead
 from models.workInProgress import WorkInProgress
 from dependecies import get_db
 
-# log_file = Path(__file__).parent / "debug_output.txt"
+log_file = Path(__file__).parent / "debug_output.txt"
 
 router = APIRouter()
 
@@ -193,7 +193,7 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
                     ["date_order", ">=", "2025-01-01"],
                     # ["date_order", "<", "2027-01-01"],
                     ["x_studio_imax_api", "=", "imax_home"],
-                    ["x_studio_costo_ok", "=", True],
+                    ["state", "=", "sale"],
                 ]
             ],
             {
@@ -208,9 +208,11 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
                     "invoice_status",
                     "x_studio_imax_api",
                     "x_studio_costo_ok",
+                    "costo_ok_timestamp",
                     "x_studio_pagato_ok",
                     "amount_untaxed",
                     "total_cost_of_lines",
+                    "state"
                 ]
             },
         )
@@ -241,6 +243,7 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
         #         f.write(f"Invoice status: {order.get('invoice_status')}\n")
         #         f.write(f"x_studio_imax_api: {order.get('x_studio_imax_api')}\n")
         #         f.write(f"x_studio_costo_ok: {order.get('x_studio_costo_ok')}\n")
+        #         f.write(f"costo_ok_timestamp: {order.get('costo_ok_timestamp')}\n")
         #         f.write(f"x_studio_pagato_ok: {order.get('x_studio_pagato_ok')}\n")
         #         f.write(f"total_cost_of_lines: {order.get('total_cost_of_lines')}\n")
         #         f.write(f"total_recharge: {order.get('total_recharge')}\n")
@@ -378,6 +381,8 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
                 nome_cliente=partner.get("name") or None,
                 email_cliente=partner.get("email") or None,
                 address_cliente=address_cliente,
+                costo_ok=order.get("x_studio_costo_ok"),
+                data_costo_ok=datetime.strptime(order["costo_ok_timestamp"], "%Y-%m-%d %H:%M:%S") if order.get("costo_ok_timestamp") else None,
                 responsabile=responsabile_value,
                 status=0,
                 costo=order.get("amount_untaxed", 0.0),

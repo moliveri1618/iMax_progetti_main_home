@@ -1,6 +1,6 @@
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Column, ARRAY, Integer
-from datetime import date
+from datetime import date, datetime
 
 
 class iCommesseNautica(SQLModel, table=True):
@@ -18,3 +18,5 @@ class iCommesseNautica(SQLModel, table=True):
         default=None,
         sa_column=Column(ARRAY(Integer), nullable=True),
     )
+    costo_ok: Optional[bool] = None
+    data_costo_ok: Optional[datetime] = None

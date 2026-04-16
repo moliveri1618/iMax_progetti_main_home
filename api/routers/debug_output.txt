@@ -1,0 +1,157 @@
+SALE ORDERS
+================================================================================
+
+ID: 1191
+Name: S00258
+Date: 2026-04-15 15:48:58
+Partner: [94041, 'Scialanga Nicholas']
+User: [15, 'Francesco Rispoli']
+Amount total: 11000.0
+Invoice status: to invoice
+x_studio_imax_api: imax_home
+x_studio_costo_ok: False
+costo_ok_timestamp: False
+x_studio_pagato_ok: False
+total_cost_of_lines: 0.0
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 1301
+Name: S00370
+Date: 2026-04-08 07:54:00
+Partner: [89667, 'Bisagni Gianfranco']
+User: [15, 'Francesco Rispoli']
+Amount total: 2800.02
+Invoice status: to invoice
+x_studio_imax_api: imax_home
+x_studio_costo_ok: True
+costo_ok_timestamp: 2026-04-10 13:58:02
+x_studio_pagato_ok: False
+total_cost_of_lines: 1246.0
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 1069
+Name: S00136
+Date: 2026-02-05 14:22:59
+Partner: [93377, 'Rossi Roberta']
+User: [15, 'Francesco Rispoli']
+Amount total: 2300.01
+Invoice status: to invoice
+x_studio_imax_api: imax_home
+x_studio_costo_ok: True
+costo_ok_timestamp: 2026-04-10 13:33:43
+x_studio_pagato_ok: False
+total_cost_of_lines: 1281.0
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 528
+Name: S00527
+Date: 2026-02-02 18:07:48
+Partner: [90090, 'Cliente Willi Willi']
+User: [14, 'Massimo Mulattieri']
+Amount total: 666.6
+Invoice status: to invoice
+x_studio_imax_api: imax_home
+x_studio_costo_ok: True
+costo_ok_timestamp: 2026-03-26 17:58:45
+x_studio_pagato_ok: False
+total_cost_of_lines: 252.0
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 998
+Name: S00065
+Date: 2026-01-21 11:26:25
+Partner: [93862, 'Cuneo Luca Domenico']
+User: [12, 'Francesco Lorieri']
+Amount total: 2090.0
+Invoice status: invoiced
+x_studio_imax_api: imax_home
+x_studio_costo_ok: True
+costo_ok_timestamp: 2026-04-10 15:16:37
+x_studio_pagato_ok: False
+total_cost_of_lines: 942.5
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 1012
+Name: S00079
+Date: 2026-01-15 09:57:49
+Partner: [90286, 'De Rinaldis Matteo']
+User: [13, 'Alberto Moscatelli']
+Amount total: 1808.36
+Invoice status: invoiced
+x_studio_imax_api: imax_home
+x_studio_costo_ok: True
+costo_ok_timestamp: 2026-04-10 14:29:24
+x_studio_pagato_ok: False
+total_cost_of_lines: 1129.06
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 1010
+Name: S00077
+Date: 2026-01-15 07:41:06
+Partner: [93870, 'Cullino Laura']
+User: [12, 'Francesco Lorieri']
+Amount total: 610.0
+Invoice status: invoiced
+x_studio_imax_api: imax_home
+x_studio_costo_ok: True
+costo_ok_timestamp: 2026-04-10 13:36:07
+x_studio_pagato_ok: False
+total_cost_of_lines: 258.0
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 408
+Name: S00407
+Date: 2025-05-19 15:17:23
+Partner: [93370, 'Mattei Luigina']
+User: [15, 'Francesco Rispoli']
+Amount total: 943.25
+Invoice status: invoiced
+x_studio_imax_api: imax_home
+x_studio_costo_ok: True
+costo_ok_timestamp: 2026-04-10 13:39:49
+x_studio_pagato_ok: False
+total_cost_of_lines: 478.87
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 403
+Name: S00402
+Date: 2025-05-07 06:44:02
+Partner: [93553, 'Dini Antonio']
+User: [13, 'Alberto Moscatelli']
+Amount total: 400.01
+Invoice status: invoiced
+x_studio_imax_api: imax_home
+x_studio_costo_ok: False
+costo_ok_timestamp: False
+x_studio_pagato_ok: False
+total_cost_of_lines: 174.8
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 117
+Name: S00116
+Date: 2025-02-15 09:22:06
+Partner: [93481, 'Scaglione Lisa Ann']
+User: [15, 'Francesco Rispoli']
+Amount total: 23340.28
+Invoice status: invoiced
+x_studio_imax_api: imax_home
+x_studio_costo_ok: True
+costo_ok_timestamp: 2026-04-10 16:07:35
+x_studio_pagato_ok: False
+total_cost_of_lines: 10630.7
+total_recharge: None
+--------------------------------------------------------------------------------
+ID: 64
+Name: S00063
+Date: 2025-02-03 10:04:31
+Partner: [93385, 'Bonati Corrado']
+User: [12, 'Francesco Lorieri']
+Amount total: 85.4
+Invoice status: invoiced
+x_studio_imax_api: imax_home
+x_studio_costo_ok: True
+costo_ok_timestamp: 2026-04-10 15:39:45
+x_studio_pagato_ok: False
+total_cost_of_lines: 30.0
+total_recharge: None
+--------------------------------------------------------------------------------

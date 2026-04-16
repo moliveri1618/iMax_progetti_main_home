@@ -184,7 +184,7 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
             [[
                 ["state", "!=", "cancel"],
                 ["x_studio_imax_api", "=", "imax_nautica"],
-                ["x_studio_costo_ok", "=", True],
+                ["state", "=", "sale"],
             ]],
             {
                 "fields": [
@@ -198,9 +198,11 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
                     "invoice_status",
                     "x_studio_imax_api",
                     "x_studio_costo_ok",
+                    "costo_ok_timestamp",
                     "x_studio_pagato_ok",
                     "amount_untaxed",
                     "total_cost_of_lines",
+                    "state"
                 ]
             }
         )
@@ -364,6 +366,8 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
                 nome_cliente=partner.get("name") or None,
                 email_cliente=partner.get("email") or None,
                 address_cliente=address_cliente,
+                costo_ok=order.get("x_studio_costo_ok"),
+                data_costo_ok=datetime.strptime(order["costo_ok_timestamp"], "%Y-%m-%d %H:%M:%S") if order.get("costo_ok_timestamp") else None,
                 responsabile=responsabile_value,
                 status=0,
                 costo=order.get("amount_untaxed", 0.0),
