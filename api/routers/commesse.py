@@ -141,7 +141,6 @@ def rpc_call(model, method, args=None, kwargs=None):
     if kwargs is None:
         kwargs = {}
 
-
     # merge default global context with per-call context
     kwargs["context"] = {
         **ODOO_CONTEXT,
@@ -178,6 +177,38 @@ def rpc_call(model, method, args=None, kwargs=None):
         if "error" in data:
             raise Exception(data["error"])
         return data["result"]
+
+
+def costo_ok_updates(sale_orders, existing_map):
+    updates_costo_ok = []
+
+    for order in sale_orders:
+        ordine = order.get("name")
+        existing_row = existing_map.get(ordine)
+
+        if not existing_row:
+            continue
+
+        new_costo_ok = order.get("x_studio_costo_ok")
+        new_data_costo_ok = (
+            datetime.strptime(order["costo_ok_timestamp"], "%Y-%m-%d %H:%M:%S")
+            if order.get("costo_ok_timestamp")
+            else None
+        )
+
+        old_costo_ok = existing_row["costo_ok"]
+        old_data_costo_ok = existing_row["data_costo_ok"]
+
+        if old_costo_ok != new_costo_ok or old_data_costo_ok != new_data_costo_ok:
+            updates_costo_ok.append(
+                {
+                    "id": existing_row["id"],
+                    "costo_ok": new_costo_ok,
+                    "data_costo_ok": new_data_costo_ok,
+                }
+            )
+
+    return updates_costo_ok
 
 
 def sync_commesse_home_from_odoo(db: Session) -> int:
@@ -344,11 +375,33 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
         # print("Template properties map:")
         # pprint.pprint(template_props_map)
 
-        # Fetch existing ordini in ONE query
+        # Fetch existing ordini in ONE query & determine which orders are new
+        # existing = db.exec(
+        #     select(iCommesse.ordine).where(iCommesse.ordine.in_(odoo_ordini))
+        # ).all()
+        # existing_set = set(existing)
         existing = db.exec(
-            select(iCommesse.ordine).where(iCommesse.ordine.in_(odoo_ordini))
+            select(
+                iCommesse.id,
+                iCommesse.ordine,
+                iCommesse.costo_ok,
+                iCommesse.data_costo_ok,
+            ).where(iCommesse.ordine.in_(odoo_ordini))
         ).all()
-        existing_set = set(existing)
+
+        existing_map = {
+            row.ordine: {
+                "id": row.id,
+                "costo_ok": row.costo_ok,
+                "data_costo_ok": row.data_costo_ok,
+            }
+            for row in existing
+        }
+        updates_costo_ok = costo_ok_updates(sale_orders, existing_map)
+        if updates_costo_ok:
+            db.bulk_update_mappings(iCommesse, updates_costo_ok)
+
+        existing_set = set(existing_map.keys())
         new_orders = [o for o in sale_orders if o.get("name") not in existing_set]
         # print('existing ordini in DB:', existing_set)
         # print('new_orders', new_orders)
