@@ -1231,7 +1231,11 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
             "margine":margine,
             "percentuale_ricarico": (margine / acquistato_a * 100) if acquistato_a != 0 else None,
             "percentuale_premio": percentuale_premio,
-            "valore_premio_lordo": (margine*percentuale_premio)/100 if percentuale_premio else None,
+            "valore_premio_lordo": (
+                (margine * percentuale_premio) / 100
+                if percentuale_premio is not None
+                else None
+            )
         })
 
     # delete_replace_ordini_premi
