@@ -1210,6 +1210,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
             else None
         )
         #print(mese)
+        
         percentuale_premio = apply_formula( 
                                         percentuale_ricarico, 
                                         mese, 
