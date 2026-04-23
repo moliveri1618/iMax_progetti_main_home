@@ -374,9 +374,6 @@ from datetime import datetime
 from typing import Dict
 
 def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
-    # rows = session.exec(
-    #     select(VenditeImax).where(VenditeImax.venditore == "Alberto Moscatelli")
-    # ).all()
 
     rows = session.exec(
         select(iCommesse).where(
@@ -430,13 +427,17 @@ def compute_quarter_totals_for_user(session, user_id: str) -> Dict[str, float]:
 
     month_totals = defaultdict(float)
     for r in rows:
-        mm = parse_month(r.data)
+        mm = parse_month(r.data_costo_ok)
         if mm:
-            month_totals[mm] += float(r.ricarico or 0.0)
+            month_totals[mm] += float(r.costo or 0.0)
+
+    print('1 trimestre', month_totals[1] + month_totals[2] + month_totals[3])
+    print('2 trimestre', month_totals[4] + month_totals[5] + month_totals[6])
+    print('3 trimestre', month_totals[7] + month_totals[8] + month_totals[9])
+    print('4 trimestre', month_totals[10] + month_totals[11] + month_totals[12])
 
     return {
-        # '1_trimestre': month_totals[1] + month_totals[2] + month_totals[3],     # Jan–Mar
-        '1_trimestre': 70000,     # TEST
+        '1_trimestre': month_totals[1] + month_totals[2] + month_totals[3],     # Jan–Mar
         '2_trimestre': month_totals[4] + month_totals[5] + month_totals[6],     # Apr–Jun
         '3_trimestre': month_totals[7] + month_totals[8] + month_totals[9],     # Jul–Sep
         '4_trimestre': month_totals[10] + month_totals[11] + month_totals[12],  # Oct–Dec
@@ -943,7 +944,7 @@ def delete_replace_ordini_premi(session, user_id: str, rows: List[Dict]) -> int:
     Cancella le righe esistenti in OrdiniPremi per lo user_id e inserisce le nuove.
     Ritorna il numero di righe inserite.
     """
-    print(rows)
+    # print(rows)
     try:
         # 1) Cancella righe esistenti per questo user
         session.exec(delete(OrdiniPremi).where(OrdiniPremi.user_id == user_id))
@@ -1007,7 +1008,7 @@ def replace_or_insert_parametriDaInserire(
       - Seed from TEMPLATE_ROWS.
     """
     uid = str(user_id)
-    print(rows)
+    # print(rows)
 
     # Decide source data
     if rows is None or (treat_empty_list_as_template and rows == []):
@@ -1183,7 +1184,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
     ).all()
     vendite = [v.model_dump() for v in vendite]
     # pprint(calcoli)
-    pprint(vendite)
+    # pprint(vendite)
 
     # 2 Perform calculations
     mapped: List[Dict[str, Any]] = []
@@ -1210,7 +1211,7 @@ def replace_or_insert_conteggi_commessa(session: Session, user_id: str, calcoli,
             else None
         )
         #print(mese)
-        
+
         percentuale_premio = apply_formula( 
                                         percentuale_ricarico, 
                                         mese, 
@@ -1391,7 +1392,7 @@ def build_pdf_report_tecnico(data):
     add_pdf_header(pdf, title="Report Intervento Tecnico")
     pdf.set_font("Arial", size=12)
     
-    print(t)
+    # print(t)
 
     def gv(name, default=""):
         """get value from tecnico, defaulting to '' (or provided) if missing/None"""
@@ -2601,7 +2602,7 @@ def build_pdf_report_posa_commessa(data):
     pdf.add_page()
     add_pdf_header(pdf, title="Report Posa In Opera")
     pdf.set_font("Arial", size=12)
-    print(t)
+    # print(t)
 
     def gv(name, default=""):
         """get value from tecnico, defaulting to '' (or provided) if missing/None"""
