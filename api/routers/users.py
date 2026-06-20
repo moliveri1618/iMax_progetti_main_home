@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 import json
 import httpx
 from sqlalchemy import text
+from pprint import pprint
 
 
 if os.getenv("GITHUB_ACTIONS"):
@@ -166,9 +167,11 @@ def sync_user_from_odoo_service(db: Session):
                 "tz",
                 "lang",
             ],
-            "limit": 20,
+            "limit": 100,
         },
     )
+    # print("Fetched users from Odoo:")
+    # pprint(users)
 
     # return users
     skipped = 0
