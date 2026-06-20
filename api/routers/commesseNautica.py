@@ -175,8 +175,8 @@ def rpc_call(model, method, args=None, kwargs=None):
             raise Exception(data["error"])
         return data["result"]
 
-def costo_ok_updates(sale_orders, existing_map):
-    updates_costo_ok = []
+def commesse_updates(sale_orders, existing_map):
+    updates = []
 
     for order in sale_orders:
         ordine = order.get("name")
@@ -191,20 +191,31 @@ def costo_ok_updates(sale_orders, existing_map):
             if order.get("costo_ok_timestamp")
             else None
         )
+        new_costo = order.get("amount_untaxed", 0.0)
+        new_ricarico = order.get("total_cost_of_lines", 0.0)
 
         old_costo_ok = existing_row["costo_ok"]
         old_data_costo_ok = existing_row["data_costo_ok"]
+        old_costo = existing_row["costo"]
+        old_ricarico = existing_row["ricarico"]
 
-        if old_costo_ok != new_costo_ok or old_data_costo_ok != new_data_costo_ok:
-            updates_costo_ok.append(
+        if (
+            old_costo_ok != new_costo_ok
+            or old_data_costo_ok != new_data_costo_ok
+            or old_costo != new_costo
+            or old_ricarico != new_ricarico
+        ):
+            updates.append(
                 {
                     "id": existing_row["id"],
                     "costo_ok": new_costo_ok,
                     "data_costo_ok": new_data_costo_ok,
+                    "costo": new_costo,
+                    "ricarico": new_ricarico,
                 }
             )
 
-    return updates_costo_ok
+    return updates
 
 def sync_commesse_nautica_odoo(db: Session) -> int:
     try:
@@ -371,6 +382,8 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
                 iCommesseNautica.ordine,
                 iCommesseNautica.costo_ok,
                 iCommesseNautica.data_costo_ok,
+                iCommesseNautica.costo,
+                iCommesseNautica.ricarico,
             ).where(iCommesseNautica.ordine.in_(odoo_ordini))
         ).all()
 
@@ -379,12 +392,14 @@ def sync_commesse_nautica_odoo(db: Session) -> int:
                 "id": row.id,
                 "costo_ok": row.costo_ok,
                 "data_costo_ok": row.data_costo_ok,
+                "costo": row.costo,
+                "ricarico": row.ricarico,
             }
             for row in existing
         }
-        updates_costo_ok = costo_ok_updates(sale_orders, existing_map)
-        if updates_costo_ok:
-            db.bulk_update_mappings(iCommesseNautica, updates_costo_ok)
+        updates= commesse_updates(sale_orders, existing_map)
+        if updates :
+            db.bulk_update_mappings(iCommesseNautica, updates)
 
         existing_set = set(existing_map.keys())
         new_orders = [o for o in sale_orders if o.get("name") not in existing_set]

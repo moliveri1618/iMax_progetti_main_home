@@ -412,9 +412,9 @@ def sync_commesse_home_from_odoo(db: Session) -> int:
             }
             for row in existing
         }
-        updates_costo_ok = commesse_updates(sale_orders, existing_map)
-        if updates_costo_ok:
-            db.bulk_update_mappings(iCommesse, updates_costo_ok)
+        updates = commesse_updates(sale_orders, existing_map)
+        if updates:
+            db.bulk_update_mappings(iCommesse, updates)
 
         existing_set = set(existing_map.keys())
         new_orders = [o for o in sale_orders if o.get("name") not in existing_set]
